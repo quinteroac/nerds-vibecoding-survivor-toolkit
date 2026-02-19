@@ -1,0 +1,16 @@
+{
+  "name": "agents-coding-toolkit",
+  "version": "0.1.0",
+  "private": true,
+  "bin": {
+    "nvst": "src/cli.ts"
+  },
+  "scripts": {
+    "validate:state": "bun run scaffold/schemas/tmpl_validate-state.ts",
+    "validate:progress": "bun run scaffold/schemas/tmpl_validate-progress.ts"
+  },
+  "devDependencies": {
+    "zod": "^3.23.8",
+    "typescript": "^5.6.3"
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "entries": [
+    {
+      "use_case_id": "UC-01",
+      "timestamp": "2026-02-18T12:00:00Z",
+      "implementation": {
+        "status": "completed",
+        "summary_of_actions": "Implemented feature X.",
+        "learnings": "TBD"
+      },
+      "tests": [
+        {
+          "id": "T1",
+          "description": "should do X",
+          "status": "passed",
+          "file": "tests/uc-01.test.ts"
+        }
+      ]
+    }
+  ]
+}
