@@ -21,11 +21,97 @@ Approach: requirements-driven development.
 
 **Assumptions:** An entry document for the agent exists. Global conventions (clean design, clean code, recommended stack, etc.) are defined in advance by the user and live in the project context document.
 
+```mermaid
+flowchart LR
+    Start(["▶ start iteration"]) --> Define
+
+    subgraph Define["🔍 Define"]
+        direction TB
+        DA["define requirement"] --> DB["refine requirement\n(optional × N)"]
+        DB --> DC["approve requirement"]
+        DC --> DD["create PRD.json"]
+    end
+
+    subgraph Prototype["🛠 Prototype"]
+        direction TB
+        PA["create / approve\nproject-context"] --> PB["create prototype\n(Ralph loop)"]
+        PB --> PC["define + approve\ntest-plan"]
+        PC --> PD["execute test-plan"]
+        PD --> PE{all pass?}
+        PE -- No --> PF["fix bugs"]
+        PF --> PD
+        PE -- Yes --> PG["approve prototype"]
+    end
+
+    subgraph Refactor["♻ Refactor"]
+        direction TB
+        RA["define refactor-plan\n(evaluate + plan)"] --> RB["approve refactor-plan\n→ TECHNICAL_DEBT.md"]
+        RB --> RC["create prd --refactor"]
+        RC --> RD["execute refactor\n(Ralph loop)"]
+        RD --> RE["run all tests"]
+        RE --> RF{pass?}
+        RF -- No --> RG["fix bugs"]
+        RG --> RE
+        RF -- Yes --> RH["update PROJECT_CONTEXT.md\n+ register CHANGELOG.md"]
+    end
+
+    Define --> Prototype
+    Prototype --> Refactor
+    Refactor --> Start
+```
+
 ---
 
 ## 2. Implementation
 
 Summary: **Start:** `bun nvst start iteration` (archives previous iteration if it exists, initializes state for the new one). Then **Define** → **Prototype** → **Refactor** (evaluate + plan → approve → PRD refactor → execute refactor → full tests → CHANGELOG). For the next iteration, run `bun nvst start iteration` again.
+
+```mermaid
+stateDiagram-v2
+    [*] --> define : bun nvst start iteration
+
+    state define {
+        [*] --> req_pending
+        req_pending --> req_in_progress : define requirement
+        req_in_progress --> req_in_progress : refine requirement
+        req_in_progress --> req_approved : approve requirement
+        req_approved --> prd_completed : create prd
+        prd_completed --> [*]
+    }
+
+    define --> prototype : create project-context
+
+    state prototype {
+        [*] --> ctx_pending_approval
+        ctx_pending_approval --> ctx_created : approve project-context
+        ctx_created --> build_in_progress : create prototype
+        build_in_progress --> build_created : (loop done)
+        build_created --> tp_pending_approval : define test-plan
+        tp_pending_approval --> tp_created : approve test-plan
+        tp_created --> tests_running : execute test-plan
+        tests_running --> fixing : failures exist
+        fixing --> tests_running : automated-fix / manual-fix
+        tests_running --> proto_approved : approve prototype
+        proto_approved --> [*]
+    }
+
+    prototype --> refactor : define refactor-plan
+
+    state refactor {
+        [*] --> plan_pending_approval
+        plan_pending_approval --> plan_approved : approve refactor-plan
+        plan_approved --> prd_refactored : create prd --refactor
+        prd_refactored --> refactor_executing : execute refactor
+        refactor_executing --> all_tests_running : (loop done)
+        all_tests_running --> bug_fixing : failures
+        bug_fixing --> all_tests_running
+        all_tests_running --> ctx_updated : update PROJECT_CONTEXT.md
+        ctx_updated --> changelog_done : register changelog
+        changelog_done --> [*]
+    }
+
+    refactor --> [*] : bun nvst start iteration (next)
+```
 
 ### 2.1 State Management
 
