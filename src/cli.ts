@@ -4,6 +4,7 @@ import { parseAgentArg } from "./agent";
 import { runApproveProjectContext } from "./commands/approve-project-context";
 import { runApproveRequirement } from "./commands/approve-requirement";
 import { runCreateProjectContext } from "./commands/create-project-context";
+import { runCreatePrototype } from "./commands/create-prototype";
 import { runDefineRequirement } from "./commands/define-requirement";
 import { runDestroy } from "./commands/destroy";
 import { runInit } from "./commands/init";
@@ -30,6 +31,43 @@ function parseMode(args: string[]): { mode: "strict" | "yolo"; remainingArgs: st
   return { mode, remainingArgs };
 }
 
+function extractFlagValue(args: string[], flag: string): { value: string | null; remainingArgs: string[] } {
+  const idx = args.indexOf(flag);
+  if (idx === -1) {
+    return { value: null, remainingArgs: args };
+  }
+
+  if (idx + 1 >= args.length) {
+    throw new Error(`Missing value for ${flag}.`);
+  }
+
+  const value = args[idx + 1];
+  return {
+    value,
+    remainingArgs: [...args.slice(0, idx), ...args.slice(idx + 2)],
+  };
+}
+
+function parseOptionalIntegerFlag(
+  args: string[],
+  flag: "--iterations" | "--retry-on-fail",
+  min: number,
+): { value: number | undefined; remainingArgs: string[] } {
+  const { value, remainingArgs } = extractFlagValue(args, flag);
+  if (value === null) {
+    return { value: undefined, remainingArgs };
+  }
+
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed < min) {
+    throw new Error(
+      `Invalid ${flag} value '${value}'. Expected an integer >= ${min}.`,
+    );
+  }
+
+  return { value: parsed, remainingArgs };
+}
+
 function printUsage() {
   console.log(`Usage: nvst <command> [options]
 
@@ -38,6 +76,8 @@ Commands:
   start iteration    Start a new iteration (archives previous if exists)
   create project-context --agent <provider> [--mode strict|yolo]
                      Generate/update .agents/PROJECT_CONTEXT.md via agent
+  create prototype --agent <provider> [--iterations <N>] [--retry-on-fail <N>] [--stop-on-critical]
+                     Initialize prototype build for current iteration
   approve project-context
                      Mark project context as approved
   refine project-context --agent <provider> [--challenge]
@@ -55,6 +95,9 @@ Commands:
 Options:
   --agent            Agent provider (claude, codex, gemini) for agent-backed commands
   --mode             Create mode for project-context (strict or yolo)
+  --iterations       Maximum prototype passes (integer >= 1)
+  --retry-on-fail    Retry attempts per failed story (integer >= 0)
+  --stop-on-critical Stop execution after critical failures
   --challenge        Run refine in challenger mode
   --clean            When used with destroy, also removes .agents/flow/archived
   -h, --help         Show this help message`);
@@ -104,34 +147,75 @@ async function main() {
   }
 
   if (command === "create") {
-    if (args.length === 0 || args[0] !== "project-context") {
+    if (args.length === 0) {
       console.error(
-        `Usage for create: nvst create project-context --agent <provider> [--mode strict|yolo]`,
+        `Usage for create: nvst create <project-context|prototype> --agent <provider> [options]`,
       );
       printUsage();
       process.exitCode = 1;
       return;
     }
 
-    try {
-      const { provider, remainingArgs: postAgentArgs } = parseAgentArg(args.slice(1));
-      const { mode, remainingArgs: postModeArgs } = parseMode(postAgentArgs);
+    const subcommand = args[0];
 
-      if (postModeArgs.length > 0) {
-        console.error(`Unknown option(s) for create project-context: ${postModeArgs.join(" ")}`);
+    if (subcommand === "project-context") {
+      try {
+        const { provider, remainingArgs: postAgentArgs } = parseAgentArg(args.slice(1));
+        const { mode, remainingArgs: postModeArgs } = parseMode(postAgentArgs);
+
+        if (postModeArgs.length > 0) {
+          console.error(`Unknown option(s) for create project-context: ${postModeArgs.join(" ")}`);
+          printUsage();
+          process.exitCode = 1;
+          return;
+        }
+
+        await runCreateProjectContext({ provider, mode });
+        return;
+      } catch (error) {
+        console.error(error instanceof Error ? error.message : String(error));
         printUsage();
         process.exitCode = 1;
         return;
       }
-
-      await runCreateProjectContext({ provider, mode });
-      return;
-    } catch (error) {
-      console.error(error instanceof Error ? error.message : String(error));
-      printUsage();
-      process.exitCode = 1;
-      return;
     }
+
+    if (subcommand === "prototype") {
+      try {
+        const { provider, remainingArgs: postAgentArgs } = parseAgentArg(args.slice(1));
+
+        const {
+          value: iterations,
+          remainingArgs: postIterationsArgs,
+        } = parseOptionalIntegerFlag(postAgentArgs, "--iterations", 1);
+        const {
+          value: retryOnFail,
+          remainingArgs: postRetryArgs,
+        } = parseOptionalIntegerFlag(postIterationsArgs, "--retry-on-fail", 0);
+
+        const stopOnCritical = postRetryArgs.includes("--stop-on-critical");
+        const unknownArgs = postRetryArgs.filter((arg) => arg !== "--stop-on-critical");
+        if (unknownArgs.length > 0) {
+          console.error(`Unknown option(s) for create prototype: ${unknownArgs.join(" ")}`);
+          printUsage();
+          process.exitCode = 1;
+          return;
+        }
+
+        await runCreatePrototype({ provider, iterations, retryOnFail, stopOnCritical });
+        return;
+      } catch (error) {
+        console.error(error instanceof Error ? error.message : String(error));
+        printUsage();
+        process.exitCode = 1;
+        return;
+      }
+    }
+
+    console.error(`Unknown create subcommand: ${subcommand}`);
+    printUsage();
+    process.exitCode = 1;
+    return;
   }
 
   if (command === "define") {
