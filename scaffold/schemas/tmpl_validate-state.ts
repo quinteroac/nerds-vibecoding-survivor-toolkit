@@ -1,4 +1,4 @@
-import { StateSchema } from "./tmpl_state.ts";
+import { StateSchema } from "./tmpl_state";
 import { readFileSync } from "fs";
 import { join } from "path";
 
@@ -9,5 +9,5 @@ if (result.success) {
   console.log("tmpl_state.example.json is valid");
 } else {
   console.error("tmpl_state.example.json validation failed:", result.error.flatten());
-  process.exit(1);
+  process.exitCode = 1;
 }

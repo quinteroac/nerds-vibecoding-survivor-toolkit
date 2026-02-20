@@ -1,4 +1,4 @@
-import { ProgressSchema } from "./tmpl_progress.ts";
+import { ProgressSchema } from "./tmpl_progress";
 import { readFileSync } from "fs";
 import { join } from "path";
 
@@ -9,5 +9,5 @@ if (result.success) {
   console.log("tmpl_it_000001_progress.example.json is valid");
 } else {
   console.error("Validation failed:", result.error.flatten());
-  process.exit(1);
+  process.exitCode = 1;
 }
