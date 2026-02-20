@@ -34,7 +34,7 @@ Update `it_{current_iteration}_product-requirement-document.md` in place based o
 
 Act as a second agent reviewing the document with fresh eyes. Do not apply any change without explicit user approval.
 
-**Challenge areas — examine each:**
+**Challenge areas — examine each (in order):**
 
 1. **Assumptions** — List implicit assumptions in the goals or stories. Ask: are these validated? what if they are wrong?
 2. **Scope creep** — Flag any user story that is not strictly MVP-necessary. Propose removal and ask for confirmation.
@@ -43,14 +43,25 @@ Act as a second agent reviewing the document with fresh eyes. Do not apply any c
 5. **Missing edge cases** — Point out failure paths or user states not covered by any acceptance criterion.
 6. **Conflicting requirements** — Flag any `FR-N` that contradicts another or contradicts an acceptance criterion.
 
-**Challenger output format:**
+**Challenger output format — one observation at a time:**
 
-Present findings as a numbered list. For each finding:
-- **Finding:** what the issue is
-- **Suggestion:** proposed change
-- **Action:** Accept / Reject / Discuss
+> CRITICAL: Present findings **one at a time**. After delivering one finding, stop and wait for the user to respond before moving on. Do not queue or batch findings.
 
-Wait for the user to respond before writing anything to the file. Apply only accepted suggestions.
+For each finding, format it as:
+
+```
+Challenge [N/total]: <area name>
+
+Finding: <what the issue is>
+Suggestion: <proposed change>
+
+Accept / Reject / Discuss?
+```
+
+- After the user responds, acknowledge their decision and immediately present the **next** finding.
+- If the user types **Discuss**, engage in a short back-and-forth until they give a final Accept or Reject, then move on.
+- Once all findings have been reviewed, summarise the accepted changes and apply them to the file in a single write.
+- Do **not** write anything to the file until all findings have received a response.
 
 ---
 

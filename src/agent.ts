@@ -61,10 +61,11 @@ export async function invokeAgent(options: AgentInvokeOptions): Promise<AgentRes
   let stdinOption: "ignore" | "inherit";
   if (provider === "gemini" && interactive) {
     // Interactive mode: drop -p so Gemini runs as a conversational session.
-    finalArgs = [prompt, ...args];
+    // Flags must come before the positional prompt arg.
+    finalArgs = [...args, prompt];
     stdinOption = "inherit";
   } else if (provider === "gemini") {
-    finalArgs = ["-p", prompt, ...args];
+    finalArgs = [...args, "-p", prompt];
     stdinOption = "ignore";
   } else if (provider === "codex" && interactive) {
     // Codex interactive mode (no "exec"): prompt first, then TUI can read user input.

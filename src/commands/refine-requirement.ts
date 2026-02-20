@@ -49,6 +49,7 @@ export async function runRefineRequirement(opts: RefineRequirementOptions): Prom
     provider,
     prompt,
     cwd: projectRoot,
+    interactive: true,
   });
 
   if (result.exitCode !== 0) {
