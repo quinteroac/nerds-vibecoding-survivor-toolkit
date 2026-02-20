@@ -1,11 +1,13 @@
 #!/usr/bin/env bun
 
 import { parseAgentArg } from "./agent";
+import { runApproveProjectContext } from "./commands/approve-project-context";
 import { runApproveRequirement } from "./commands/approve-requirement";
 import { runCreateProjectContext } from "./commands/create-project-context";
 import { runDefineRequirement } from "./commands/define-requirement";
 import { runDestroy } from "./commands/destroy";
 import { runInit } from "./commands/init";
+import { runRefineProjectContext } from "./commands/refine-project-context";
 import { runRefineRequirement } from "./commands/refine-requirement";
 import { runStartIteration } from "./commands/start-iteration";
 import { runWriteJson } from "./commands/write-json";
@@ -36,6 +38,10 @@ Commands:
   start iteration    Start a new iteration (archives previous if exists)
   create project-context --agent <provider> [--mode strict|yolo]
                      Generate/update .agents/PROJECT_CONTEXT.md via agent
+  approve project-context
+                     Mark project context as approved
+  refine project-context --agent <provider> [--challenge]
+                     Refine project context via agent (editor or challenge mode)
   define requirement --agent <provider>
                      Create requirement document via agent
   refine requirement --agent <provider> [--challenge]
@@ -49,7 +55,7 @@ Commands:
 Options:
   --agent            Agent provider (claude, codex, gemini) for agent-backed commands
   --mode             Create mode for project-context (strict or yolo)
-  --challenge        Run refine requirement in challenger mode
+  --challenge        Run refine in challenger mode
   --clean            When used with destroy, also removes .agents/flow/archived
   -h, --help         Show this help message`);
 }
@@ -157,46 +163,94 @@ async function main() {
   }
 
   if (command === "refine") {
-    if (args.length === 0 || args[0] !== "requirement") {
+    if (args.length === 0) {
       console.error(
-        `Usage for refine: nvst refine requirement --agent <provider> [--challenge]`,
+        `Usage for refine: nvst refine <requirement|project-context> --agent <provider> [--challenge]`,
       );
       printUsage();
       process.exitCode = 1;
       return;
     }
 
-    try {
-      const { provider, remainingArgs: postAgentArgs } = parseAgentArg(args.slice(1));
-      const challenge = postAgentArgs.includes("--challenge");
-      const unknownArgs = postAgentArgs.filter((arg) => arg !== "--challenge");
+    const subcommand = args[0];
 
-      if (unknownArgs.length > 0) {
-        console.error(`Unknown option(s) for refine requirement: ${unknownArgs.join(" ")}`);
+    if (subcommand === "requirement") {
+      try {
+        const { provider, remainingArgs: postAgentArgs } = parseAgentArg(args.slice(1));
+        const challenge = postAgentArgs.includes("--challenge");
+        const unknownArgs = postAgentArgs.filter((arg) => arg !== "--challenge");
+
+        if (unknownArgs.length > 0) {
+          console.error(`Unknown option(s) for refine requirement: ${unknownArgs.join(" ")}`);
+          printUsage();
+          process.exitCode = 1;
+          return;
+        }
+
+        await runRefineRequirement({ provider, challenge });
+        return;
+      } catch (error) {
+        console.error(error instanceof Error ? error.message : String(error));
         printUsage();
         process.exitCode = 1;
         return;
       }
-
-      await runRefineRequirement({ provider, challenge });
-      return;
-    } catch (error) {
-      console.error(error instanceof Error ? error.message : String(error));
-      printUsage();
-      process.exitCode = 1;
-      return;
     }
+
+    if (subcommand === "project-context") {
+      try {
+        const { provider, remainingArgs: postAgentArgs } = parseAgentArg(args.slice(1));
+        const challenge = postAgentArgs.includes("--challenge");
+        const unknownArgs = postAgentArgs.filter((arg) => arg !== "--challenge");
+
+        if (unknownArgs.length > 0) {
+          console.error(
+            `Unknown option(s) for refine project-context: ${unknownArgs.join(" ")}`,
+          );
+          printUsage();
+          process.exitCode = 1;
+          return;
+        }
+
+        await runRefineProjectContext({ provider, challenge });
+        return;
+      } catch (error) {
+        console.error(error instanceof Error ? error.message : String(error));
+        printUsage();
+        process.exitCode = 1;
+        return;
+      }
+    }
+
+    console.error(`Unknown refine subcommand: ${subcommand}`);
+    printUsage();
+    process.exitCode = 1;
+    return;
   }
 
   if (command === "approve") {
-    if (args.length !== 1 || args[0] !== "requirement") {
-      console.error(`Usage for approve: nvst approve requirement`);
+    if (args.length !== 1) {
+      console.error(`Usage for approve: nvst approve <requirement|project-context>`);
       printUsage();
       process.exitCode = 1;
       return;
     }
 
-    await runApproveRequirement();
+    const subcommand = args[0];
+
+    if (subcommand === "requirement") {
+      await runApproveRequirement();
+      return;
+    }
+
+    if (subcommand === "project-context") {
+      await runApproveProjectContext();
+      return;
+    }
+
+    console.error(`Unknown approve subcommand: ${subcommand}`);
+    printUsage();
+    process.exitCode = 1;
     return;
   }
 

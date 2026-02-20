@@ -103,28 +103,25 @@ export async function invokeAgent(options: AgentInvokeOptions): Promise<AgentRes
     const readStream = async (
       stream: ReadableStream<Uint8Array> | null,
       chunks: string[],
-      passthrough?: WritableStream<Uint8Array>,
+      passthrough?: { write: (chunk: Uint8Array) => void },
     ) => {
       if (!stream) return;
       const reader = stream.getReader();
       const decoder = new TextDecoder();
-      const writer =
-        typeof passthrough?.getWriter === "function" ? passthrough.getWriter() : undefined;
       try {
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
           chunks.push(decoder.decode(value, { stream: true }));
-          if (writer) await writer.write(value);
+          if (passthrough) passthrough.write(value);
         }
       } finally {
         reader.releaseLock();
-        if (writer) writer.releaseLock();
       }
     };
     await Promise.all([
-      readStream(proc.stdout, stdoutChunks, Bun.stdout),
-      readStream(proc.stderr, stderrChunks, Bun.stderr),
+      readStream(proc.stdout, stdoutChunks, process.stdout),
+      readStream(proc.stderr, stderrChunks, process.stderr),
     ]);
     exitCode = await proc.exited;
     stdoutStr = stdoutChunks.join("");

@@ -28,13 +28,21 @@ export async function runCreateProjectContext(opts: CreateProjectContextOptions)
   const projectContext = state.phases.prototype.project_context;
   if (projectContext.status === "pending_approval") {
     throw new Error(
-      "Cannot create project context: prototype.project_context is pending approval. Approve it before re-running.",
+      "Cannot create project context: project context is pending approval. " +
+      "Run `bun nvst approve project-context` or `bun nvst refine project-context` first.",
     );
   }
 
-  if (projectContext.status !== "pending" && projectContext.status !== "created") {
+  if (projectContext.status === "created") {
     throw new Error(
-      `Cannot create project context from status '${projectContext.status}'. Expected pending or created.`,
+      "Cannot create project context: project context already exists. " +
+      "Use `bun nvst refine project-context` to iterate on it.",
+    );
+  }
+
+  if (projectContext.status !== "pending") {
+    throw new Error(
+      `Cannot create project context from status '${projectContext.status}'. Expected pending.`,
     );
   }
 
@@ -70,6 +78,7 @@ export async function runCreateProjectContext(opts: CreateProjectContextOptions)
     provider,
     prompt,
     cwd: projectRoot,
+    interactive: true,
   });
 
   if (result.exitCode !== 0) {

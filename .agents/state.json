@@ -1,0 +1,56 @@
+{
+  "current_iteration": "000001",
+  "current_phase": "define",
+  "phases": {
+    "define": {
+      "requirement_definition": {
+        "status": "in_progress",
+        "file": "it_000001_product-requirement-document.md"
+      },
+      "prd_generation": {
+        "status": "completed",
+        "file": "it_000001_PRD.json"
+      }
+    },
+    "prototype": {
+      "project_context": {
+        "status": "created",
+        "file": ".agents/PROJECT_CONTEXT.md"
+      },
+      "test_plan": {
+        "status": "pending",
+        "file": null
+      },
+      "tp_generation": {
+        "status": "pending",
+        "file": null
+      },
+      "prototype_build": {
+        "status": "pending",
+        "file": null
+      },
+      "prototype_approved": false
+    },
+    "refactor": {
+      "evaluation_report": {
+        "status": "pending",
+        "file": null
+      },
+      "refactor_plan": {
+        "status": "pending",
+        "file": null
+      },
+      "refactor_execution": {
+        "status": "pending",
+        "file": null
+      },
+      "changelog": {
+        "status": "pending",
+        "file": null
+      }
+    }
+  },
+  "last_updated": "2026-02-20T21:07:53.406Z",
+  "updated_by": "nvst:define-requirement",
+  "history": []
+}
