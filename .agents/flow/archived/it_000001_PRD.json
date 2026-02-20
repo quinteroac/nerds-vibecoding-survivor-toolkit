@@ -1,0 +1,142 @@
+{
+  "goals": [
+    "Implement the `bun nvst create prototype` command.",
+    "Automate the prototype build process by iterating through user stories in `it_{iteration}_PRD.json`.",
+    "Adhere to the \"Ralph loop\" logic (sequential iterations, agent invocation, status tracking).",
+    "Support specific operational flags: `--agent`, `--iterations`, `--retry-on-fail`, and `--stop-on-critical`.",
+    "Maintain system state by updating `it_{iteration}_progress.json` and `state.json`.",
+    "Ensure source control integrity by following the git contract (branch creation and per-user-story commits)."
+  ],
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Implement `nvst create prototype` command and flags",
+      "description": "As an end user, I want to run the `create prototype` command with specific flags so that I can control and customize the automated build process.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-001-AC01",
+          "text": "Command accepts `--agent`, `--iterations`, `--retry-on-fail`, and `--stop-on-critical` flags."
+        },
+        {
+          "id": "US-001-AC02",
+          "text": "Command validates that `current_phase` is `\"prototype\"` and `project_context.status` is `\"created\"` in `state.json`; if either condition is not met, it exits with an error indicating the prerequisite steps that must be completed first."
+        },
+        {
+          "id": "US-001-AC03",
+          "text": "Command validates that `it_{iteration}_PRD.json` exists; this file is the sole source of truth for implementation and must have been generated (e.g., via `nvst write-json`) from the Markdown PRD."
+        },
+        {
+          "id": "US-001-AC04",
+          "text": "Command validates that `it_{iteration}_PRD.json` is parseable and matches the expected schema/shape before execution; if invalid, it exits with a deterministic validation error message."
+        },
+        {
+          "id": "US-001-AC05",
+          "text": "Command creates a git branch `feature/it_{iteration}` if it does not already exist."
+        },
+        {
+          "id": "US-001-AC06",
+          "text": "Command ensures execution happens on branch `feature/it_{iteration}` (create if missing, checkout if existing) and exits with an actionable error if branch creation or checkout fails."
+        },
+        {
+          "id": "US-001-AC07",
+          "text": "Command creates `it_{iteration}_progress.json` with all user stories set to `pending` status if the file does not already exist. Each entry's `use_case_id` maps to the `id` field of the corresponding `userStory` in the PRD JSON."
+        },
+        {
+          "id": "US-001-AC08",
+          "text": "If `it_{iteration}_progress.json` already exists, the command validates that its `use_case_id` values match exactly the `id` fields from `userStories` in `it_{iteration}_PRD.json`; if they differ, it exits with a \"Progress file out of sync\" error."
+        },
+        {
+          "id": "US-001-AC09",
+          "text": "Command fails fast before any prototype work begins if the git working tree is dirty, providing an actionable error message instructing the user to either commit their changes or discard them (e.g., `git checkout .`) before retrying."
+        },
+        {
+          "id": "US-001-AC10",
+          "text": "Command validates numeric flags before execution: `--iterations` must be an integer `>= 1` when provided, and `--retry-on-fail` must be an integer `>= 0` when provided; invalid values produce deterministic validation errors."
+        }
+      ]
+    },
+    {
+      "id": "US-002",
+      "title": "Implement the Ralph Loop logic for user story implementation",
+      "description": "As an end user, I want the command to iterate through user stories sequentially so that the prototype is built and verified incrementally.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-002-AC01",
+          "text": "Command reads user stories from `it_{iteration}_PRD.json` (the `userStories` array)."
+        },
+        {
+          "id": "US-002-AC02",
+          "text": "Command identifies the next unimplemented user story using `it_{iteration}_progress.json`."
+        },
+        {
+          "id": "US-002-AC03",
+          "text": "Command invokes the specified agent to implement the user story code and testing artifacts."
+        },
+        {
+          "id": "US-002-AC04",
+          "text": "Command loads the skill template from `.agents/skills/implement-user-story/SKILL.md` and builds the agent prompt using `buildPrompt()` with context variables including: the user story being implemented (from the PRD JSON), the project context (from `.agents/PROJECT_CONTEXT.md`), and the current iteration number."
+        },
+        {
+          "id": "US-002-AC05",
+          "text": "Command validates that `.agents/skills/implement-user-story/SKILL.md` exists before starting execution; if missing, it exits with an error."
+        },
+        {
+          "id": "US-002-AC06",
+          "text": "Command runs quality checks after each user story implementation attempt. Quality checks are defined in the `## Testing Strategy` → `### Quality Checks` subsection of `.agents/PROJECT_CONTEXT.md` as a fenced code block with one shell command per line. Each command is executed in order; a non-zero exit code constitutes a check failure. If the subsection is absent or empty, the command defaults to verifying the agent process's exit code only."
+        },
+        {
+          "id": "US-002-AC07",
+          "text": "After each user story implementation attempt, the command records each quality check exit code in `it_{iteration}_progress.json`, applies retries according to `--retry-on-fail`, and halts immediately on first critical condition when `--stop-on-critical` is enabled."
+        },
+        {
+          "id": "US-002-AC08",
+          "text": "Command makes a git commit for each successfully implemented user story (including code and tests)."
+        },
+        {
+          "id": "US-002-AC09",
+          "text": "`--iterations <N>` limits the command to processing at most N user stories per run (default: all remaining). After N stories are attempted (regardless of pass/fail), the command exits gracefully."
+        },
+        {
+          "id": "US-002-AC10",
+          "text": "`--retry-on-fail <N>` sets the maximum number of retry attempts per user story when a failure occurs (default: 0, no retries). A failure is defined as: agent non-zero exit code or any quality check non-zero exit code. Each retry re-invokes the agent for the same user story."
+        },
+        {
+          "id": "US-002-AC11",
+          "text": "Command respects `--stop-on-critical` by halting execution if a critical failure is encountered. A critical failure is defined as: (a) agent invocation returns a non-zero exit code, (b) any configured quality check returns a non-zero exit code, or (c) git commit fails for the current user story."
+        },
+        {
+          "id": "US-002-AC12",
+          "text": "If there are no user stories to implement (PRD contains none, or all are already completed), the command exits successfully with a message indicating no work was performed, and does not modify `prototype_build.status`."
+        }
+      ]
+    },
+    {
+      "id": "US-003",
+      "title": "Status reporting and state management",
+      "description": "As an end user, I want the command to provide deterministic per-step status logs and persist its progress so that I can monitor the build and resume if necessary.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-003-AC01",
+          "text": "Console output clearly and deterministically displays the current iteration, the user story being processed, current attempt number, and implementation outcome for each attempt."
+        },
+        {
+          "id": "US-003-AC02",
+          "text": "After each implementation attempt, each affected entry in `it_{iteration}_progress.json` contains: `use_case_id`, `status`, `attempt_count`, `last_agent_exit_code`, `quality_checks` (array of `{ command, exit_code }`), `last_error_summary` (empty string when successful), and `updated_at` (ISO-8601 timestamp)."
+        },
+        {
+          "id": "US-003-AC03",
+          "text": "`attempt_count` is cumulative across runs for each user story and increments by 1 on every attempt, including retries."
+        },
+        {
+          "id": "US-003-AC04",
+          "text": "`state.json` is updated: `prototype_build.status` set to `\"in_progress\"` during execution and `\"created\"` upon successful completion, but only when at least one user story is attempted."
+        },
+        {
+          "id": "US-003-AC05",
+          "text": "`state.json` → `prototype_build.file` is set to the path of the progress JSON file."
+        }
+      ]
+    }
+  ],
+  "functionalRequirements": []
+}

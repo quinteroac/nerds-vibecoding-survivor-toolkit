@@ -1,0 +1,107 @@
+{
+  "goals": [
+    "Align the codebase with the `PROJECT_CONTEXT.md` standards.",
+    "Improve system robustness by using safe parsing and asynchronous I/O.",
+    "Ensure comprehensive type safety across the entire `src/` directory."
+  ],
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Implement Safe State Parsing",
+      "description": "As a Developer, I want the state loader to use `safeParse` so that invalid state files are handled gracefully without throwing unhandled exceptions.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-001-AC01",
+          "text": "`src/state.ts` uses `StateSchema.safeParse()` instead of `.parse()`."
+        },
+        {
+          "id": "US-001-AC02",
+          "text": "On schema validation failure, `readState` returns the `safeParse` error to the caller (instead of throwing a raw `ZodError`), allowing the caller to log a user-friendly message and exit gracefully."
+        },
+        {
+          "id": "US-001-AC03",
+          "text": "File-not-found (`ENOENT`) and malformed JSON (`SyntaxError`) errors are caught and surfaced with descriptive messages (not raw stack traces)."
+        },
+        {
+          "id": "US-001-AC04",
+          "text": "Typecheck passes."
+        }
+      ]
+    },
+    {
+      "id": "US-002",
+      "title": "Remove Direct Process Exit Calls",
+      "description": "As a Developer, I want validation scripts to use `process.exitCode` instead of `process.exit()` so that the toolkit follows the \"never call process.exit()\" convention.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-002-AC01",
+          "text": "`process.exit()` is removed from all files in `schemas/` and `scaffold/schemas/`."
+        },
+        {
+          "id": "US-002-AC02",
+          "text": "Scripts set `process.exitCode = 1` on failure and allow the process to terminate naturally."
+        },
+        {
+          "id": "US-002-AC03",
+          "text": "Typecheck passes."
+        }
+      ]
+    },
+    {
+      "id": "US-003",
+      "title": "Enable Project-Wide Type Checking",
+      "description": "As a Maintainer, I want `tsc` to include the `src/` directory so that I can verify type safety across the entire CLI application.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-003-AC01",
+          "text": "`tsconfig.json` includes `\"src/**/*.ts\"` in the `include` array."
+        },
+        {
+          "id": "US-003-AC02",
+          "text": "Running `bun x tsc --noEmit` performs type checking on all source files without producing build artifacts."
+        },
+        {
+          "id": "US-003-AC03",
+          "text": "All pre-existing type errors discovered in `src/` are resolved."
+        }
+      ]
+    },
+    {
+      "id": "US-004",
+      "title": "Refactor to Asynchronous I/O",
+      "description": "As a Developer, I want validation scripts to use asynchronous file operations so that they comply with the \"no synchronous I/O\" standard.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-004-AC01",
+          "text": "`readFileSync` is replaced with `readFile` (from `node:fs/promises`) or `Bun.file().json()` in all validation scripts."
+        },
+        {
+          "id": "US-004-AC02",
+          "text": "Validation scripts remain functional and correctly report errors."
+        },
+        {
+          "id": "US-004-AC03",
+          "text": "Typecheck passes."
+        }
+      ]
+    }
+  ],
+  "functionalRequirements": [
+    {
+      "id": "FR-1",
+      "description": "Update `src/state.ts` to use `safeParse`."
+    },
+    {
+      "id": "FR-2",
+      "description": "Update `schemas/validate-state.ts`, `schemas/validate-progress.ts`, and their scaffold templates to use `process.exitCode`."
+    },
+    {
+      "id": "FR-3",
+      "description": "Update `tsconfig.json` to include `src/`."
+    },
+    {
+      "id": "FR-4",
+      "description": "Refactor validation scripts (`schemas/validate-*.ts` and `scaffold/schemas/tmpl_validate-*.ts`) to use async I/O."
+    }
+  ]
+}
