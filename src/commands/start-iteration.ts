@@ -1,52 +1,12 @@
-import { access, mkdir, readFile, readdir, rename, writeFile } from "node:fs/promises";
+import { mkdir, readdir, rename } from "node:fs/promises";
 import { join } from "node:path";
 
-import { StateSchema } from "../../scaffold/schemas/tmpl_state";
+import type { State } from "../../scaffold/schemas/tmpl_state";
+import { exists, readState, writeState, STATE_REL_PATH, FLOW_REL_DIR } from "../state";
 
-const STATE_PATH = join(".agents", "state.json");
-const FLOW_DIR = join(".agents", "flow");
-const ARCHIVED_DIR = join(FLOW_DIR, "archived");
+const ARCHIVED_DIR = join(FLOW_REL_DIR, "archived");
 
-type IterationState = {
-  current_iteration: string;
-  current_phase: "define";
-  phases: {
-    define: {
-      requirement_definition: { status: "pending"; file: null };
-      prd_generation: { status: "pending"; file: null };
-    };
-    prototype: {
-      project_context: { status: "pending"; file: null };
-      test_plan: { status: "pending"; file: null };
-      tp_generation: { status: "pending"; file: null };
-      prototype_build: { status: "pending"; file: null };
-      prototype_approved: false;
-    };
-    refactor: {
-      evaluation_report: { status: "pending"; file: null };
-      refactor_plan: { status: "pending"; file: null };
-      refactor_execution: { status: "pending"; file: null };
-      changelog: { status: "pending"; file: null };
-    };
-  };
-  last_updated: string;
-  history: Array<{
-    iteration: string;
-    archived_at: string;
-    archived_path: string;
-  }>;
-};
-
-async function exists(path: string): Promise<boolean> {
-  try {
-    await access(path);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-function createInitialState(nowIso: string): IterationState {
+function createInitialState(nowIso: string): State {
   return {
     current_iteration: "000001",
     current_phase: "define",
@@ -80,21 +40,19 @@ function nextIteration(iteration: string): string {
 
 export async function runStartIteration(): Promise<void> {
   const projectRoot = process.cwd();
-  const statePath = join(projectRoot, STATE_PATH);
-  const flowDir = join(projectRoot, FLOW_DIR);
+  const statePath = join(projectRoot, STATE_REL_PATH);
+  const flowDir = join(projectRoot, FLOW_REL_DIR);
   const nowIso = new Date().toISOString();
 
   await mkdir(flowDir, { recursive: true });
 
   if (!(await exists(statePath))) {
-    const initialState = createInitialState(nowIso);
-    await writeFile(statePath, `${JSON.stringify(initialState, null, 2)}\n`, "utf8");
+    await writeState(projectRoot, createInitialState(nowIso));
     console.log("Iteration 000001 started (phase: define)");
     return;
   }
 
-  const rawState = await readFile(statePath, "utf8");
-  const parsedState = StateSchema.parse(JSON.parse(rawState));
+  const parsedState = await readState(projectRoot);
 
   const currentIteration = parsedState.current_iteration;
   const flowEntries = await readdir(flowDir, { withFileTypes: true });
@@ -124,7 +82,7 @@ export async function runStartIteration(): Promise<void> {
   nextState.current_iteration = nextIteration(currentIteration);
   nextState.history = updatedHistory;
 
-  await writeFile(statePath, `${JSON.stringify(nextState, null, 2)}\n`, "utf8");
+  await writeState(projectRoot, nextState);
 
   console.log(
     `Archived ${filesToArchive.length} file(s) to .agents/flow/archived/${currentIteration}`,
