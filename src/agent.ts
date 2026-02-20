@@ -13,6 +13,8 @@ export interface AgentInvokeOptions {
   provider: AgentProvider;
   prompt: string;
   cwd?: string;
+  /** Use interactive mode (e.g. Codex TUI) so the agent can interview the user. */
+  interactive?: boolean;
 }
 
 export interface AgentResult {
@@ -44,60 +46,94 @@ export function buildCommand(provider: AgentProvider): { cmd: string; args: stri
 // ---------------------------------------------------------------------------
 // Agent invocation
 // ---------------------------------------------------------------------------
+// For interactive interviews, claude/codex need a real TTY: pass prompt as
+// positional arg and use stdin: "inherit" so the agent can read user input.
+// ---------------------------------------------------------------------------
+
+/** Codex interactive (TUI) args: no "exec", so it can read stdin for interview. */
+const CODEX_INTERACTIVE_ARGS = ["--sandbox", "workspace-write"];
 
 export async function invokeAgent(options: AgentInvokeOptions): Promise<AgentResult> {
-  const { provider, prompt, cwd = process.cwd() } = options;
+  const { provider, prompt, cwd = process.cwd(), interactive = false } = options;
   const { cmd, args } = buildCommand(provider);
 
-  // Gemini receives prompt via -p flag; others via stdin.
-  const finalArgs = provider === "gemini" ? ["-p", prompt, ...args] : [...args];
+  let finalArgs: string[];
+  let stdinOption: "ignore" | "inherit";
+  if (provider === "gemini" && interactive) {
+    // Interactive mode: drop -p so Gemini runs as a conversational session.
+    finalArgs = [prompt, ...args];
+    stdinOption = "inherit";
+  } else if (provider === "gemini") {
+    finalArgs = ["-p", prompt, ...args];
+    stdinOption = "ignore";
+  } else if (provider === "codex" && interactive) {
+    // Codex interactive mode (no "exec"): prompt first, then TUI can read user input.
+    finalArgs = [prompt, ...CODEX_INTERACTIVE_ARGS];
+    stdinOption = "inherit";
+  } else if (provider === "claude" && interactive) {
+    // Interactive mode: drop --print so Claude runs as a conversational TUI.
+    finalArgs = ["--dangerously-skip-permissions", prompt];
+    stdinOption = "inherit";
+  } else {
+    // Claude or Codex exec: prompt as last arg, inherit stdin.
+    finalArgs = [...args, prompt];
+    stdinOption = "inherit";
+  }
 
+  const useTty = interactive;
   const proc = Bun.spawn([cmd, ...finalArgs], {
     cwd,
-    stdin: provider === "gemini" ? "ignore" : new Response(prompt),
-    stdout: "pipe",
-    stderr: "pipe",
+    stdin: stdinOption,
+    stdout: useTty ? "inherit" : "pipe",
+    stderr: useTty ? "inherit" : "pipe",
   });
 
-  // Stream stdout to terminal in real-time while capturing it.
-  const stdoutChunks: string[] = [];
-  const stderrChunks: string[] = [];
+  let exitCode: number;
+  let stdoutStr: string;
+  let stderrStr: string;
 
-  const readStream = async (
-    stream: ReadableStream<Uint8Array> | null,
-    chunks: string[],
-    passthrough?: WritableStream<Uint8Array>,
-  ) => {
-    if (!stream) return;
-    const reader = stream.getReader();
-    const decoder = new TextDecoder();
-    const writer = passthrough?.getWriter();
-    try {
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        chunks.push(decoder.decode(value, { stream: true }));
-        if (writer) await writer.write(value);
+  if (useTty) {
+    exitCode = await proc.exited;
+    stdoutStr = "";
+    stderrStr = "";
+  } else {
+    const stdoutChunks: string[] = [];
+    const stderrChunks: string[] = [];
+    const readStream = async (
+      stream: ReadableStream<Uint8Array> | null,
+      chunks: string[],
+      passthrough?: WritableStream<Uint8Array>,
+    ) => {
+      if (!stream) return;
+      const reader = stream.getReader();
+      const decoder = new TextDecoder();
+      const writer =
+        typeof passthrough?.getWriter === "function" ? passthrough.getWriter() : undefined;
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          chunks.push(decoder.decode(value, { stream: true }));
+          if (writer) await writer.write(value);
+        }
+      } finally {
+        reader.releaseLock();
+        if (writer) writer.releaseLock();
       }
-    } finally {
-      reader.releaseLock();
-      if (writer) {
-        writer.releaseLock();
-      }
-    }
-  };
-
-  await Promise.all([
-    readStream(proc.stdout, stdoutChunks, Bun.stdout),
-    readStream(proc.stderr, stderrChunks, Bun.stderr),
-  ]);
-
-  const exitCode = await proc.exited;
+    };
+    await Promise.all([
+      readStream(proc.stdout, stdoutChunks, Bun.stdout),
+      readStream(proc.stderr, stderrChunks, Bun.stderr),
+    ]);
+    exitCode = await proc.exited;
+    stdoutStr = stdoutChunks.join("");
+    stderrStr = stderrChunks.join("");
+  }
 
   return {
     exitCode,
-    stdout: stdoutChunks.join(""),
-    stderr: stderrChunks.join(""),
+    stdout: stdoutStr,
+    stderr: stderrStr,
   };
 }
 

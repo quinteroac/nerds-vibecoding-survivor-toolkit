@@ -24,31 +24,42 @@ Produce `it_{current_iteration}_product-requirement-document.md` in `.agents/flo
 
 ## Questions Flow
 
-Ask only questions where the initial prompt is ambiguous. Present lettered options so the user can reply with short codes (e.g. "1A, 2C").
+**CRITICAL: Ask ONE question at a time. Wait for the user's answer before asking the next question. Do NOT present all questions at once.**
 
-```
+Ask only questions where the initial prompt is ambiguous. Present lettered options so the user can reply with short codes (e.g. "1A").
+
+Questions to ask (one by one, in order):
+
 1. What problem does this solve or goal does it achieve?
-   A. [inferred option]
-   B. [inferred option]
-   C. Other: [please specify]
+   - A. [inferred option]
+   - B. [inferred option]
+   - C. Other: [please specify]
+
+*(Wait for answer, then ask question 2)*
 
 2. Who is the primary user or actor?
-   A. End user / customer
-   B. Internal operator / admin
-   C. Another system or automated process
-   D. Other: [specify]
+   - A. End user / customer
+   - B. Internal operator / admin
+   - C. Another system or automated process
+   - D. Other: [specify]
+
+*(Wait for answer, then ask question 3)*
 
 3. MVP scope — what is the minimum set of use cases needed to validate the idea?
    List only the user stories you consider strictly necessary.
-   (The agent will include no more than what is listed here.)
-   [Open answer — e.g. "UC-1: user can log in, UC-2: user can view dashboard"]
+   *(e.g. "UC-1: user can log in, UC-2: user can view dashboard")*
+
+*(Wait for answer, then ask question 4)*
 
 4. Are there hard constraints (deadline, platform, dependencies)?
-   [Open answer — skip if none]
+   *(Skip if the user says none)*
+
+*(Wait for answer, then ask question 5)*
 
 5. What does "done" look like? How will we know it works?
-   [Open answer — or describe acceptance criteria]
-```
+   *(Describe acceptance criteria or how you'd verify success)*
+
+*(Wait for answer, then generate the document)*
 
 ---
 
