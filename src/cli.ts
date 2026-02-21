@@ -3,6 +3,7 @@
 import { parseAgentArg } from "./agent";
 import { runApproveProjectContext } from "./commands/approve-project-context";
 import { runApproveRequirement } from "./commands/approve-requirement";
+import { runApproveTestPlan } from "./commands/approve-test-plan";
 import { runCreateProjectContext } from "./commands/create-project-context";
 import { runCreatePrototype } from "./commands/create-prototype";
 import { runCreateTestPlan } from "./commands/create-test-plan";
@@ -84,6 +85,8 @@ Commands:
                      Initialize prototype build for current iteration
   approve project-context
                      Mark project context as approved
+  approve test-plan
+                     Mark test plan as approved and generate structured TP JSON
   refine project-context --agent <provider> [--challenge]
                      Refine project context via agent (editor or challenge mode)
   define requirement --agent <provider>
@@ -367,7 +370,7 @@ async function main() {
 
   if (command === "approve") {
     if (args.length !== 1) {
-      console.error(`Usage for approve: nvst approve <requirement|project-context>`);
+      console.error(`Usage for approve: nvst approve <requirement|project-context|test-plan>`);
       printUsage();
       process.exitCode = 1;
       return;
@@ -382,6 +385,11 @@ async function main() {
 
     if (subcommand === "project-context") {
       await runApproveProjectContext();
+      return;
+    }
+
+    if (subcommand === "test-plan") {
+      await runApproveTestPlan();
       return;
     }
 
