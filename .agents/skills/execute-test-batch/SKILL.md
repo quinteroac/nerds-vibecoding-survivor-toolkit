@@ -1,12 +1,12 @@
 ---
-name: execute-test-case
-description: "Executes a batch of approved test cases and returns a strict JSON array of result payloads. Invoked by: bun nvst execute test-plan."
+name: execute-test-batch
+description: "Executes a batch of approved automated test cases and returns a strict JSON array of result payloads. Invoked by: bun nvst execute test-plan."
 user-invocable: false
 ---
 
-# Execute Test Case
+# Execute Test Batch
 
-Execute all provided test cases from the approved test plan in a single session.
+Execute all provided automated test cases from the approved test plan in a single session.
 
 All generated content must be in English.
 
