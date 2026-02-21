@@ -5,6 +5,7 @@ import { runApproveProjectContext } from "./commands/approve-project-context";
 import { runApproveRequirement } from "./commands/approve-requirement";
 import { runCreateProjectContext } from "./commands/create-project-context";
 import { runCreatePrototype } from "./commands/create-prototype";
+import { runCreateTestPlan } from "./commands/create-test-plan";
 import { runDefineRequirement } from "./commands/define-requirement";
 import { runDestroy } from "./commands/destroy";
 import { runInit } from "./commands/init";
@@ -76,6 +77,8 @@ Commands:
   start iteration    Start a new iteration (archives previous if exists)
   create project-context --agent <provider> [--mode strict|yolo]
                      Generate/update .agents/PROJECT_CONTEXT.md via agent
+  create test-plan --agent <provider> [--force]
+                     Generate test plan document for current iteration
   create prototype --agent <provider> [--iterations <N>] [--retry-on-fail <N>] [--stop-on-critical]
                      Initialize prototype build for current iteration
   approve project-context
@@ -98,6 +101,7 @@ Options:
   --iterations       Maximum prototype passes (integer >= 1)
   --retry-on-fail    Retry attempts per failed story (integer >= 0)
   --stop-on-critical Stop execution after critical failures
+  --force            Overwrite output file without confirmation
   --challenge        Run refine in challenger mode
   --clean            When used with destroy, also removes .agents/flow/archived
   -h, --help         Show this help message`);
@@ -149,7 +153,7 @@ async function main() {
   if (command === "create") {
     if (args.length === 0) {
       console.error(
-        `Usage for create: nvst create <project-context|prototype> --agent <provider> [options]`,
+        `Usage for create: nvst create <project-context|test-plan|prototype> --agent <provider> [options]`,
       );
       printUsage();
       process.exitCode = 1;
@@ -203,6 +207,29 @@ async function main() {
         }
 
         await runCreatePrototype({ provider, iterations, retryOnFail, stopOnCritical });
+        return;
+      } catch (error) {
+        console.error(error instanceof Error ? error.message : String(error));
+        printUsage();
+        process.exitCode = 1;
+        return;
+      }
+    }
+
+    if (subcommand === "test-plan") {
+      try {
+        const { provider, remainingArgs: postAgentArgs } = parseAgentArg(args.slice(1));
+        const force = postAgentArgs.includes("--force");
+        const unknownArgs = postAgentArgs.filter((arg) => arg !== "--force");
+
+        if (unknownArgs.length > 0) {
+          console.error(`Unknown option(s) for create test-plan: ${unknownArgs.join(" ")}`);
+          printUsage();
+          process.exitCode = 1;
+          return;
+        }
+
+        await runCreateTestPlan({ provider, force });
         return;
       } catch (error) {
         console.error(error instanceof Error ? error.message : String(error));
