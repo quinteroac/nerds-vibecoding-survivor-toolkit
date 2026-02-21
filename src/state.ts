@@ -17,8 +17,33 @@ export async function exists(path: string): Promise<boolean> {
 
 export async function readState(projectRoot: string): Promise<State> {
   const statePath = join(projectRoot, STATE_REL_PATH);
-  const raw = await readFile(statePath, "utf8");
-  return StateSchema.parse(JSON.parse(raw));
+  try {
+    const raw = await readFile(statePath, "utf8");
+    let json: unknown;
+
+    try {
+      json = JSON.parse(raw);
+    } catch (error) {
+      if (error instanceof SyntaxError) {
+        throw new Error(`Malformed JSON in state file at ${statePath}.`, { cause: error });
+      }
+      throw error;
+    }
+
+    const parsed = StateSchema.safeParse(json);
+    if (!parsed.success) {
+      throw new Error(`State file at ${statePath} failed schema validation.`, {
+        cause: parsed.error,
+      });
+    }
+
+    return parsed.data;
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+      throw new Error(`State file not found at ${statePath}.`, { cause: error });
+    }
+    throw error;
+  }
 }
 
 export async function writeState(projectRoot: string, state: State): Promise<void> {
