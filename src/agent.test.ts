@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { buildCommand, parseAgentArg, parseProvider } from "./agent";
+import { buildCommand, invokeAgent, parseAgentArg, parseProvider } from "./agent";
 
 describe("agent provider parsing", () => {
   test("accepts cursor as a valid provider in --agent argument parsing", () => {
@@ -18,6 +18,20 @@ describe("agent provider parsing", () => {
   test("unknown provider error includes cursor in valid provider list", () => {
     expect(() => parseProvider("unknown-provider")).toThrow(
       "Unknown agent provider 'unknown-provider'. Valid providers: claude, codex, gemini, cursor",
+    );
+  });
+});
+
+describe("agent invocation command availability", () => {
+  test("returns a clear error when cursor provider is selected but `agent` is not in PATH", async () => {
+    await expect(
+      invokeAgent({
+        provider: "cursor",
+        prompt: "Test prompt",
+        resolveCommandPath: () => null,
+      }),
+    ).rejects.toThrow(
+      "Cursor agent CLI is unavailable: `agent` command not found in PATH. Install/configure Cursor Agent CLI or use another provider.",
     );
   });
 });

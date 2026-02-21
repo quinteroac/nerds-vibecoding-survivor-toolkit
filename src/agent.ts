@@ -15,6 +15,7 @@ export interface AgentInvokeOptions {
   cwd?: string;
   /** Use interactive mode (e.g. Codex TUI) so the agent can interview the user. */
   interactive?: boolean;
+  resolveCommandPath?: ResolveCommandPath;
 }
 
 export interface AgentResult {
@@ -22,6 +23,8 @@ export interface AgentResult {
   stdout: string;
   stderr: string;
 }
+
+export type ResolveCommandPath = (command: string) => string | null | undefined;
 
 // ---------------------------------------------------------------------------
 // Provider helpers
@@ -44,6 +47,27 @@ export function buildCommand(provider: AgentProvider): { cmd: string; args: stri
   return PROVIDERS[provider];
 }
 
+function defaultResolveCommandPath(command: string): string | null {
+  const resolved = Bun.which(command);
+  return resolved ?? null;
+}
+
+export function ensureAgentCommandAvailable(
+  provider: AgentProvider,
+  resolveCommandPath: ResolveCommandPath = defaultResolveCommandPath,
+): void {
+  const { cmd } = buildCommand(provider);
+  if (resolveCommandPath(cmd)) return;
+
+  if (provider === "cursor") {
+    throw new Error(
+      "Cursor agent CLI is unavailable: `agent` command not found in PATH. Install/configure Cursor Agent CLI or use another provider.",
+    );
+  }
+
+  throw new Error(`Required CLI '${cmd}' for provider '${provider}' is not in PATH.`);
+}
+
 // ---------------------------------------------------------------------------
 // Agent invocation
 // ---------------------------------------------------------------------------
@@ -55,8 +79,15 @@ export function buildCommand(provider: AgentProvider): { cmd: string; args: stri
 const CODEX_INTERACTIVE_ARGS = ["--sandbox", "workspace-write"];
 
 export async function invokeAgent(options: AgentInvokeOptions): Promise<AgentResult> {
-  const { provider, prompt, cwd = process.cwd(), interactive = false } = options;
+  const {
+    provider,
+    prompt,
+    cwd = process.cwd(),
+    interactive = false,
+    resolveCommandPath = defaultResolveCommandPath,
+  } = options;
   const { cmd, args } = buildCommand(provider);
+  ensureAgentCommandAvailable(provider, resolveCommandPath);
 
   let finalArgs: string[];
   let stdinOption: "ignore" | "inherit";
