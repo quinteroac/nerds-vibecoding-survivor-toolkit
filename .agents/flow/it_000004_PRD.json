@@ -1,0 +1,103 @@
+{
+  "goals": [
+    "Enhance `it_TP.json` to include correlation with PRD user stories and functional requirements.",
+    "Add comprehensive status tracking for both the overall test plan and individual test items.",
+    "Ensure the `create-test-plan` skill prompt and `approve-test-plan` parser correctly produce the new structure."
+  ],
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Enhanced Test Plan Schema Definition",
+      "description": "As a developer, I want an updated Zod schema for the Test Plan so that I can represent complex testing metadata including scope, environment, and requirement traceability.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-001-AC01",
+          "text": "`TestPlanSchema` in `schemas/test-plan.ts` updated to include:"
+        },
+        {
+          "id": "US-001-AC02",
+          "text": "Typecheck passes."
+        }
+      ]
+    },
+    {
+      "id": "US-002",
+      "title": "Update Test Plan Generator Skill",
+      "description": "As a developer, I want the `create-test-plan` skill prompt to instruct the AI agent to include requirement traceability in the generated markdown so that downstream parsing can populate the new schema fields.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-002-AC01",
+          "text": "`create-test-plan` skill prompt (`.agents/skills/create-test-plan/SKILL.md`) updated to instruct the agent to:"
+        },
+        {
+          "id": "US-002-AC02",
+          "text": "`create-test-plan.ts` command updated to use the new schema for any validation it performs."
+        },
+        {
+          "id": "US-002-AC03",
+          "text": "A manual run of `bun nvst create test-plan` (after a PRD is present) produces a markdown test plan that includes requirement ID references in the test case table."
+        }
+      ]
+    },
+    {
+      "id": "US-003",
+      "title": "Automated Validation of Traceability",
+      "description": "As a developer, I want automated tests to verify that the parsed test plan JSON correctly correlates with the PRD so that I can be confident in my test coverage.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-003-AC01",
+          "text": "New or updated test in `src/commands/approve-test-plan.test.ts` verifies that:"
+        },
+        {
+          "id": "US-003-AC02",
+          "text": "Existing test in `src/commands/create-test-plan.test.ts` updated to verify that the skill prompt includes instructions for requirement traceability."
+        }
+      ]
+    },
+    {
+      "id": "US-004",
+      "title": "Update Approve Test Plan Parser",
+      "description": "As a developer, I want the `approve-test-plan` markdown parser to produce the new object-based structure so that the JSON output matches the updated schema.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-004-AC01",
+          "text": "`parseTestPlan()` in `approve-test-plan.ts` updated to parse markdown test plan tables into objects with `id`, `description`, `status` (initialized to `pending`), and `correlatedRequirements`."
+        },
+        {
+          "id": "US-004-AC02",
+          "text": "Parser correctly extracts requirement IDs from the markdown table columns."
+        },
+        {
+          "id": "US-004-AC03",
+          "text": "`overallStatus` is set to `pending` on initial approval."
+        },
+        {
+          "id": "US-004-AC04",
+          "text": "Parsed output validates against the updated `TestPlanSchema`."
+        },
+        {
+          "id": "US-004-AC05",
+          "text": "Visually verified by running `bun nvst approve test-plan` with a sample markdown test plan."
+        }
+      ]
+    }
+  ],
+  "functionalRequirements": [
+    {
+      "id": "FR-1",
+      "description": "The schema must support four statuses: `pending`, `passed`, `failed`, `skipped`."
+    },
+    {
+      "id": "FR-2",
+      "description": "Each test item (automated or manual) must have a `correlatedRequirements` field containing an array of strings (IDs from the PRD)."
+    },
+    {
+      "id": "FR-3",
+      "description": "`environmentData` must capture the technical context required for testing (e.g., node version, browser, specific data sets)."
+    },
+    {
+      "id": "FR-4",
+      "description": "`approve-test-plan` must initialize all new test statuses to `pending` and set `overallStatus` to `pending`."
+    }
+  ]
+}

@@ -11,6 +11,7 @@ import {
   type AgentResult,
 } from "../agent";
 import { exists, FLOW_REL_DIR, readState, writeState } from "../state";
+import { TestPlanSchema, type TestPlan } from "../../schemas/test-plan";
 
 export interface CreateTestPlanOptions {
   provider: AgentProvider;
@@ -36,6 +37,101 @@ const defaultDeps: CreateTestPlanDeps = {
   nowFn: () => new Date(),
   readFileFn: readFile,
 };
+
+function parseRequirements(cell: string): string[] {
+  return cell
+    .split(",")
+    .map((entry) => entry.trim())
+    .filter((entry) => /^(US-\d{3}|FR-\d+)$/i.test(entry))
+    .map((entry) => entry.toUpperCase());
+}
+
+export function parseTestPlanForValidation(markdown: string): TestPlan {
+  const scope: string[] = [];
+  const environmentData: string[] = [];
+  const automatedTests: TestPlan["automatedTests"] = [];
+  const exploratoryManualTests: TestPlan["exploratoryManualTests"] = [];
+
+  type Section = "scope" | "environmentData" | null;
+  let currentSection: Section = null;
+  let inTable = false;
+
+  for (const line of markdown.split("\n")) {
+    const trimmed = line.trim();
+
+    if (/^##\s+Scope$/i.test(trimmed)) {
+      currentSection = "scope";
+      inTable = false;
+      continue;
+    }
+    if (/^##\s+Environment\s*(?:and|&)\s*data$/i.test(trimmed)) {
+      currentSection = "environmentData";
+      inTable = false;
+      continue;
+    }
+
+    if (
+      trimmed.startsWith("|")
+      && trimmed.includes("Test Case ID")
+      && trimmed.includes("Correlated Requirements")
+    ) {
+      inTable = true;
+      currentSection = null;
+      continue;
+    }
+
+    if (inTable && trimmed.startsWith("|")) {
+      if (trimmed.includes("---|")) continue;
+
+      const cells = trimmed
+        .split("|")
+        .map((cell) => cell.trim())
+        .filter((cell, index, all) => index > 0 && index < all.length - 1);
+
+      if (cells.length >= 6) {
+        const [id, description, , mode, correlatedRequirementsCell] = cells;
+        if (id === "Test Case ID") continue;
+
+        const item = {
+          id,
+          description,
+          status: "pending" as const,
+          correlatedRequirements: parseRequirements(correlatedRequirementsCell),
+        };
+        if (mode.toLowerCase().includes("automated")) {
+          automatedTests.push(item);
+        } else {
+          exploratoryManualTests.push(item);
+        }
+      }
+      continue;
+    }
+
+    if (inTable && trimmed.length === 0) {
+      inTable = false;
+      continue;
+    }
+
+    if (!currentSection || trimmed.length === 0 || /^<!--/.test(trimmed)) {
+      continue;
+    }
+
+    const bulletMatch = trimmed.match(/^[-*]\s+(.+)$/);
+    const value = bulletMatch ? bulletMatch[1].trim() : trimmed;
+    if (!value) continue;
+
+    if (currentSection === "scope") scope.push(value);
+    if (currentSection === "environmentData") environmentData.push(value);
+  }
+
+  return {
+    overallStatus: "pending",
+    scope,
+    environmentData,
+    automatedTests,
+    exploratoryManualTests,
+  };
+}
 
 export async function promptForConfirmation(question: string): Promise<boolean> {
   const readline = createInterface({
@@ -122,6 +218,22 @@ export async function runCreateTestPlan(
   if (!(await mergedDeps.existsFn(outputPath))) {
     throw new Error(
       `Test plan generation did not produce ${join(FLOW_REL_DIR, fileName)}.`,
+    );
+  }
+
+  const generatedMarkdown = await mergedDeps.readFileFn(outputPath, "utf8");
+  const parsed = parseTestPlanForValidation(generatedMarkdown);
+  const totalTestCases = parsed.automatedTests.length + parsed.exploratoryManualTests.length;
+  if (totalTestCases === 0) {
+    throw new Error(
+      "Generated test plan does not satisfy traceability requirements for the test-plan schema.",
+    );
+  }
+  const validation = TestPlanSchema.safeParse(parsed);
+  if (!validation.success) {
+    throw new Error(
+      "Generated test plan does not satisfy traceability requirements for the test-plan schema.",
+      { cause: validation.error },
     );
   }
 

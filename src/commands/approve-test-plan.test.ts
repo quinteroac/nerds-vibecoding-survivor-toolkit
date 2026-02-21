@@ -3,9 +3,9 @@ import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { TestPlanSchema } from "../../scaffold/schemas/tmpl_test-plan";
+import { TestPlanSchema } from "../../schemas/test-plan";
 import { readState, writeState } from "../state";
-import { runApproveTestPlan } from "./approve-test-plan";
+import { parseTestPlan, runApproveTestPlan } from "./approve-test-plan";
 
 async function createProjectRoot(): Promise<string> {
   return mkdtemp(join(tmpdir(), "nvst-approve-test-plan-"));
@@ -92,12 +92,12 @@ describe("approve test-plan command", () => {
       testPlanPath,
       [
         "# Test plan - Iteration 000003",
+        "| Test Case ID | Description | Type (unit/integration/e2e) | Mode (automated/manual) | Correlated Requirements (US-XXX, FR-X) | Expected Result |",
+        "|---|---|---|---|---|---|",
+        "| TC-US001-01 | Validate login success | integration | automated | US-001, FR-1 | Login succeeds with valid credentials |",
+        "| TC-US001-02 | Validate login error handling | integration | manual | US-001, FR-2 | Login error is shown for invalid credentials |",
         "## Scope",
         "- Validate login",
-        "## Automated tests",
-        "- Unit test auth",
-        "## Exploratory / manual tests",
-        "- Browser smoke",
         "## Environment and data",
         "- staging + seeded user",
       ].join("\n"),
@@ -130,10 +130,25 @@ describe("approve test-plan command", () => {
     if (!validation.success) {
       throw new Error("Expected test-plan payload to be valid");
     }
+    expect(validation.data.overallStatus).toBe("pending");
     expect(validation.data.scope).toEqual(["Validate login"]);
-    expect(validation.data.automatedTests).toEqual(["Unit test auth"]);
-    expect(validation.data.exploratoryManualTests).toEqual(["Browser smoke"]);
-    expect(validation.data.environmentAndData).toEqual(["staging + seeded user"]);
+    expect(validation.data.automatedTests).toEqual([
+      {
+        id: "TC-US001-01",
+        description: "Validate login success",
+        status: "pending",
+        correlatedRequirements: ["US-001", "FR-1"],
+      },
+    ]);
+    expect(validation.data.exploratoryManualTests).toEqual([
+      {
+        id: "TC-US001-02",
+        description: "Validate login error handling",
+        status: "pending",
+        correlatedRequirements: ["US-001", "FR-2"],
+      },
+    ]);
+    expect(validation.data.environmentData).toEqual(["staging + seeded user"]);
 
     const state = await readState(projectRoot);
     expect(state.phases.prototype.test_plan.status).toBe("created");
@@ -141,5 +156,37 @@ describe("approve test-plan command", () => {
     expect(state.phases.prototype.tp_generation.file).toBe("it_000003_TP.json");
     expect(state.last_updated).toBe("2026-02-21T05:00:00.000Z");
     expect(state.updated_by).toBe("nvst:approve-test-plan");
+  });
+
+  test("parseTestPlan extracts IDs, correlated requirements, and defaults statuses to pending", () => {
+    const parsed = parseTestPlan(
+      [
+        "# Test plan - Iteration 000004",
+        "| Test Case ID | Description | Type (unit/integration/e2e) | Mode (automated/manual) | Correlated Requirements (US-XXX, FR-X) | Expected Result |",
+        "|---|---|---|---|---|---|",
+        "| TC-US004-01 | Parser maps automated test | unit | automated | us-004, FR-7, INVALID | Entry is captured |",
+        "| TC-US004-02 | Parser maps manual test | integration | manual | FR-8, us-004 | Entry is captured |",
+        "## Scope",
+        "- Parser migration",
+        "## Environment and data",
+        "- local fixtures",
+      ].join("\n"),
+    );
+
+    expect(parsed.overallStatus).toBe("pending");
+    expect(parsed.automatedTests[0]).toEqual({
+      id: "TC-US004-01",
+      description: "Parser maps automated test",
+      status: "pending",
+      correlatedRequirements: ["US-004", "FR-7"],
+    });
+    expect(parsed.exploratoryManualTests[0]).toEqual({
+      id: "TC-US004-02",
+      description: "Parser maps manual test",
+      status: "pending",
+      correlatedRequirements: ["FR-8", "US-004"],
+    });
+    const validation = TestPlanSchema.safeParse(parsed);
+    expect(validation.success).toBe(true);
   });
 });
