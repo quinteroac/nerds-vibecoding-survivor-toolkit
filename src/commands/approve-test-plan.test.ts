@@ -92,12 +92,12 @@ describe("approve test-plan command", () => {
       testPlanPath,
       [
         "# Test plan - Iteration 000003",
+        "| Test Case ID | Description | Type (unit/integration/e2e) | Mode (automated/manual) | Correlated Requirements (US-XXX, FR-X) | Expected Result |",
+        "|---|---|---|---|---|---|",
+        "| TC-US001-01 | Validate login success | integration | automated | US-001, FR-1 | Login succeeds with valid credentials |",
+        "| TC-US001-02 | Validate login error handling | integration | manual | US-001, FR-2 | Login error is shown for invalid credentials |",
         "## Scope",
         "- Validate login",
-        "## Automated tests",
-        "- Unit test auth",
-        "## Exploratory / manual tests",
-        "- Browser smoke",
         "## Environment and data",
         "- staging + seeded user",
       ].join("\n"),
@@ -131,8 +131,14 @@ describe("approve test-plan command", () => {
       throw new Error("Expected test-plan payload to be valid");
     }
     expect(validation.data.scope).toEqual(["Validate login"]);
-    expect(validation.data.automatedTests).toEqual(["Unit test auth"]);
-    expect(validation.data.exploratoryManualTests).toEqual(["Browser smoke"]);
+    expect(validation.data.automatedTests).toEqual([
+      "TC-US001-01: Validate login success (integration) -> US-001, FR-1",
+    ]);
+    expect(validation.data.exploratoryManualTests).toEqual([
+      "TC-US001-02: Validate login error handling (integration) -> US-001, FR-2",
+    ]);
+    expect(validation.data.automatedTests[0]).toMatch(/US-\d{3}|FR-\d+/);
+    expect(validation.data.exploratoryManualTests[0]).toMatch(/US-\d{3}|FR-\d+/);
     expect(validation.data.environmentAndData).toEqual(["staging + seeded user"]);
 
     const state = await readState(projectRoot);

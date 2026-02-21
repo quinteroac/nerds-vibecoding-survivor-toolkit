@@ -84,7 +84,11 @@ describe("create test-plan command", () => {
         {
           loadSkillFn: async (_root, skillName) => {
             loadedSkill = skillName;
-            return "Create test plan skill";
+            return [
+              "# Create Test Plan",
+              "Every functional requirement (`FR-N`) must appear in at least one test case `Correlated Requirements` field.",
+              "Use this table column exactly: Correlated Requirements (US-XXX, FR-X).",
+            ].join("\n");
           },
           invokeAgentFn: async (options): Promise<AgentResult> => {
             invocation = {
@@ -120,6 +124,10 @@ describe("create test-plan command", () => {
     expect(invocation.interactive).toBe(true);
     expect(invocation.prompt).toContain("### iteration");
     expect(invocation.prompt).toContain("000003");
+    expect(invocation.prompt).toContain("Correlated Requirements (US-XXX, FR-X)");
+    expect(invocation.prompt).toContain(
+      "Every functional requirement (`FR-N`) must appear in at least one test case `Correlated Requirements` field.",
+    );
 
     const content = await readFile(outputPath, "utf8");
     expect(content).toContain("# Test Plan");
