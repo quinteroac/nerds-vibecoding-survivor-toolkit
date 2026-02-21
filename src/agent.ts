@@ -101,7 +101,7 @@ export async function invokeAgent(options: AgentInvokeOptions): Promise<AgentRes
     const stdoutChunks: string[] = [];
     const stderrChunks: string[] = [];
     const readStream = async (
-      stream: ReadableStream<Uint8Array> | null,
+      stream: ReadableStream<Uint8Array<ArrayBuffer>> | undefined,
       chunks: string[],
       passthrough?: { write: (chunk: Uint8Array) => void },
     ) => {
