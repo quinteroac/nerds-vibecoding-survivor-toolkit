@@ -1,50 +1,67 @@
-# Requirement: New CLI Command `execute test-plan`
+# Requirement: Enhanced Test Plan Structure and Traceability
 
 ## Context
-The CLI currently lacks a dedicated command to execute the test plan defined during the prototype phase. This requirement introduces `bun nvst execute test-plan` to trigger an automated multi-step loop that runs tests and verifies the implementation, following the same pattern as `create-prototype`.
+The current `it_TP.json` (Test Plan JSON) structure is too simplistic, offering only basic lists of tests without linking them back to the requirements defined in the Product Requirement Document (PRD). Furthermore, it lacks fields to track execution status, which is critical for monitoring progress during the prototype and refactor phases.
 
 ## Goals
-- Register `bun nvst execute test-plan` in the CLI.
-- Implement the command as a multi-step loop: iterate over test commands from `TP.json`'s `automatedTests` array, invoke the agent per test, verify results, track pass/fail, and support retries.
-- Produce a persistent results file (`test-results.json`) tracking per-test outcomes.
+- Enhance `it_TP.json` to include correlation with PRD user stories and functional requirements.
+- Add comprehensive status tracking for both the overall test plan and individual test items.
+- Ensure the `create-test-plan` skill prompt and `approve-test-plan` parser correctly produce the new structure.
 
 ## User Stories
 
-### US-001: Register Command
-**As a** developer, **I want** to execute `bun nvst execute test-plan --agent <provider>` **so that** I can start the automated verification phase.
+### US-001: Enhanced Test Plan Schema Definition
+**As a** developer, **I want** an updated Zod schema for the Test Plan **so that** I can represent complex testing metadata including scope, environment, and requirement traceability.
 
 **Acceptance Criteria:**
-- [ ] `execute test-plan` is a valid command in the CLI.
-- [ ] Command requires `--agent <provider>` flag, consistent with other agent-backed commands.
-- [ ] Running `bun nvst execute test-plan` without required args prints usage to stderr.
-- [ ] Command exits with an error if `phases.prototype.test_plan.status` in `state.json` is not `"created"`.
-- [ ] Command exits with an error if `it_{iteration}_TP.json` does not exist in `.agents/flow/`.
-- [ ] Typecheck / lint passes.
+- [ ] `TestPlanSchema` in `schemas/test-plan.ts` updated to include:
+    - `overallStatus`: "pending", "passed", "failed", "skipped"
+    - `scope`: detailed array of strings
+    - `environmentData`: detailed array of strings
+    - `automatedTests`: array of objects with `id`, `description`, `status`, and `correlatedRequirements`
+    - `exploratoryManualTests`: array of objects with `id`, `description`, `status`, and `correlatedRequirements`
+- [ ] Typecheck passes.
 
-### US-002: Automated Test Execution (Multi-Step Loop)
-**As a** developer, **I want** the command to iterate over test commands and execute them **so that** each test is independently verified and results are tracked.
+### US-002: Update Test Plan Generator Skill
+**As a** developer, **I want** the `create-test-plan` skill prompt to instruct the AI agent to include requirement traceability in the generated markdown **so that** downstream parsing can populate the new schema fields.
 
 **Acceptance Criteria:**
-- [ ] Command reads `it_{iteration}_TP.json` from `.agents/flow/` and iterates over the `automatedTests` string array.
-- [ ] Before execution starts, command validates that `it_{iteration}_TP.json` exists, parses as valid JSON, and contains a non-empty `automatedTests` array. If validation fails, command prints a human-readable error message to stderr and exits with code 1.
-- [ ] For each entry in `automatedTests`, command invokes the agent and records the test command string, raw exit code, and normalized status (`passed`|`failed`) in `it_{iteration}_test-results.json`.
-- [ ] Command logs structured output per test: `iteration=it_NNNNNN test_index=N attempt=N outcome=passed|failed`, matching the `create-prototype` logging pattern.
-- [ ] Command supports `--iterations` and `--retry-on-fail` flags for retry behavior on failed tests.
-- [ ] Command writes a results file (`it_{iteration}_test-results.json`) to `.agents/flow/` tracking per-test outcomes.
-- [ ] Each test command execution is subject to a default timeout (60 seconds). If a test exceeds the timeout, it is recorded as `failed`.
-- [ ] If `it_{iteration}_test-results.json` already exists, the command overwrites it with fresh results.
+- [ ] `create-test-plan` skill prompt (`.agents/skills/create-test-plan/SKILL.md`) updated to instruct the agent to:
+    - Include correlated requirement IDs (US-XXX, FR-X) for each test case in the markdown test plan table.
+    - Ensure every functional requirement (FR-N) has at least one correlated test case.
+- [ ] `create-test-plan.ts` command updated to use the new schema for any validation it performs.
+- [ ] A manual run of `bun nvst create test-plan` (after a PRD is present) produces a markdown test plan that includes requirement ID references in the test case table.
+
+### US-003: Automated Validation of Traceability
+**As a** developer, **I want** automated tests to verify that the parsed test plan JSON correctly correlates with the PRD **so that** I can be confident in my test coverage.
+
+**Acceptance Criteria:**
+- [ ] New or updated test in `src/commands/approve-test-plan.test.ts` verifies that:
+    - The parsed JSON is valid according to the updated `TestPlanSchema`.
+    - `correlatedRequirements` arrays in test items are populated with at least one PRD requirement ID.
+- [ ] Existing test in `src/commands/create-test-plan.test.ts` updated to verify that the skill prompt includes instructions for requirement traceability.
+
+### US-004: Update Approve Test Plan Parser
+**As a** developer, **I want** the `approve-test-plan` markdown parser to produce the new object-based structure **so that** the JSON output matches the updated schema.
+
+**Acceptance Criteria:**
+- [ ] `parseTestPlan()` in `approve-test-plan.ts` updated to parse markdown test plan tables into objects with `id`, `description`, `status` (initialized to `pending`), and `correlatedRequirements`.
+- [ ] Parser correctly extracts requirement IDs from the markdown table columns.
+- [ ] `overallStatus` is set to `pending` on initial approval.
+- [ ] Parsed output validates against the updated `TestPlanSchema`.
+- [ ] Visually verified by running `bun nvst approve test-plan` with a sample markdown test plan.
 
 ## Functional Requirements
-- FR-1: Update `src/cli.ts` to include the `execute test-plan` command.
-- FR-2: Create `src/commands/execute-test-plan.ts` to handle the command logic.
-- FR-3: Invoke the agent via `invokeAgent()` from `src/agent.ts` for each test command in the loop.
-- FR-4: Create `.agents/skills/execute-test-plan/SKILL.md` with the prompt template for test execution.
+- FR-1: The schema must support four statuses: `pending`, `passed`, `failed`, `skipped`.
+- FR-2: Each test item (automated or manual) must have a `correlatedRequirements` field containing an array of strings (IDs from the PRD).
+- FR-3: `environmentData` must capture the technical context required for testing (e.g., node version, browser, specific data sets).
+- FR-4: `approve-test-plan` must initialize all new test statuses to `pending` and set `overallStatus` to `pending`.
 
 ## Non-Goals (Out of Scope)
-- Modifying the requirement or project context files.
-- Git operations (branching, committing) — test execution does not modify the repository history.
-- Modifying production application source code as part of test-plan execution.
-- Automatically fixing or modifying source code in response to test failures.
+- Automatic execution of tests (this requirement is about structure and tracking, not automation logic).
+- UI for updating statuses (status updates will be manual or via future tools).
+- Migration of existing/archived test plan JSON files (iterations 000001–000003 are snapshots and do not need to conform to the new schema).
+- Updating the `refine-test-plan` command or its skill prompt.
 
 ## Open Questions
-- None.
+No open questions.
