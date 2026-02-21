@@ -14,7 +14,7 @@
     },
     "prototype": {
       "project_context": {
-        "status": "completed",
+        "status": "created",
         "file": ".agents/PROJECT_CONTEXT.md"
       },
       "test_plan": {
