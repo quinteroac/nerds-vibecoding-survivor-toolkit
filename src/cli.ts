@@ -9,6 +9,7 @@ import { runCreatePrototype } from "./commands/create-prototype";
 import { runCreateTestPlan } from "./commands/create-test-plan";
 import { runDefineRequirement } from "./commands/define-requirement";
 import { runDestroy } from "./commands/destroy";
+import { runExecuteTestPlan } from "./commands/execute-test-plan";
 import { runInit } from "./commands/init";
 import { runRefineProjectContext } from "./commands/refine-project-context";
 import { runRefineRequirement } from "./commands/refine-requirement";
@@ -95,6 +96,8 @@ Commands:
                      Refine requirement document via agent
   refine test-plan --agent <provider> [--challenge]
                      Refine test plan document via agent
+  execute test-plan --agent <provider>
+                     Execute approved structured test-plan JSON via agent
   approve requirement
                      Mark requirement definition as approved
   write-json --schema <name> --out <path> [--data '<json>']
@@ -394,6 +397,42 @@ async function main() {
     }
 
     console.error(`Unknown approve subcommand: ${subcommand}`);
+    printUsage();
+    process.exitCode = 1;
+    return;
+  }
+
+  if (command === "execute") {
+    if (args.length === 0) {
+      console.error(`Usage for execute: nvst execute test-plan --agent <provider>`);
+      printUsage();
+      process.exitCode = 1;
+      return;
+    }
+
+    const subcommand = args[0];
+
+    if (subcommand === "test-plan") {
+      try {
+        const { provider, remainingArgs: postAgentArgs } = parseAgentArg(args.slice(1));
+        if (postAgentArgs.length > 0) {
+          console.error(`Unknown option(s) for execute test-plan: ${postAgentArgs.join(" ")}`);
+          printUsage();
+          process.exitCode = 1;
+          return;
+        }
+
+        await runExecuteTestPlan({ provider });
+        return;
+      } catch (error) {
+        console.error(error instanceof Error ? error.message : String(error));
+        printUsage();
+        process.exitCode = 1;
+        return;
+      }
+    }
+
+    console.error(`Unknown execute subcommand: ${subcommand}`);
     printUsage();
     process.exitCode = 1;
     return;
