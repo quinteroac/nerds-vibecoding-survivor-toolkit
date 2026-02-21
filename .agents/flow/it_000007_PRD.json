@@ -1,0 +1,48 @@
+{
+  "goals": [
+    "Enable the usage of Cursor Agent via the `--agent cursor` flag.",
+    "Ensure seamless integration with all existing NVST commands that utilize AI generation.",
+    "Maintain consistency in input/output handling compared to other supported agents."
+  ],
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Run NVST commands with Cursor Agent",
+      "description": "As a developer, I want to pass `--agent cursor` to any NVST command so that the task is performed using the Cursor `agent` CLI.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-001-AC01",
+          "text": "`bun nvst [command] --agent cursor` is accepted as a valid argument."
+        },
+        {
+          "id": "US-001-AC02",
+          "text": "The system invokes the `agent` binary executable when this flag is used."
+        },
+        {
+          "id": "US-001-AC03",
+          "text": "The prompt context is correctly passed to the `agent` command."
+        },
+        {
+          "id": "US-001-AC04",
+          "text": "The output from `agent` is correctly captured and written to the target files (PRDs, plans, code)."
+        },
+        {
+          "id": "US-001-AC05",
+          "text": "Verified on at least one major flow (e.g., `define-requirement` or `create-prototype`)."
+        }
+      ]
+    },
+    {
+      "id": "US-002",
+      "title": "Error Handling for Missing CLI",
+      "description": "As a developer, I want to be notified if the `agent` command is missing so that I know I need to install or configure it.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-002-AC01",
+          "text": "If `--agent cursor` is selected but `agent` is not in the PATH, return a clear error message."
+        }
+      ]
+    }
+  ],
+  "functionalRequirements": []
+}
