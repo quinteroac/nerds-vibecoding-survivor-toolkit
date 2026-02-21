@@ -1301,3 +1301,590 @@ describe("execute-test-batch skill definition", () => {
     expect(source).toContain("Do not output markdown or additional text outside the JSON array.");
   });
 });
+
+describe("US-004: preserve report and state tracking compatibility", () => {
+  // US-004-AC01: progress file tracks all tests with correct statuses and attempt counts
+  test("AC01: progress file tracks all tests (automated + manual) with correct statuses and attempt counts", async () => {
+    const projectRoot = await createProjectRoot();
+    createdRoots.push(projectRoot);
+
+    const tpFileName = "it_000005_TP.json";
+    await seedState(projectRoot, "created", tpFileName);
+    await writeProjectContext(projectRoot);
+    await writeApprovedTpJson(projectRoot, tpFileName);
+
+    await withCwd(projectRoot, async () => {
+      await runExecuteTestPlan(
+        { provider: "claude" },
+        {
+          loadSkillFn: async (_pr, name) => {
+            if (name === "execute-test-batch") return "batch skill";
+            return "single skill";
+          },
+          invokeAgentFn: async (): Promise<AgentResult> => {
+            return {
+              exitCode: 0,
+              stdout: JSON.stringify([
+                { testCaseId: "TC-US001-01", status: "passed", evidence: "ok", notes: "" },
+                { testCaseId: "TC-US001-02", status: "failed", evidence: "err", notes: "assertion fail" },
+              ]),
+              stderr: "",
+            };
+          },
+          promptManualTestFn: async () => {
+            return { status: "passed", evidence: "manual ok", notes: "" };
+          },
+        },
+      );
+    });
+
+    const progressRaw = await readFile(
+      join(projectRoot, ".agents", "flow", "it_000005_test-execution-progress.json"),
+      "utf8",
+    );
+    const progress = JSON.parse(progressRaw) as {
+      entries: Array<{
+        id: string;
+        type: string;
+        status: string;
+        attempt_count: number;
+        last_agent_exit_code: number | null;
+        last_error_summary: string;
+        updated_at: string;
+      }>;
+    };
+
+    // All three tests tracked
+    expect(progress.entries).toHaveLength(3);
+
+    // Automated passed test
+    expect(progress.entries[0]).toMatchObject({
+      id: "TC-US001-01",
+      type: "automated",
+      status: "passed",
+      attempt_count: 1,
+      last_agent_exit_code: 0,
+      last_error_summary: "",
+    });
+    expect(progress.entries[0]!.updated_at).toBeTruthy();
+
+    // Automated failed test
+    expect(progress.entries[1]).toMatchObject({
+      id: "TC-US001-02",
+      type: "automated",
+      status: "failed",
+      attempt_count: 1,
+      last_agent_exit_code: 0,
+      last_error_summary: "assertion fail",
+    });
+
+    // Manual passed test
+    expect(progress.entries[2]).toMatchObject({
+      id: "TC-US001-03",
+      type: "exploratory_manual",
+      status: "passed",
+      attempt_count: 1,
+      last_agent_exit_code: null,
+      last_error_summary: "",
+    });
+  });
+
+  // US-004-AC01: attempt counts increment on retry
+  test("AC01: attempt counts increment correctly on retries", async () => {
+    const projectRoot = await createProjectRoot();
+    createdRoots.push(projectRoot);
+
+    const tpFileName = "it_000005_TP.json";
+    await seedState(projectRoot, "created", tpFileName);
+    await writeProjectContext(projectRoot);
+    await writeApprovedTpJson(projectRoot, tpFileName);
+
+    await withCwd(projectRoot, async () => {
+      // First run: one automated fails
+      await runExecuteTestPlan(
+        { provider: "claude" },
+        {
+          loadSkillFn: async (_pr, name) => {
+            if (name === "execute-test-batch") return "batch skill";
+            return "single skill";
+          },
+          invokeAgentFn: async (): Promise<AgentResult> => {
+            return {
+              exitCode: 0,
+              stdout: JSON.stringify([
+                { testCaseId: "TC-US001-01", status: "passed", evidence: "ok", notes: "" },
+                { testCaseId: "TC-US001-02", status: "failed", evidence: "err", notes: "fail" },
+              ]),
+              stderr: "",
+            };
+          },
+          promptManualTestFn: async () => {
+            return { status: "passed", evidence: "ok", notes: "" };
+          },
+        },
+      );
+
+      // Second run: retry fixes the failure
+      await runExecuteTestPlan(
+        { provider: "claude" },
+        {
+          loadSkillFn: async (_pr, name) => {
+            if (name === "execute-test-batch") return "batch skill";
+            return "single skill";
+          },
+          invokeAgentFn: async (): Promise<AgentResult> => {
+            return {
+              exitCode: 0,
+              stdout: JSON.stringify([
+                { testCaseId: "TC-US001-02", status: "passed", evidence: "retry ok", notes: "" },
+              ]),
+              stderr: "",
+            };
+          },
+          promptManualTestFn: async () => {
+            throw new Error("Should not prompt for already-passed manual test");
+          },
+        },
+      );
+    });
+
+    const progressRaw = await readFile(
+      join(projectRoot, ".agents", "flow", "it_000005_test-execution-progress.json"),
+      "utf8",
+    );
+    const progress = JSON.parse(progressRaw) as {
+      entries: Array<{ id: string; attempt_count: number; status: string }>;
+    };
+
+    expect(progress.entries.find((e) => e.id === "TC-US001-01")).toMatchObject({
+      attempt_count: 1,
+      status: "passed",
+    });
+    expect(progress.entries.find((e) => e.id === "TC-US001-02")).toMatchObject({
+      attempt_count: 2,
+      status: "passed",
+    });
+    expect(progress.entries.find((e) => e.id === "TC-US001-03")).toMatchObject({
+      attempt_count: 1,
+      status: "passed",
+    });
+  });
+
+  // US-004-AC02: execution artifacts written per test case per attempt with correct schema
+  test("AC02: artifacts written per test case per attempt with correct directory structure and schema", async () => {
+    const projectRoot = await createProjectRoot();
+    createdRoots.push(projectRoot);
+
+    const tpFileName = "it_000005_TP.json";
+    await seedState(projectRoot, "created", tpFileName);
+    await writeProjectContext(projectRoot);
+    await writeApprovedTpJson(projectRoot, tpFileName);
+
+    await withCwd(projectRoot, async () => {
+      // First run: one test fails
+      await runExecuteTestPlan(
+        { provider: "claude" },
+        {
+          loadSkillFn: async (_pr, name) => {
+            if (name === "execute-test-batch") return "batch skill";
+            return "single skill";
+          },
+          invokeAgentFn: async (): Promise<AgentResult> => {
+            return {
+              exitCode: 0,
+              stdout: JSON.stringify([
+                { testCaseId: "TC-US001-01", status: "passed", evidence: "ok", notes: "fine" },
+                { testCaseId: "TC-US001-02", status: "failed", evidence: "err", notes: "broken" },
+              ]),
+              stderr: "some stderr",
+            };
+          },
+          promptManualTestFn: async () => {
+            return { status: "passed", evidence: "manual ok", notes: "verified" };
+          },
+        },
+      );
+
+      // Second run: retry the failed test
+      await runExecuteTestPlan(
+        { provider: "claude" },
+        {
+          loadSkillFn: async (_pr, name) => {
+            if (name === "execute-test-batch") return "batch skill";
+            return "single skill";
+          },
+          invokeAgentFn: async (): Promise<AgentResult> => {
+            return {
+              exitCode: 0,
+              stdout: JSON.stringify([
+                { testCaseId: "TC-US001-02", status: "passed", evidence: "fixed", notes: "ok now" },
+              ]),
+              stderr: "",
+            };
+          },
+          promptManualTestFn: async () => {
+            throw new Error("Should not prompt for already-passed manual test");
+          },
+        },
+      );
+    });
+
+    const artifactsDirPath = join(projectRoot, ".agents", "flow", "it_000005_test-execution-artifacts");
+    const artifactFileNames = (await readdir(artifactsDirPath)).sort();
+
+    // 3 from first run + 1 retry = 4 artifacts
+    expect(artifactFileNames).toHaveLength(4);
+
+    // Verify artifact file naming: {sanitized_id}_attempt_{padded_number}.json
+    expect(artifactFileNames).toContain("TC-US001-01_attempt_001.json");
+    expect(artifactFileNames).toContain("TC-US001-02_attempt_001.json");
+    expect(artifactFileNames).toContain("TC-US001-02_attempt_002.json");
+    expect(artifactFileNames).toContain("TC-US001-03_attempt_001.json");
+
+    // Verify automated artifact schema
+    const autoArtifactRaw = await readFile(
+      join(artifactsDirPath, "TC-US001-01_attempt_001.json"),
+      "utf8",
+    );
+    const autoArtifact = JSON.parse(autoArtifactRaw) as Record<string, unknown>;
+    expect(autoArtifact).toHaveProperty("testCaseId", "TC-US001-01");
+    expect(autoArtifact).toHaveProperty("attemptNumber", 1);
+    expect(autoArtifact).toHaveProperty("prompt");
+    expect(typeof autoArtifact.prompt).toBe("string");
+    expect(autoArtifact).toHaveProperty("agentExitCode", 0);
+    expect(autoArtifact).toHaveProperty("stdout");
+    expect(autoArtifact).toHaveProperty("stderr", "some stderr");
+    expect(autoArtifact).toHaveProperty("payload");
+    const autoPayload = autoArtifact.payload as Record<string, unknown>;
+    expect(autoPayload).toMatchObject({ status: "passed", evidence: "ok", notes: "fine" });
+
+    // Verify manual artifact schema
+    const manualArtifactRaw = await readFile(
+      join(artifactsDirPath, "TC-US001-03_attempt_001.json"),
+      "utf8",
+    );
+    const manualArtifact = JSON.parse(manualArtifactRaw) as Record<string, unknown>;
+    expect(manualArtifact).toHaveProperty("testCaseId", "TC-US001-03");
+    expect(manualArtifact).toHaveProperty("attemptNumber", 1);
+    expect(manualArtifact).toHaveProperty("prompt", "manual-user-input");
+    expect(manualArtifact).toHaveProperty("agentExitCode", 0);
+    expect(manualArtifact).toHaveProperty("stdout");
+    expect(manualArtifact).toHaveProperty("stderr", "");
+    const manualPayload = manualArtifact.payload as Record<string, unknown>;
+    expect(manualPayload).toMatchObject({ status: "passed", evidence: "manual ok", notes: "verified" });
+
+    // Verify retry artifact has incremented attempt number
+    const retryArtifactRaw = await readFile(
+      join(artifactsDirPath, "TC-US001-02_attempt_002.json"),
+      "utf8",
+    );
+    const retryArtifact = JSON.parse(retryArtifactRaw) as Record<string, unknown>;
+    expect(retryArtifact).toHaveProperty("testCaseId", "TC-US001-02");
+    expect(retryArtifact).toHaveProperty("attemptNumber", 2);
+  });
+
+  // US-004-AC03: markdown report and JSON results have identical structure
+  test("AC03: markdown report and JSON results files generated with correct structure", async () => {
+    const projectRoot = await createProjectRoot();
+    createdRoots.push(projectRoot);
+
+    const tpFileName = "it_000005_TP.json";
+    await seedState(projectRoot, "created", tpFileName);
+    await writeProjectContext(projectRoot);
+    await writeApprovedTpJson(projectRoot, tpFileName);
+
+    await withCwd(projectRoot, async () => {
+      await runExecuteTestPlan(
+        { provider: "claude" },
+        {
+          loadSkillFn: async (_pr, name) => {
+            if (name === "execute-test-batch") return "batch skill";
+            return "single skill";
+          },
+          invokeAgentFn: async (): Promise<AgentResult> => {
+            return {
+              exitCode: 0,
+              stdout: JSON.stringify([
+                { testCaseId: "TC-US001-01", status: "passed", evidence: "ev1", notes: "n1" },
+                { testCaseId: "TC-US001-02", status: "failed", evidence: "ev2", notes: "n2" },
+              ]),
+              stderr: "",
+            };
+          },
+          promptManualTestFn: async () => {
+            return { status: "skipped", evidence: "", notes: "N/A" };
+          },
+        },
+      );
+    });
+
+    // Verify JSON results structure
+    const resultsRaw = await readFile(
+      join(projectRoot, ".agents", "flow", "it_000005_test-execution-results.json"),
+      "utf8",
+    );
+    const results = JSON.parse(resultsRaw) as Record<string, unknown>;
+
+    expect(results).toHaveProperty("iteration", "000005");
+    expect(results).toHaveProperty("testPlanFile", tpFileName);
+    expect(results).toHaveProperty("executedTestIds");
+    expect(Array.isArray(results.executedTestIds)).toBe(true);
+    expect(results).toHaveProperty("results");
+    expect(Array.isArray(results.results)).toBe(true);
+
+    const resultEntries = results.results as Array<Record<string, unknown>>;
+    expect(resultEntries).toHaveLength(3);
+
+    // Verify each result has required fields
+    for (const entry of resultEntries) {
+      expect(entry).toHaveProperty("testCaseId");
+      expect(entry).toHaveProperty("description");
+      expect(entry).toHaveProperty("correlatedRequirements");
+      expect(Array.isArray(entry.correlatedRequirements)).toBe(true);
+      expect(entry).toHaveProperty("mode");
+      expect(["automated", "exploratory_manual"]).toContain(entry.mode as string);
+      expect(entry).toHaveProperty("payload");
+      const payload = entry.payload as Record<string, unknown>;
+      expect(payload).toHaveProperty("status");
+      expect(payload).toHaveProperty("evidence");
+      expect(payload).toHaveProperty("notes");
+      expect(entry).toHaveProperty("passFail");
+      expect([null, "pass", "fail"]).toContain(entry.passFail as string | null);
+      expect(entry).toHaveProperty("agentExitCode");
+      expect(typeof entry.agentExitCode).toBe("number");
+      expect(entry).toHaveProperty("artifactReferences");
+      expect(Array.isArray(entry.artifactReferences)).toBe(true);
+    }
+
+    // Verify passFail derivation
+    expect(resultEntries[0]!.passFail).toBe("pass"); // passed -> pass
+    expect(resultEntries[1]!.passFail).toBe("fail"); // failed -> fail
+    expect(resultEntries[2]!.passFail).toBeNull(); // skipped -> null
+
+    // Verify mode field
+    expect(resultEntries[0]!.mode).toBe("automated");
+    expect(resultEntries[1]!.mode).toBe("automated");
+    expect(resultEntries[2]!.mode).toBe("exploratory_manual");
+
+    // Verify markdown report structure
+    const markdownRaw = await readFile(
+      join(projectRoot, ".agents", "flow", "it_000005_test-execution-report.md"),
+      "utf8",
+    );
+
+    expect(markdownRaw).toContain("# Test Execution Report (Iteration 000005)");
+    expect(markdownRaw).toContain("- Test Plan: `it_000005_TP.json`");
+    expect(markdownRaw).toContain("- Total Tests: 3");
+    expect(markdownRaw).toContain("- Passed: 1");
+    expect(markdownRaw).toContain("- Failed: 2");
+    expect(markdownRaw).toContain("| Test ID | Description | Status | Correlated Requirements | Artifacts |");
+    expect(markdownRaw).toContain("| --- | --- | --- | --- | --- |");
+    // All three test cases appear in table
+    expect(markdownRaw).toContain("TC-US001-01");
+    expect(markdownRaw).toContain("TC-US001-02");
+    expect(markdownRaw).toContain("TC-US001-03");
+    // Artifact references present in table
+    expect(markdownRaw).toContain("_attempt_001.json");
+  });
+
+  // US-004-AC04: state transitions follow the same rules
+  test("AC04: state is in_progress during execution, completed when all pass", async () => {
+    const projectRoot = await createProjectRoot();
+    createdRoots.push(projectRoot);
+
+    const tpFileName = "it_000005_TP.json";
+    await seedState(projectRoot, "created", tpFileName);
+    await writeProjectContext(projectRoot);
+    await writeApprovedTpJson(projectRoot, tpFileName);
+
+    const stateSnapshots: Array<{ status: string; file: string | null }> = [];
+
+    await withCwd(projectRoot, async () => {
+      await runExecuteTestPlan(
+        { provider: "claude" },
+        {
+          loadSkillFn: async (_pr, name) => {
+            if (name === "execute-test-batch") return "batch skill";
+            return "single skill";
+          },
+          invokeAgentFn: async (): Promise<AgentResult> => {
+            // Capture state during execution
+            const midState = await readState(projectRoot);
+            stateSnapshots.push({
+              status: midState.phases.prototype.test_execution.status,
+              file: midState.phases.prototype.test_execution.file,
+            });
+            return {
+              exitCode: 0,
+              stdout: JSON.stringify([
+                { testCaseId: "TC-US001-01", status: "passed", evidence: "ok", notes: "" },
+                { testCaseId: "TC-US001-02", status: "passed", evidence: "ok", notes: "" },
+              ]),
+              stderr: "",
+            };
+          },
+          promptManualTestFn: async () => {
+            return { status: "passed", evidence: "ok", notes: "" };
+          },
+        },
+      );
+    });
+
+    // During execution: in_progress
+    expect(stateSnapshots).toHaveLength(1);
+    expect(stateSnapshots[0]!.status).toBe("in_progress");
+    expect(stateSnapshots[0]!.file).toBe("it_000005_test-execution-progress.json");
+
+    // After execution (all passed): completed
+    const finalState = await readState(projectRoot);
+    expect(finalState.phases.prototype.test_execution.status).toBe("completed");
+    expect(finalState.phases.prototype.test_execution.file).toBe("it_000005_test-execution-progress.json");
+    expect(finalState.updated_by).toBe("nvst:execute-test-plan");
+  });
+
+  test("AC04: state is failed when any test fails", async () => {
+    const projectRoot = await createProjectRoot();
+    createdRoots.push(projectRoot);
+
+    const tpFileName = "it_000005_TP.json";
+    await seedState(projectRoot, "created", tpFileName);
+    await writeProjectContext(projectRoot);
+    await writeApprovedTpJson(projectRoot, tpFileName);
+
+    await withCwd(projectRoot, async () => {
+      await runExecuteTestPlan(
+        { provider: "claude" },
+        {
+          loadSkillFn: async (_pr, name) => {
+            if (name === "execute-test-batch") return "batch skill";
+            return "single skill";
+          },
+          invokeAgentFn: async (): Promise<AgentResult> => {
+            return {
+              exitCode: 0,
+              stdout: JSON.stringify([
+                { testCaseId: "TC-US001-01", status: "passed", evidence: "ok", notes: "" },
+                { testCaseId: "TC-US001-02", status: "failed", evidence: "err", notes: "fail" },
+              ]),
+              stderr: "",
+            };
+          },
+          promptManualTestFn: async () => {
+            return { status: "passed", evidence: "ok", notes: "" };
+          },
+        },
+      );
+    });
+
+    const finalState = await readState(projectRoot);
+    expect(finalState.phases.prototype.test_execution.status).toBe("failed");
+    expect(finalState.phases.prototype.test_execution.file).toBe("it_000005_test-execution-progress.json");
+    expect(finalState.updated_by).toBe("nvst:execute-test-plan");
+  });
+
+  test("AC04: state is failed when agent invocation fails", async () => {
+    const projectRoot = await createProjectRoot();
+    createdRoots.push(projectRoot);
+
+    const tpFileName = "it_000005_TP.json";
+    await seedState(projectRoot, "created", tpFileName);
+    await writeProjectContext(projectRoot);
+    await writeApprovedTpJson(projectRoot, tpFileName);
+
+    await withCwd(projectRoot, async () => {
+      await runExecuteTestPlan(
+        { provider: "claude" },
+        {
+          loadSkillFn: async (_pr, name) => {
+            if (name === "execute-test-batch") return "batch skill";
+            return "single skill";
+          },
+          invokeAgentFn: async (): Promise<AgentResult> => {
+            return { exitCode: 1, stdout: "", stderr: "crashed" };
+          },
+          promptManualTestFn: async () => {
+            return { status: "passed", evidence: "ok", notes: "" };
+          },
+        },
+      );
+    });
+
+    const finalState = await readState(projectRoot);
+    expect(finalState.phases.prototype.test_execution.status).toBe("failed");
+  });
+
+  // US-004-AC03: executedTestIds in JSON results tracks only tests run in this execution
+  test("AC03: executedTestIds tracks only tests executed in current run, not previously passed", async () => {
+    const projectRoot = await createProjectRoot();
+    createdRoots.push(projectRoot);
+
+    const tpFileName = "it_000005_TP.json";
+    await seedState(projectRoot, "created", tpFileName);
+    await writeProjectContext(projectRoot);
+    await writeApprovedTpJson(projectRoot, tpFileName);
+
+    await withCwd(projectRoot, async () => {
+      // First run: one automated fails
+      await runExecuteTestPlan(
+        { provider: "claude" },
+        {
+          loadSkillFn: async (_pr, name) => {
+            if (name === "execute-test-batch") return "batch skill";
+            return "single skill";
+          },
+          invokeAgentFn: async (): Promise<AgentResult> => {
+            return {
+              exitCode: 0,
+              stdout: JSON.stringify([
+                { testCaseId: "TC-US001-01", status: "passed", evidence: "ok", notes: "" },
+                { testCaseId: "TC-US001-02", status: "failed", evidence: "err", notes: "fail" },
+              ]),
+              stderr: "",
+            };
+          },
+          promptManualTestFn: async () => {
+            return { status: "passed", evidence: "ok", notes: "" };
+          },
+        },
+      );
+
+      // Second run: only failed test retried
+      await runExecuteTestPlan(
+        { provider: "claude" },
+        {
+          loadSkillFn: async (_pr, name) => {
+            if (name === "execute-test-batch") return "batch skill";
+            return "single skill";
+          },
+          invokeAgentFn: async (): Promise<AgentResult> => {
+            return {
+              exitCode: 0,
+              stdout: JSON.stringify([
+                { testCaseId: "TC-US001-02", status: "passed", evidence: "fixed", notes: "" },
+              ]),
+              stderr: "",
+            };
+          },
+          promptManualTestFn: async () => {
+            throw new Error("Should not prompt");
+          },
+        },
+      );
+    });
+
+    const resultsRaw = await readFile(
+      join(projectRoot, ".agents", "flow", "it_000005_test-execution-results.json"),
+      "utf8",
+    );
+    const results = JSON.parse(resultsRaw) as {
+      executedTestIds: string[];
+      results: Array<{ testCaseId: string }>;
+    };
+
+    // Only TC-US001-02 was executed in the second run
+    expect(results.executedTestIds).toEqual(["TC-US001-02"]);
+    // But all results are still present
+    expect(results.results).toHaveLength(3);
+    expect(results.results.map((r) => r.testCaseId)).toEqual(["TC-US001-01", "TC-US001-02", "TC-US001-03"]);
+  });
+});

@@ -29,12 +29,12 @@
     },
     {
       "use_case_id": "US-004",
-      "status": "failed",
-      "attempt_count": 1,
-      "last_agent_exit_code": 137,
+      "status": "completed",
+      "attempt_count": 2,
+      "last_agent_exit_code": 0,
       "quality_checks": [],
-      "last_error_summary": "Agent or quality check failed",
-      "updated_at": "2026-02-21T19:12:33.341Z"
+      "last_error_summary": "",
+      "updated_at": "2026-02-21T19:17:27.914Z"
     }
   ]
 }
