@@ -1,0 +1,172 @@
+{
+  "goals": [
+    "Reduce agent session overhead by batching all automated tests into one invocation.",
+    "Enable proper human-in-the-loop execution for manual/exploratory tests.",
+    "Preserve all existing tracking, artifact generation, progress persistence, and report generation.",
+    "Maintain resume behavior (skip already-passed tests on re-run)."
+  ],
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Batch Automated Tests in a Single Agent Session",
+      "description": "As a user running the test plan, I want all automated tests to be executed in a single agent session so that execution is faster and the agent has full context of all tests.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-001-AC01",
+          "text": "When the `execute-test-plan` command runs, all automated tests with status != `passed` are collected and sent to a single agent invocation."
+        },
+        {
+          "id": "US-001-AC02",
+          "text": "The agent prompt includes the full list of pending automated test cases (as JSON array) along with the skill body and project context."
+        },
+        {
+          "id": "US-001-AC03",
+          "text": "The agent returns a JSON array of results, one per test case, each with `{testCaseId, status, evidence, notes}`."
+        },
+        {
+          "id": "US-001-AC04",
+          "text": "Each individual test result is recorded in the progress file and as a separate artifact, exactly as today."
+        },
+        {
+          "id": "US-001-AC05",
+          "text": "If the agent session fails (non-zero exit code), all automated tests in the batch are marked as `failed` with an `invocation_failed` payload."
+        },
+        {
+          "id": "US-001-AC06",
+          "text": "If the agent returns partial results (fewer results than tests sent), unmatched tests are marked as `failed`."
+        },
+        {
+          "id": "US-001-AC07",
+          "text": "Resume behavior is preserved: already-passed automated tests are excluded from the batch."
+        },
+        {
+          "id": "US-001-AC08",
+          "text": "Typecheck / lint passes."
+        }
+      ]
+    },
+    {
+      "id": "US-002",
+      "title": "Execute Manual Tests One-by-One with User Interaction",
+      "description": "As a user running the test plan, I want manual/exploratory tests to be presented to me one at a time so that I can perform each test and report the result myself.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-002-AC01",
+          "text": "After automated tests complete, each pending manual test is presented to the user sequentially."
+        },
+        {
+          "id": "US-002-AC02",
+          "text": "For each manual test, the user sees: test ID, description, correlated requirements, and expected result."
+        },
+        {
+          "id": "US-002-AC03",
+          "text": "The user is prompted to enter: status (`passed`, `failed`, or `skipped`), evidence (what they observed), and notes (optional)."
+        },
+        {
+          "id": "US-002-AC04",
+          "text": "Each manual test result is recorded in the progress file and as a separate artifact, consistent with existing format."
+        },
+        {
+          "id": "US-002-AC05",
+          "text": "Resume behavior is preserved: already-passed manual tests are skipped."
+        },
+        {
+          "id": "US-002-AC06",
+          "text": "Typecheck / lint passes."
+        }
+      ]
+    },
+    {
+      "id": "US-003",
+      "title": "Update Execute-Test-Case Skill for Batch Mode",
+      "description": "As a developer maintaining the agent skill, I want the `execute-test-case` skill to support receiving multiple test cases so that it can execute a batch and return an array of results.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-003-AC01",
+          "text": "The skill prompt (`.agents/skills/execute-test-case/SKILL.md`) is updated to instruct the agent to accept an array of test case definitions."
+        },
+        {
+          "id": "US-003-AC02",
+          "text": "The skill instructs the agent to return a JSON array where each element contains `{testCaseId, status, evidence, notes}`."
+        },
+        {
+          "id": "US-003-AC03",
+          "text": "The skill clearly states the agent must execute each test in order and report individual results."
+        },
+        {
+          "id": "US-003-AC04",
+          "text": "Backward references to single-test-case mode are removed or updated."
+        },
+        {
+          "id": "US-003-AC05",
+          "text": "Typecheck / lint passes."
+        }
+      ]
+    },
+    {
+      "id": "US-004",
+      "title": "Preserve Report and State Tracking Compatibility",
+      "description": "As a user, I want the test execution report, results JSON, and state transitions to work exactly as before so that downstream processes are not broken.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-004-AC01",
+          "text": "The progress file (`it_{iteration}_test-execution-progress.json`) tracks all tests with correct statuses and attempt counts."
+        },
+        {
+          "id": "US-004-AC02",
+          "text": "Execution artifacts are written per test case per attempt, same directory structure and schema."
+        },
+        {
+          "id": "US-004-AC03",
+          "text": "The markdown report and JSON results files are generated with identical structure."
+        },
+        {
+          "id": "US-004-AC04",
+          "text": "State transitions follow the same rules: `in_progress` during execution, `completed` if all pass, `failed` if any fail."
+        },
+        {
+          "id": "US-004-AC05",
+          "text": "Typecheck / lint passes."
+        }
+      ]
+    }
+  ],
+  "functionalRequirements": [
+    {
+      "id": "FR-1",
+      "description": "The `execute-test-plan` command must partition the flattened test list into two groups by `mode`: `automated` and `exploratory_manual`."
+    },
+    {
+      "id": "FR-2",
+      "description": "All pending automated tests must be sent to a single agent invocation as a batch (one prompt, one session)."
+    },
+    {
+      "id": "FR-3",
+      "description": "The batch prompt must include the array of test case definitions and instruct the agent to return a JSON array of results."
+    },
+    {
+      "id": "FR-4",
+      "description": "The batch agent response must be parsed as a JSON array, matching each result to its test case by `testCaseId`."
+    },
+    {
+      "id": "FR-5",
+      "description": "If the batch agent invocation fails entirely (non-zero exit or unparseable output), all tests in the batch must be marked `failed`."
+    },
+    {
+      "id": "FR-6",
+      "description": "Each pending manual test must be presented to the user interactively, one at a time, collecting `status`, `evidence`, and `notes` from stdin."
+    },
+    {
+      "id": "FR-7",
+      "description": "Manual test execution must occur after all automated tests have been processed."
+    },
+    {
+      "id": "FR-8",
+      "description": "Progress persistence, artifact writing, resume logic, and report generation must remain functionally identical."
+    },
+    {
+      "id": "FR-9",
+      "description": "The `execute-test-case` skill must be updated to support batch input/output format."
+    }
+  ]
+}
