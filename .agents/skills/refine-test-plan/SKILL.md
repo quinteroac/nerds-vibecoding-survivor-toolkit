@@ -31,6 +31,7 @@ Update `it_{current_iteration}_test-plan.md` in place. The file already exists a
 Ask only what is needed, then update the document directly.
 
 Focus on:
+- Preserve the existing section structure, headings, and overall organization unless the user explicitly requests structural changes
 - Test scope completeness
 - Acceptance criteria traceability
 - Execution order and environment assumptions
@@ -47,7 +48,8 @@ Evaluate at minimum:
 2. Missing negative/error-path scenarios
 3. Weak or non-verifiable assertions
 4. Ambiguous setup/fixtures/test data
-5. Missing quality checks (typecheck, lint, CI gates) where applicable
+5. Over-reliance on manual testing where automation should be used
+6. Missing quality checks (typecheck, lint, CI gates) where applicable
 
 Present findings one at a time:
 
@@ -70,4 +72,5 @@ Only apply accepted suggestions to the document after all findings are triaged.
 - [ ] Output remains in English
 - [ ] Accepted changes applied to the existing test plan file
 - [ ] Each acceptance criterion has explicit test intent
+- [ ] Same output file path is preserved (refine in place, do not write to a new file)
 - [ ] State files are not modified by this skill

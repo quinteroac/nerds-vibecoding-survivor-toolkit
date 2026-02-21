@@ -169,3 +169,31 @@ describe("refine test-plan command", () => {
     });
   });
 });
+
+describe("refine-test-plan skill definition", () => {
+  test("has YAML frontmatter and required editor/challenger guidance", async () => {
+    const skillPath = join(
+      process.cwd(),
+      ".agents",
+      "skills",
+      "refine-test-plan",
+      "SKILL.md",
+    );
+    const source = await readFile(skillPath, "utf8");
+
+    expect(source.startsWith("---\n")).toBe(true);
+    expect(source).toContain("name: refine-test-plan");
+    expect(source).toContain("description:");
+    expect(source).toContain("user-invocable: true");
+    expect(source).toContain("Editor mode");
+    expect(source).toContain("default");
+    expect(source).toContain("Preserve the existing section structure");
+    expect(source).toContain("Challenger mode");
+    expect(source).toContain("`mode = \"challenger\"`");
+    expect(source).toContain("Coverage gaps");
+    expect(source).toContain("Weak or non-verifiable assertions");
+    expect(source).toContain("Over-reliance on manual testing");
+    expect(source).toContain("Update `it_{current_iteration}_test-plan.md` in place.");
+    expect(source).toContain("Same output file path is preserved");
+  });
+});
