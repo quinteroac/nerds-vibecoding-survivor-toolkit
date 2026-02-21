@@ -1,0 +1,273 @@
+{
+  "iteration": "000006",
+  "testPlanFile": "it_000006_TP.json",
+  "executedTestIds": [
+    "TC-001",
+    "TC-002",
+    "TC-003",
+    "TC-004",
+    "TC-005",
+    "TC-006",
+    "TC-007",
+    "TC-008",
+    "TC-010",
+    "TC-011",
+    "TC-012",
+    "TC-013"
+  ],
+  "results": [
+    {
+      "testCaseId": "TC-001",
+      "description": "Execute all pending automated tests in a single batch.",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-1",
+        "FR-2",
+        "FR-4"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "Ran `bun test src/commands/execute-test-plan.test.ts -t \"batches all pending automated tests into a single agent invocation with JSON array prompt and results\"`; output: `1 pass, 0 fail`.",
+        "notes": "Automated batch execution for all pending automated tests is covered and passing."
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000006_test-execution-artifacts/TC-001_attempt_002.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-002",
+      "description": "Handle partial results from the agent (e.g., 5 sent, 3 returned).",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-4",
+        "FR-6"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "Ran `bun test src/commands/execute-test-plan.test.ts -t \"marks unmatched automated tests as failed when agent returns partial batch results\"`; output: `1 pass, 0 fail`.",
+        "notes": "Partial batch response handling is validated and passing."
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000006_test-execution-artifacts/TC-002_attempt_002.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-003",
+      "description": "Handle total agent failure (non-zero exit or invalid JSON).",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-5"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "Ran `bun test src/commands/execute-test-plan.test.ts -t \"marks all automated tests as failed with invocation_failed when batch agent session fails\"`; output: `1 pass, 0 fail`.",
+        "notes": "Total batch invocation failure path is validated and passing."
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000006_test-execution-artifacts/TC-003_attempt_002.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-004",
+      "description": "Resume execution: Skip already passed automated tests.",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-8"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "Ran `bun test src/commands/execute-test-plan.test.ts -t \"excludes already-passed automated tests from the batch on resume\"`; output: `1 pass, 0 fail`.",
+        "notes": "Resume logic correctly skips already passed automated tests."
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000006_test-execution-artifacts/TC-004_attempt_002.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-005",
+      "description": "Verify batch prompt structure.",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-3"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "Ran `bun test src/commands/execute-test-plan.test.ts -t \"batches all pending automated tests into a single agent invocation with JSON array prompt and results\"`; output: `1 pass, 0 fail`.",
+        "notes": "Batch prompt structure assertions in that test (including `### test_cases` JSON array and project context) are passing."
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000006_test-execution-artifacts/TC-005_attempt_002.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-006",
+      "description": "Sequential presentation of manual tests.",
+      "correlatedRequirements": [
+        "US-002",
+        "FR-1",
+        "FR-6",
+        "FR-7"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "Ran `bun test src/commands/execute-test-plan.test.ts -t \"presents pending manual tests sequentially after automated tests complete\"`; output: `1 pass, 0 fail`.",
+        "notes": "Manual tests are presented sequentially after automated execution."
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000006_test-execution-artifacts/TC-006_attempt_002.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-007",
+      "description": "User input validation (status, evidence, notes).",
+      "correlatedRequirements": [
+        "US-002",
+        "FR-6"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "Ran `bun test src/commands/execute-test-plan.test.ts -t \"records user-provided status, evidence, and notes for manual tests\"`; output: `1 pass, 0 fail`.",
+        "notes": "Manual input fields (`status`, `evidence`, `notes`) are captured and persisted as expected."
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000006_test-execution-artifacts/TC-007_attempt_002.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-008",
+      "description": "Resume execution: Skip passed manual tests.",
+      "correlatedRequirements": [
+        "US-002",
+        "FR-8"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "Ran `bun test src/commands/execute-test-plan.test.ts -t \"skips already-passed manual tests on resume\"`; output: `1 pass, 0 fail`.",
+        "notes": "Resume behavior correctly skips manual tests already marked passed."
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000006_test-execution-artifacts/TC-008_attempt_002.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-010",
+      "description": "Verify `execute-test-case` skill prompt update.",
+      "correlatedRequirements": [
+        "US-003",
+        "FR-9",
+        "FR-3"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "Ran `bun test src/commands/execute-test-plan.test.ts -t \"US-003: execute-test-case skill batch mode\"`; output: `5 pass, 0 fail`.",
+        "notes": "All `execute-test-case` skill prompt update checks passed (batch input/output contract and removal of single-case references)."
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000006_test-execution-artifacts/TC-010_attempt_002.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-011",
+      "description": "Verify progress JSON integrity after batch execution.",
+      "correlatedRequirements": [
+        "US-004",
+        "FR-8"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "Ran `bun test src/commands/execute-test-plan.test.ts -t \"AC01: progress file tracks all tests \\(automated \\+ manual\\) with correct statuses and attempt counts\"`; output: `1 pass, 0 fail`.",
+        "notes": "Progress JSON integrity checks for statuses and attempt counts are passing."
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000006_test-execution-artifacts/TC-011_attempt_002.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-012",
+      "description": "Verify individual artifact generation.",
+      "correlatedRequirements": [
+        "US-004",
+        "FR-8"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "Ran `bun test src/commands/execute-test-plan.test.ts -t \"AC02: artifacts written per test case per attempt with correct directory structure and schema\"`; output: `1 pass, 0 fail`.",
+        "notes": "Per-test artifact generation, naming, and schema validation passed."
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000006_test-execution-artifacts/TC-012_attempt_002.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-013",
+      "description": "Verify final report generation.",
+      "correlatedRequirements": [
+        "US-004",
+        "FR-8"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "Ran `bun test src/commands/execute-test-plan.test.ts -t \"AC03: markdown report and JSON results files generated with correct structure\"`; output: `1 pass, 0 fail`.",
+        "notes": "Final markdown report and JSON results structure validation is passing."
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000006_test-execution-artifacts/TC-013_attempt_002.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-009",
+      "description": "Manual UX Sanity Check.",
+      "correlatedRequirements": [
+        "US-002",
+        "FR-6"
+      ],
+      "mode": "exploratory_manual",
+      "payload": {
+        "status": "passed",
+        "evidence": "",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000006_test-execution-artifacts/TC-009_attempt_001.json"
+      ]
+    }
+  ]
+}
