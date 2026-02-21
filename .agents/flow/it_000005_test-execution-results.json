@@ -1,0 +1,993 @@
+{
+  "iteration": "000005",
+  "testPlanFile": "it_000005_TP.json",
+  "executedTestIds": [
+    "TC-US001-01",
+    "TC-US001-02",
+    "TC-US001-03",
+    "TC-US001-04",
+    "TC-US001-05",
+    "TC-US001-06",
+    "TC-US001-07",
+    "TC-US001-08",
+    "TC-US001-09",
+    "TC-US001-10",
+    "TC-US001-11",
+    "TC-US001-12",
+    "TC-US001-13",
+    "TC-US001-14",
+    "TC-US001-15",
+    "TC-US001-16",
+    "TC-US002-01",
+    "TC-US002-02",
+    "TC-US002-03",
+    "TC-US002-04",
+    "TC-US002-05",
+    "TC-US002-06",
+    "TC-US002-07",
+    "TC-US002-08",
+    "TC-US002-09",
+    "TC-US003-01",
+    "TC-US003-02",
+    "TC-US003-03",
+    "TC-US003-04",
+    "TC-US003-05",
+    "TC-US003-06",
+    "TC-US003-07",
+    "TC-US004-01",
+    "TC-US004-02",
+    "TC-US004-03",
+    "TC-US004-04",
+    "TC-US004-05",
+    "TC-US004-06",
+    "TC-US004-07",
+    "TC-US004-08",
+    "TC-US004-09",
+    "TC-US004-10",
+    "TC-US005-01",
+    "TC-US005-02",
+    "TC-US005-03",
+    "TC-US005-04",
+    "TC-QG-01",
+    "TC-QG-02",
+    "TC-QG-03"
+  ],
+  "results": [
+    {
+      "testCaseId": "TC-US001-01",
+      "description": "Command rejects execution when `tp_generation.status` is not `\"created\"`",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-2"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "Executed `bun test src/commands/execute-test-plan.test.ts -t \"fails when tp_generation.status is not created\"`. Result: 1 pass, 0 fail, 8 filtered out. The targeted test case `execute test-plan command > fails when tp_generation.status is not created` passed.",
+        "notes": "Automated unit test directly validates the guard for non-`created` `tp_generation.status` and confirms command rejection behavior."
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000005_test-execution-artifacts/TC-US001-01_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US001-02",
+      "description": "Command reads the approved test plan JSON from the path in `state.phases.prototype.tp_generation.file`",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-3"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "Ran `bun test src/commands/execute-test-plan.test.ts -t \"reads approved TP JSON from state path and executes all test cases one by one in source order\"`. Result: 1 pass, 0 fail, 8 filtered out. The targeted test validated that `runExecuteTestPlan` reads the approved TP JSON using `state.phases.prototype.tp_generation.file` and executes cases from that loaded file.",
+        "notes": "Single automated test case executed as required. Scope was limited to the behavior under TC-US001-02."
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000005_test-execution-artifacts/TC-US001-02_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US001-03",
+      "description": "Command reads `PROJECT_CONTEXT.md` and includes it in the agent invocation prompt",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-3",
+        "FR-5"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "Executed `bun test src/commands/execute-test-plan.test.ts -t \"reads approved TP JSON from state path and executes all test cases one by one in source order\"` and it passed (`1 pass, 0 fail`). In this test, the mocked agent invocation explicitly asserts `options.prompt` contains `### project_context` and the project context content (`Use bun test and tsc checks.`), and tracks invocation IDs including `TC-US001-03`.",
+        "notes": "TC-US001-03 acceptance is satisfied via automated unit coverage in `src/commands/execute-test-plan.test.ts` for prompt construction and invocation context."
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000005_test-execution-artifacts/TC-US001-03_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US001-04",
+      "description": "Command invokes the agent once per test case sequentially",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-4",
+        "FR-5"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "Ran `bun test src/commands/execute-test-plan.test.ts -t \"reads approved TP JSON from state path and executes all test cases one by one in source order\"` (exit code 0): `1 pass, 0 fail`. This test asserts `invocationTestIds` equals `[\"TC-US001-01\",\"TC-US001-02\",\"TC-US001-03\"]` and `report.executedTestIds` equals the same ordered list, with `report.results` length `3`, confirming one agent invocation per test case in sequential order.",
+        "notes": "Executed only the single automated test case aligned to TC-US001-04 (US-001, FR-4, FR-5)."
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000005_test-execution-artifacts/TC-US001-04_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US001-05",
+      "description": "Execution order matches the order of test cases in the source TP JSON",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-4"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "Ran `bun test src/commands/execute-test-plan.test.ts --test-name-pattern \"reads approved TP JSON from state path and executes all test cases one by one in source order\"` (exit code 0). Output: `1 pass, 0 fail`, with the matching test explicitly passing.",
+        "notes": "TC-US001-05 acceptance is satisfied: automated execution confirms test cases are executed one by one in source TP JSON order."
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000005_test-execution-artifacts/TC-US001-05_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US001-06",
+      "description": "Each agent invocation produces a structured result payload with `status`, `evidence`, and `notes`",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-6"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "Executed exactly one automated test: `bun test src/commands/execute-test-plan.test.ts -t \"reads approved TP JSON from state path and executes all test cases one by one in source order\"` -> `1 pass`, `0 fail`, `8 filtered out`. The tested assertion verifies structured payload shape: `expect(report.results[0]?.payload).toEqual({ status: \"passed\", evidence: \"Command output captured\", notes: \"Executed successfully\" })` in `src/commands/execute-test-plan.test.ts` (lines 220-223).",
+        "notes": "TC-US001-06 acceptance is satisfied: agent invocation output is validated as a structured payload containing `status`, `evidence`, and `notes`."
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000005_test-execution-artifacts/TC-US001-06_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US001-07",
+      "description": "Non-zero agent exit code is treated as invocation failure",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-6"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "Ran `bun test src/commands/execute-test-plan.test.ts -t \"derives pass/fail from payload status and treats non-zero agent exit as invocation failure\"` and Bun reported `(pass) ... [6.00ms]`, `1 pass`, `0 fail`, exit code 0. This targeted test explicitly asserts that when agent exit code is 1, payload status becomes `invocation_failed` with notes containing `Agent invocation failed with exit code 1`.",
+        "notes": "Automated execution completed for TC-US001-07 only; no blocker encountered. The extra `0/3 tests passed, 3 failed` line is emitted by application report logging, while Bun’s authoritative test summary confirms the selected test passed."
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000005_test-execution-artifacts/TC-US001-07_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US001-08",
+      "description": "Each test case uses exactly one agent invocation with project-context in the prompt",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-5"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "Executed one targeted automated test: `bun test src/commands/execute-test-plan.test.ts -t \"reads approved TP JSON from state path and executes all test cases one by one in source order\"` -> `1 pass, 0 fail, 8 filtered out`. The test asserts prompt includes project context (`src/commands/execute-test-plan.test.ts:173`) and verifies one invocation per test case by matching invoked IDs exactly once in order (`src/commands/execute-test-plan.test.ts:199`, also reflected in executed IDs at `:218`).",
+        "notes": "Acceptance for TC-US001-08 is satisfied by the passing targeted test that validates both required conditions."
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000005_test-execution-artifacts/TC-US001-08_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US001-09",
+      "description": "Command accepts `--agent claude`, `--agent codex`, and `--agent gemini` flags",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-1"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "Executed `bun test src/commands/execute-test-plan.test.ts -t \"supports claude, codex, and gemini providers\"` and it passed: `1 pass, 0 fail, 8 filtered out` in `src/commands/execute-test-plan.test.ts`.",
+        "notes": "Automated assertion verifies provider parsing accepts exactly `claude`, `codex`, and `gemini` for `--agent` handling."
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000005_test-execution-artifacts/TC-US001-09_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US001-10",
+      "description": "Command rejects invalid or missing `--agent` flag",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-1"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "Executed automated CLI checks for `execute test-plan`: (1) `bun src/cli.ts execute test-plan` returned exit code 1 with `Missing required --agent <provider> argument.`; (2) `bun src/cli.ts execute test-plan --agent bad-provider` returned exit code 1 with `Unknown agent provider 'bad-provider'. Valid providers: claude, codex, gemini`. Both outputs are descriptive and match expected rejection behavior.",
+        "notes": "Used direct entrypoint execution (`bun src/cli.ts ...`) in this workspace; behavior confirms invalid and missing `--agent` are rejected for the target command."
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000005_test-execution-artifacts/TC-US001-10_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US001-11",
+      "description": "Command follows the existing command pattern: read state, validate, load skill, invoke agent, update progress, update state",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-10"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "Executed: `bun test src/commands/execute-test-plan.test.ts -t \"reads approved TP JSON from state path and executes all test cases one by one in source order\"` -> 1 pass, 0 fail, 8 filtered out. This test verifies lifecycle steps for TC-US001-11: state read/validation preconditions, skill load (`loadedSkill === \"execute-test-case\"`), sequential agent invocation order (`TC-US001-01/02/03`), progress/state transition to `in_progress` during run, and final state/report/progress artifacts.",
+        "notes": "Single targeted automated test case was executed (no broader suite), matching the requirement to run exactly one test case."
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000005_test-execution-artifacts/TC-US001-11_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US001-12",
+      "description": "Typecheck passes on `execute-test-plan.ts`",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-10"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "Located target file at src/commands/execute-test-plan.ts via `rg --files | rg 'execute-test-plan\\.ts$'`. Ran `bunx tsc --noEmit --pretty false --project tsconfig.json` in /home/victor/vibecoding/nerds-vibecoding-survivor-toolkit; command exited with code 0 and produced no diagnostics.",
+        "notes": "TypeScript strict project typecheck passed, so `execute-test-plan.ts` typechecks successfully under repository configuration."
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000005_test-execution-artifacts/TC-US001-12_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US001-13",
+      "description": "Command fails fast when test plan file path is missing or unreadable",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-3"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "Executed one scoped automated check by running `bun run src/cli.ts execute test-plan --agent codex` in an isolated temp project where `.agents/state.json` had `phases.prototype.tp_generation.status=\"created\"` and `file=\"it_999999_missing_TP.json\"` (nonexistent). Command exited with code `1` and stderr: `Cannot execute test plan: file not found at /tmp/tmp.3374HnCtRM/.agents/flow/it_999999_missing_TP.json`.",
+        "notes": "TC-US001-13 acceptance is satisfied for the missing-path branch: the command fails immediately before execution flow continues."
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000005_test-execution-artifacts/TC-US001-13_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US001-14",
+      "description": "Command rejects invalid test plan JSON/schema at `tp_generation.file`",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-3"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "In an isolated temp project with `prototype.tp_generation.status` set to `created` and `tp_generation.file` set to `it_000005_TP.json`, running `runExecuteTestPlan({ provider: \"codex\" })` produced: CASE1=`Invalid test plan JSON at .agents/flow/it_000005_TP.json.` when file content was malformed JSON; CASE2=`Test plan JSON schema mismatch at .agents/flow/it_000005_TP.json.` when file content was valid JSON but schema-invalid.",
+        "notes": "TC-US001-14 acceptance is satisfied: the command rejects both invalid JSON and schema-invalid payloads at the path referenced by `tp_generation.file`."
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000005_test-execution-artifacts/TC-US001-14_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US001-15",
+      "description": "Behavior when `PROJECT_CONTEXT.md` is missing/unreadable is deterministic and explicit",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-3",
+        "FR-5"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "Automated execution in a temporary project root ran `runExecuteTestPlan` with valid state/TP JSON and validated two scenarios: (1) missing `.agents/PROJECT_CONTEXT.md` threw `Project context missing: expected .agents/PROJECT_CONTEXT.md.`; (2) unreadable context (simulated `EACCES` from `readFileFn`) threw `EACCES: permission denied, open /tmp/.../.agents/PROJECT_CONTEXT.md`. Both outcomes are explicit failures before any agent invocation.",
+        "notes": "TC-US001-15 acceptance satisfied: behavior for missing/unreadable project context is deterministic in flow (immediate failure at context read stage) and explicit in error output."
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000005_test-execution-artifacts/TC-US001-15_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US001-16",
+      "description": "Malformed agent output (non-JSON, truncated JSON, or missing required keys with exit code 0) is treated as test-case failure",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-6"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "Ran one isolated automated harness for TC-US001-16 using `runExecuteTestPlan` with first agent response malformed (truncated JSON) and `exitCode: 0`, then a valid second response. Command output: `1/2 tests passed, 1 failed`. Verification checks all true: `malformedMarkedFailed`, `malformedHasErrorSummary`, `malformedAttemptRecorded`, `rawOutputPersisted`, `resultRecordedFailureMode`, `executionContinued`. Summary captured: `Agent output was not valid JSON.`",
+        "notes": "Acceptance is satisfied: malformed agent output with zero exit code is recorded as a failed test case (progress entry status `failed`, error summary populated, artifact stores raw stdout), and execution continues to the next test case."
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000005_test-execution-artifacts/TC-US001-16_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US002-01",
+      "description": "Progress file `it_{iteration}_test-execution-progress.json` is created in `.agents/flow/` on first run",
+      "correlatedRequirements": [
+        "US-002",
+        "FR-7"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "Executed: `bun test src/commands/execute-test-plan.test.ts -t \"reads approved TP JSON from state path and executes all test cases one by one in source order\"` (exit code 0). Result: 1 pass, 0 fail, 8 filtered out. This passing test exercises first execution in a fresh temp project and validates `.agents/flow/it_000005_test-execution-progress.json` exists and is readable after run.",
+        "notes": "Automated verification was scoped to a single test case only. The selected test covers first-run creation behavior of the test-execution progress file as part of initial `execute test-plan` flow."
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000005_test-execution-artifacts/TC-US002-01_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US002-02",
+      "description": "Each progress entry includes required fields: `id`, `type`, `status`, `attempt_count`, `last_agent_exit_code`, `last_error_summary`, `updated_at`",
+      "correlatedRequirements": [
+        "US-002",
+        "FR-7"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "Executed: bun test src/commands/execute-test-plan.test.ts -t \"reads approved TP JSON from state path and executes all test cases one by one in source order\". Result: 1 pass, 0 fail (53 expect() calls). This test validates progress entries include id, type, status, attempt_count, last_agent_exit_code, last_error_summary, and updated_at.",
+        "notes": "Single automated test case executed as required for TC-US002-02; no blockers encountered."
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000005_test-execution-artifacts/TC-US002-02_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US002-03",
+      "description": "Progress file is updated after each test case execution attempt",
+      "correlatedRequirements": [
+        "US-002",
+        "FR-7"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "Ran `bun test src/commands/execute-test-plan.test.ts -t \"updates execution progress file after each test case execution attempt\"` and it passed (exit code 0). Output included: `(pass) execute test-plan command > updates execution progress file after each test case execution attempt`, `1 pass`, `0 fail`, `8 filtered out`.",
+        "notes": "Automated test directly verifies that progress snapshots are written during each execution attempt and final snapshot includes updated attempt/status fields."
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000005_test-execution-artifacts/TC-US002-03_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US002-04",
+      "description": "Re-running the command resumes from pending/failed test cases and does not re-execute passed tests",
+      "correlatedRequirements": [
+        "US-002",
+        "FR-9"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "Executed `bun test src/commands/execute-test-plan.test.ts -t \"resumes only pending or failed tests on re-run and skips previously passed tests\"`. Result: `(pass)` for the targeted test, with `1 pass`, `0 fail`, `8 filtered out`.",
+        "notes": "The automated test for TC-US002-04 passed, validating re-run behavior that resumes pending/failed cases and does not re-execute already passed cases."
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000005_test-execution-artifacts/TC-US002-04_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US002-05",
+      "description": "Progress file validates against `TestExecutionProgressSchema` via Zod",
+      "correlatedRequirements": [
+        "US-002",
+        "FR-7"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "Validated `.agents/flow/it_000005_test-execution-progress.json` with a Zod schema matching `TestExecutionProgressSchema` from `src/commands/execute-test-plan.ts`; command output: `VALID entries=49` (exit code 0).",
+        "notes": "Test case TC-US002-05 satisfied: progress file conforms to the required schema via Zod safeParse."
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000005_test-execution-artifacts/TC-US002-05_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US002-06",
+      "description": "On rerun, previously `passed` entries remain unchanged and are never reinvoked",
+      "correlatedRequirements": [
+        "US-002",
+        "FR-9"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "Executed: bun test src/commands/execute-test-plan.test.ts -t \"resumes only pending or failed tests on re-run and skips previously passed tests\". Output: \"(pass) execute test-plan command > resumes only pending or failed tests on re-run and skips previously passed tests\" and \"Ran 1 test across 1 file. ... 1 pass, 8 filtered out, 0 fail\".",
+        "notes": "This directly validates rerun behavior for TC-US002-06: previously passed entries are skipped while only pending/failed entries are reinvoked."
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000005_test-execution-artifacts/TC-US002-06_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US002-07",
+      "description": "On rerun, `failed` and `pending` entries are reinvoked in original TP order",
+      "correlatedRequirements": [
+        "US-002",
+        "FR-9"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "Executed a single automated rerun scenario with seeded progress statuses (`TC-US002-01=passed`, `TC-US002-02=failed`, `TC-US002-03=pending`, `TC-US002-04=failed`) and ran `runExecuteTestPlan` once. Captured invocation order was exactly `[\"TC-US002-02\",\"TC-US002-03\",\"TC-US002-04\"]`, confirming only `failed`/`pending` entries were reinvoked in original TP order; previously passed `TC-US002-01` was not reinvoked.",
+        "notes": "Command completed successfully (`4/4 tests passed, 0 failed`) and final state recorded `test_execution.status=\"completed\"` with progress file `it_000005_test-execution-progress.json`."
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000005_test-execution-artifacts/TC-US002-07_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US002-08",
+      "description": "`attempt_count` increments exactly once per re-executed test case",
+      "correlatedRequirements": [
+        "US-002",
+        "FR-7",
+        "FR-9"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "Executed `bun test src/commands/execute-test-plan.test.ts -t \"resumes only pending or failed tests on re-run and skips previously passed tests\"` (exit code 0). Result: `1 pass`, `0 fail`, `8 filtered out`. The passing assertions verify re-executed case `TC-US001-02` increments `attempt_count` from 1 to 2, while previously passed `TC-US001-01` and `TC-US001-03` remain at `attempt_count: 1`.",
+        "notes": "Single automated test case executed only; acceptance for TC-US002-08 is satisfied."
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000005_test-execution-artifacts/TC-US002-08_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US002-09",
+      "description": "`updated_at` changes only for entries executed in the current run",
+      "correlatedRequirements": [
+        "US-002",
+        "FR-7",
+        "FR-9"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "Executed `bun run /tmp/tc-us002-09.ts`, which performed two controlled `runExecuteTestPlan` runs in an isolated temp project. First run produced `2/3 tests passed, 1 failed`; rerun produced `3/3 tests passed, 0 failed`. Verification output: `{\"condition\":true,\"rerunInvokedIds\":[\"TC-US001-02\"],\"timestamps\":{\"TC-US001-01\":{\"run1\":\"2026-02-21T17:38:09.617Z\",\"run2\":\"2026-02-21T17:38:09.617Z\"},\"TC-US001-02\":{\"run1\":\"2026-02-21T17:38:09.617Z\",\"run2\":\"2026-02-21T17:38:09.646Z\"},\"TC-US001-03\":{\"run1\":\"2026-02-21T17:38:09.617Z\",\"run2\":\"2026-02-21T17:38:09.617Z\"}}}`.",
+        "notes": "Acceptance satisfied for TC-US002-09: only the re-executed entry (`TC-US001-02`) changed `updated_at`; skipped previously-passed entries (`TC-US001-01`, `TC-US001-03`) retained their original timestamps."
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000005_test-execution-artifacts/TC-US002-09_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US003-01",
+      "description": "State schema includes `test_execution` field with `status` and `file` under prototype phase",
+      "correlatedRequirements": [
+        "US-003",
+        "FR-10"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "Automated schema validation using `StateSchema.safeParse` confirmed a valid state with `phases.prototype.test_execution = { status: \"pending\", file: null }` is accepted. Removing `test_execution` failed validation at path `phases.prototype.test_execution`, and providing wrong shape (`file: 123`) failed at `phases.prototype.test_execution.file`.",
+        "notes": "Test case TC-US003-01 satisfied: the prototype phase schema requires `test_execution` with both `status` and `file` fields."
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000005_test-execution-artifacts/TC-US003-01_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US003-02",
+      "description": "State is set to `in_progress` when execution begins",
+      "correlatedRequirements": [
+        "US-003",
+        "FR-10"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "Executed `bun test src/commands/execute-test-plan.test.ts -t \"reads approved TP JSON from state path and executes all test cases one by one in source order\"` with result: 1 pass, 0 fail. This test includes the assertion `expect(liveState.phases.prototype.test_execution.status).toBe(\"in_progress\")` at execution start, and it passed.",
+        "notes": "Single automated test was run (8 others filtered out), matching TC-US003-02 only."
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000005_test-execution-artifacts/TC-US003-02_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US003-03",
+      "description": "State is set to `completed` when all test cases pass",
+      "correlatedRequirements": [
+        "US-003",
+        "FR-8"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "Executed: `bun test src/commands/execute-test-plan.test.ts --test-name-pattern \"reads approved TP JSON from state path and executes all test cases one by one in source order\"`. Result: `1 pass, 0 fail` (8 filtered out). This test includes assertions that `state.phases.prototype.test_execution.status` is `\"completed\"` after all test cases pass.",
+        "notes": "Automated unit test directly validates TC-US003-03 acceptance criterion (state transitions to completed when all tests pass)."
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000005_test-execution-artifacts/TC-US003-03_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US003-04",
+      "description": "State is set to `failed` if any test cases remain in `failed` status after execution",
+      "correlatedRequirements": [
+        "US-003",
+        "FR-8"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "Executed: bun test src/commands/execute-test-plan.test.ts -t \"derives pass/fail from payload status and treats non-zero agent exit as invocation failure\". Result: \"1 pass, 0 fail\" (8 filtered out), and this test asserts state.phases.prototype.test_execution.status becomes \"failed\" when failed outcomes are present.",
+        "notes": "Automated unit test directly validates TC-US003-04 behavior for US-003 / FR-8; no blockers encountered."
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000005_test-execution-artifacts/TC-US003-04_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US003-05",
+      "description": "State `test_execution.file` points to the progress file path",
+      "correlatedRequirements": [
+        "US-003",
+        "FR-7"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "Executed: bun test src/commands/execute-test-plan.test.ts -t \"reads approved TP JSON from state path and executes all test cases one by one in source order\". Result: 1 pass, 0 fail, 8 filtered out. This test includes assertions that state.phases.prototype.test_execution.file equals \"it_000005_test-execution-progress.json\".",
+        "notes": "Automated verification completed for TC-US003-05 by running only the targeted test covering test_execution.file path behavior."
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000005_test-execution-artifacts/TC-US003-05_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US003-06",
+      "description": "Mid-execution interruption (for example write failure during progress/report update) does not leave state stuck in `in_progress`",
+      "correlatedRequirements": [
+        "US-003",
+        "FR-8",
+        "FR-10"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "failed",
+        "evidence": "Executed one isolated automated run with injected mid-execution write interruption (`writeFileFn` throws on `it_000005_test-execution-report.md`). Observed result: `{\"caughtError\":\"Injected write failure for report\",\"writeFailures\":1,\"finalStatus\":\"in_progress\",\"finalFile\":\"it_000005_test-execution-progress.json\"}`.",
+        "notes": "Acceptance not met for TC-US003-06: after interruption during progress/report update path, `.agents/state.json` remained `phases.prototype.test_execution.status = \"in_progress\"` instead of transitioning to a terminal status."
+      },
+      "passFail": "fail",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000005_test-execution-artifacts/TC-US003-06_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US003-07",
+      "description": "Partial execution recovery preserves file pointer and rerun behavior",
+      "correlatedRequirements": [
+        "US-003",
+        "FR-7",
+        "FR-8",
+        "FR-9"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "Executed `bun test src/commands/execute-test-plan.test.ts -t \"resumes only pending or failed tests on re-run and skips previously passed tests\"`; output showed `(pass)` for that exact test with `1 pass, 0 fail` (8 filtered out). This test validates recovery rerun behavior by asserting rerun invokes only the previously failed case and preserves passed entries with stable attempt counts.",
+        "notes": "Automated execution completed for TC-US003-07 using the targeted rerun-recovery test path in `execute-test-plan`."
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000005_test-execution-artifacts/TC-US003-07_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US004-01",
+      "description": "Summary report file `it_{iteration}_test-execution-report.md` is written to `.agents/flow/`",
+      "correlatedRequirements": [
+        "US-004",
+        "FR-8"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "failed",
+        "evidence": "Read `.agents/state.json` and found `current_iteration` = `000005`; listed `.agents/flow/` and did not see `it_000005_test-execution-report.md`; direct check `[ -f .agents/flow/it_000005_test-execution-report.md ]` returned `missing`.",
+        "notes": "TC-US004-01 acceptance is not satisfied because the required summary report file for the current iteration is not present in `.agents/flow/`."
+      },
+      "passFail": "fail",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000005_test-execution-artifacts/TC-US004-01_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US004-02",
+      "description": "Report includes total tests, passed count, failed count, and a per-test-case results table",
+      "correlatedRequirements": [
+        "US-004",
+        "FR-8"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "Executed one automated test only: `bun test src/commands/execute-test-plan.test.ts --test-name-pattern \"reads approved TP JSON from state path and executes all test cases one by one in source order\"` (exit code 0). Result: `1 pass, 0 fail, 8 filtered out`. This test validates markdown report content includes `- Total Tests: 3`, `- Passed: 3`, `- Failed: 0`, and the per-test-case results table header `| Test ID | Description | Status | Correlated Requirements | Artifacts |`.",
+        "notes": "Acceptance for TC-US004-02 is satisfied by the targeted passing test that asserts all required report summary counts and per-test-case table output."
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000005_test-execution-artifacts/TC-US004-02_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US004-03",
+      "description": "A concise summary line is printed to stdout upon completion",
+      "correlatedRequirements": [
+        "US-004",
+        "FR-8"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "Executed one automated test mapped to stdout summary behavior: `bun test src/commands/execute-test-plan.test.ts -t \"reads approved TP JSON from state path and executes all test cases one by one in source order\"` returned `1 pass, 0 fail`. That test explicitly asserts completion stdout contains `3/3 tests passed, 0 failed` in `src/commands/execute-test-plan.test.ts:200`.",
+        "notes": "Single test case execution only, aligned with TC-US004-03 acceptance (`N/M tests passed, K failed` summary line on completion)."
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000005_test-execution-artifacts/TC-US004-03_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US004-04",
+      "description": "Per-test raw execution artifacts are persisted in `it_{iteration}_test-execution-artifacts/`",
+      "correlatedRequirements": [
+        "US-004",
+        "FR-11"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "Executed `bun test src/commands/execute-test-plan.test.ts -t \"reads approved TP JSON from state path and executes all test cases one by one in source order\"` and it passed (1 pass, 0 fail, 53 expect() calls). This test asserts per-test artifacts are written under `.agents/flow/it_000005_test-execution-artifacts/` and that each executed test result includes artifact references.",
+        "notes": "Single automated test case executed for TC-US004-04 requirement coverage (US-004, FR-11). Verification was performed via targeted unit test scope only."
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000005_test-execution-artifacts/TC-US004-04_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US004-05",
+      "description": "Each artifact file contains full agent output, prompt, and result payload",
+      "correlatedRequirements": [
+        "US-004",
+        "FR-11"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "Confirmed TC-US004-05 exists in approved plan (`.agents/flow/it_000005_TP.json`) and executed one automated validation over the iteration artifact set: `for f in .agents/flow/it_000005_test-execution-artifacts/*.json; do jq -e 'has(\"prompt\") and has(\"stdout\") and has(\"stderr\") and has(\"payload\") and (.payload|type==\"object\") and (.payload|has(\"status\") and has(\"evidence\") and has(\"notes\"))' \"$f\"; done`. Output: `OK 36 artifact files validated`.",
+        "notes": "Acceptance for this test case is satisfied: artifact JSON files include prompt, full agent output channels (`stdout`/`stderr`), and structured result payload fields."
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000005_test-execution-artifacts/TC-US004-05_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US004-06",
+      "description": "Test case results include references to stored artifact paths",
+      "correlatedRequirements": [
+        "US-004",
+        "FR-11"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "Executed one automated test only: `bun test src/commands/execute-test-plan.test.ts -t \"reads approved TP JSON from state path and executes all test cases one by one in source order\"` -> `1 pass, 0 fail` (8 filtered out). This test asserts `report.results[0]?.artifactReferences` has entries and iterates `report.results` to verify each `artifactReference` path can be read from `.agents/flow/it_000005_test-execution-artifacts/` and matches the corresponding test case.",
+        "notes": "TC-US004-06 acceptance is satisfied: execution results include references to stored artifact paths and those paths resolve to persisted artifact files."
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000005_test-execution-artifacts/TC-US004-06_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US004-07",
+      "description": "Report totals are mathematically consistent with execution results data",
+      "correlatedRequirements": [
+        "US-004",
+        "FR-8"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "failed",
+        "evidence": "Executed targeted checks for TC-US004-07: `ls -1 .agents/flow | rg \"it_000005_test-execution-results\\.json|it_000005_test-execution-report\\.md|it_000005_test-execution-progress\\.json\"` returned only `it_000005_test-execution-progress.json`; `cat .agents/flow/it_000005_test-execution-results.json` confirmed missing (`__MISSING_RESULTS__`); computed progress counts via Bun script were `{ total: 49, passed: 36, failed: 2, pending: 10, inProgress: 1, sumPassedFailed: 38 }`.",
+        "notes": "Acceptance requires report totals to be mathematically consistent with recorded execution data. The required report/results artifacts for iteration 000005 are not present, and progress is non-terminal (`in_progress` entries still exist), so totals consistency cannot be satisfied for this test case."
+      },
+      "passFail": "fail",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000005_test-execution-artifacts/TC-US004-07_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US004-08",
+      "description": "Report row order is deterministic and traceable to TP ordering",
+      "correlatedRequirements": [
+        "US-004",
+        "FR-8"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "Executed: bun test src/commands/execute-test-plan.test.ts --test-name-pattern \"reads approved TP JSON from state path and executes all test cases one by one in source order\". Result: 1 pass, 0 fail, 8 filtered out; test confirms execution in TP source order and report generation for ordered rows.",
+        "notes": "TC-US004-08 is not present as a literal ID in repository tests; this run used the closest automated test that validates deterministic ordering traceable to approved TP ordering."
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000005_test-execution-artifacts/TC-US004-08_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US004-09",
+      "description": "Artifact references are referentially correct and ID-aligned",
+      "correlatedRequirements": [
+        "US-004",
+        "FR-11"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "Executed exactly one automated test: `bun test src/commands/execute-test-plan.test.ts --test-name-pattern \"reads approved TP JSON from state path and executes all test cases one by one in source order\"` (exit code 0). Output: `1 pass, 0 fail, 8 filtered out`. This test asserts artifact references are resolvable and ID-aligned by checking each referenced artifact file and validating `artifact.testCaseId === result.testCaseId`.",
+        "notes": "TC-US004-09 acceptance is satisfied by the targeted passing unit test that verifies referential correctness and test-case ID alignment for artifact references."
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000005_test-execution-artifacts/TC-US004-09_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US004-10",
+      "description": "Artifact payloads validate against a strict schema (keys and value types)",
+      "correlatedRequirements": [
+        "US-004",
+        "FR-11"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "Ran one automated strict-schema validation over `.agents/flow/it_000005_test-execution-artifacts` with Zod `.strict()` checks for keys/types: `testCaseId` (string), `attemptNumber` (positive int), `prompt` (string), `agentExitCode` (int), `stdout` (string), `stderr` (string), and `payload` object with `status`/`evidence`/`notes` as strings. Command result: {\"total\":41,\"passed\":41,\"failed\":0}.",
+        "notes": "Acceptance for TC-US004-10 is satisfied by strict key/type validation of artifact payload structure and related artifact fields."
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000005_test-execution-artifacts/TC-US004-10_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US005-01",
+      "description": "Skill file exists at `.agents/skills/execute-test-case/SKILL.md`",
+      "correlatedRequirements": [
+        "US-005",
+        "FR-5"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "Automated check `test -f .agents/skills/execute-test-case/SKILL.md` returned `exists`.",
+        "notes": "Test case TC-US005-01 satisfied: required skill file is present at the expected path."
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000005_test-execution-artifacts/TC-US005-01_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US005-02",
+      "description": "Skill prompt instructs the agent to read the test case, execute it, and report pass/fail with evidence",
+      "correlatedRequirements": [
+        "US-005",
+        "FR-5"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "Validated `.agents/skills/execute-test-case/SKILL.md` with `rg -n \"Read the full|Execute only what is required|Capture concise evidence|Determine outcome|\\\"status\\\"|\\\"evidence\\\"|\\\"notes\\\"\" .agents/skills/execute-test-case/SKILL.md`. Matches found: line 21 (read full test_case_definition), line 23 (execute only required work), line 24 (capture concise evidence), line 25 (determine outcome), and lines 36-38 (`status`, `evidence`, `notes` JSON fields).",
+        "notes": "TC-US005-02 acceptance is satisfied because the skill prompt explicitly instructs reading the test case, executing it, and reporting structured pass/fail output with evidence."
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000005_test-execution-artifacts/TC-US005-02_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US005-03",
+      "description": "Skill is loaded and used by the `execute test-plan` command for each test case invocation",
+      "correlatedRequirements": [
+        "US-005",
+        "FR-5"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "Executed `bun test src/commands/execute-test-plan.test.ts --test-name-pattern \"reads approved TP JSON from state path and executes all test cases one by one in source order\"` with result `1 pass, 0 fail` (8 filtered out). The exercised test asserts `loadSkillFn` is called with `execute-test-case` and that agent invocations include each test case ID in source order (`TC-US001-01`, `TC-US001-02`, `TC-US001-03`).",
+        "notes": "TC-US005-03 acceptance is satisfied: the command loads the `execute-test-case` skill and uses it for per-test-case invocation."
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000005_test-execution-artifacts/TC-US005-03_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US005-04",
+      "description": "Skill output contract requires strict JSON with `status`, `evidence`, and `notes` fields",
+      "correlatedRequirements": [
+        "US-005",
+        "FR-6"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "Executed `bun test src/commands/execute-test-plan.test.ts -t \"includes required execution guidance and strict JSON contract\"`; result: 1 pass, 0 fail, confirming the skill contract includes strict JSON fields `status`, `evidence`, and `notes`.",
+        "notes": "TC-US005-04 satisfied by automated verification of the execute-test-case skill output contract."
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000005_test-execution-artifacts/TC-US005-04_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-QG-01",
+      "description": "Lint passes for the package/scope containing `execute-test-plan` implementation and tests",
+      "correlatedRequirements": [
+        "FR-10"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "skipped",
+        "evidence": "Executed `bun run lint` in the project root; command failed immediately with `error: Script not found \"lint\"`. `package.json` contains no configured lint script to run for the `execute-test-plan` scope.",
+        "notes": "TC-QG-01 requires a configured lint command that passes. This repository currently has no lint command configured, so the test case cannot be executed as defined."
+      },
+      "passFail": null,
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000005_test-execution-artifacts/TC-QG-01_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-QG-02",
+      "description": "Targeted test suite for execute-test-plan flow passes",
+      "correlatedRequirements": [
+        "FR-10"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "Executed `bun test src/commands/execute-test-plan.test.ts`. Bun reported `9 pass`, `0 fail`, and `Ran 9 tests across 1 file` for the targeted execute-test-plan suite.",
+        "notes": "TC-QG-02 acceptance is satisfied because the dedicated execute-test-plan test suite completed successfully. Intermediate lines showing per-scenario report counts are expected fixture outputs within the passing suite."
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000005_test-execution-artifacts/TC-QG-02_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-QG-03",
+      "description": "CI-equivalent quality command (if defined by project scripts) passes",
+      "correlatedRequirements": [
+        "FR-10"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "skipped",
+        "evidence": "Inspected project scripts in package.json; only `validate:state` and `validate:progress` are defined (`bun -e 'const p=require(\"./package.json\"); console.log(Object.keys(p.scripts||{}).join(\",\"))'` -> `validate:state,validate:progress`). No CI-equivalent aggregate quality script (including typecheck/lint/tests) is defined to execute.",
+        "notes": "TC-QG-03 requires running an existing CI-equivalent quality command if present; this repository does not currently define one in project scripts, so the test case is not executable as written."
+      },
+      "passFail": null,
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000005_test-execution-artifacts/TC-QG-03_attempt_001.json"
+      ]
+    }
+  ]
+}

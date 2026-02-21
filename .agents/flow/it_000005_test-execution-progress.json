@@ -1,0 +1,445 @@
+{
+  "entries": [
+    {
+      "id": "TC-US001-01",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-21T17:23:00.214Z"
+    },
+    {
+      "id": "TC-US001-02",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-21T17:23:21.426Z"
+    },
+    {
+      "id": "TC-US001-03",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-21T17:23:50.714Z"
+    },
+    {
+      "id": "TC-US001-04",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-21T17:24:16.409Z"
+    },
+    {
+      "id": "TC-US001-05",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-21T17:24:32.161Z"
+    },
+    {
+      "id": "TC-US001-06",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-21T17:25:03.323Z"
+    },
+    {
+      "id": "TC-US001-07",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-21T17:25:24.696Z"
+    },
+    {
+      "id": "TC-US001-08",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-21T17:25:55.961Z"
+    },
+    {
+      "id": "TC-US001-09",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-21T17:26:24.163Z"
+    },
+    {
+      "id": "TC-US001-10",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-21T17:27:11.770Z"
+    },
+    {
+      "id": "TC-US001-11",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-21T17:27:52.082Z"
+    },
+    {
+      "id": "TC-US001-12",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-21T17:28:12.797Z"
+    },
+    {
+      "id": "TC-US001-13",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-21T17:29:14.472Z"
+    },
+    {
+      "id": "TC-US001-14",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-21T17:30:03.672Z"
+    },
+    {
+      "id": "TC-US001-15",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-21T17:31:08.286Z"
+    },
+    {
+      "id": "TC-US001-16",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-21T17:32:12.947Z"
+    },
+    {
+      "id": "TC-US002-01",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-21T17:32:58.159Z"
+    },
+    {
+      "id": "TC-US002-02",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-21T17:33:27.418Z"
+    },
+    {
+      "id": "TC-US002-03",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-21T17:33:57.246Z"
+    },
+    {
+      "id": "TC-US002-04",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-21T17:34:24.045Z"
+    },
+    {
+      "id": "TC-US002-05",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-21T17:34:58.948Z"
+    },
+    {
+      "id": "TC-US002-06",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-21T17:35:24.618Z"
+    },
+    {
+      "id": "TC-US002-07",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-21T17:36:30.621Z"
+    },
+    {
+      "id": "TC-US002-08",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-21T17:36:55.860Z"
+    },
+    {
+      "id": "TC-US002-09",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-21T17:38:16.886Z"
+    },
+    {
+      "id": "TC-US003-01",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-21T17:38:39.475Z"
+    },
+    {
+      "id": "TC-US003-02",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-21T17:39:03.942Z"
+    },
+    {
+      "id": "TC-US003-03",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-21T17:39:27.574Z"
+    },
+    {
+      "id": "TC-US003-04",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-21T17:39:49.713Z"
+    },
+    {
+      "id": "TC-US003-05",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-21T17:40:14.066Z"
+    },
+    {
+      "id": "TC-US003-06",
+      "type": "automated",
+      "status": "failed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "Acceptance not met for TC-US003-06: after interruption during progress/report update path, `.agents/state.json` remained `phases.prototype.test_execution.status = \"in_progress\"` instead of transitioning to a terminal status.",
+      "updated_at": "2026-02-21T17:41:13.212Z"
+    },
+    {
+      "id": "TC-US003-07",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-21T17:42:04.001Z"
+    },
+    {
+      "id": "TC-US004-01",
+      "type": "automated",
+      "status": "failed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "TC-US004-01 acceptance is not satisfied because the required summary report file for the current iteration is not present in `.agents/flow/`.",
+      "updated_at": "2026-02-21T17:42:15.294Z"
+    },
+    {
+      "id": "TC-US004-02",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-21T17:42:37.807Z"
+    },
+    {
+      "id": "TC-US004-03",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-21T17:43:13.714Z"
+    },
+    {
+      "id": "TC-US004-04",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-21T17:43:58.538Z"
+    },
+    {
+      "id": "TC-US004-05",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-21T17:44:33.759Z"
+    },
+    {
+      "id": "TC-US004-06",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-21T17:45:21.858Z"
+    },
+    {
+      "id": "TC-US004-07",
+      "type": "automated",
+      "status": "failed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "Acceptance requires report totals to be mathematically consistent with recorded execution data. The required report/results artifacts for iteration 000005 are not present, and progress is non-terminal (`in_progress` entries still exist), so totals consistency cannot be satisfied for this test case.",
+      "updated_at": "2026-02-21T17:46:00.691Z"
+    },
+    {
+      "id": "TC-US004-08",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-21T17:46:31.894Z"
+    },
+    {
+      "id": "TC-US004-09",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-21T17:47:01.931Z"
+    },
+    {
+      "id": "TC-US004-10",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-21T17:48:15.122Z"
+    },
+    {
+      "id": "TC-US005-01",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-21T17:48:21.496Z"
+    },
+    {
+      "id": "TC-US005-02",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-21T17:48:54.458Z"
+    },
+    {
+      "id": "TC-US005-03",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-21T17:49:12.728Z"
+    },
+    {
+      "id": "TC-US005-04",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-21T17:49:36.962Z"
+    },
+    {
+      "id": "TC-QG-01",
+      "type": "automated",
+      "status": "failed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "TC-QG-01 requires a configured lint command that passes. This repository currently has no lint command configured, so the test case cannot be executed as defined.",
+      "updated_at": "2026-02-21T17:50:14.227Z"
+    },
+    {
+      "id": "TC-QG-02",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-21T17:50:38.884Z"
+    },
+    {
+      "id": "TC-QG-03",
+      "type": "automated",
+      "status": "failed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "TC-QG-03 requires running an existing CI-equivalent quality command if present; this repository does not currently define one in project scripts, so the test case is not executable as written.",
+      "updated_at": "2026-02-21T17:51:04.288Z"
+    }
+  ]
+}
