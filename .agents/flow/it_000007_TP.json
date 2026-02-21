@@ -1,0 +1,101 @@
+{
+  "overallStatus": "pending",
+  "scope": [
+    "Validate `--agent cursor` flag parsing, provider routing, and integration across all agent-backed NVST commands.",
+    "Verify Cursor agent CLI invocation: `agent` binary usage, prompt context passing, and output capture to target files.",
+    "Verify error handling when the `agent` command is not available in PATH."
+  ],
+  "environmentData": [
+    "Runtime: Bun v1+ with TypeScript strict mode.",
+    "Test runner: `bun:test` (Bun built-in).",
+    "Unit/integration tests: co-located `*.test.ts` files; no external fixtures required for provider parsing and command routing.",
+    "E2E or integration tests that invoke the real `agent` binary: require `agent` in PATH or a mock/spy that simulates subprocess behaviour.",
+    "For `ensureAgentCommandAvailable` / missing-CLI tests: inject `resolveCommandPath` returning `null` to simulate missing binary.",
+    "---",
+    "## User Story: US-001 - Run NVST commands with Cursor Agent"
+  ],
+  "automatedTests": [
+    {
+      "id": "TC-US001-01",
+      "description": "CLI accepts `bun nvst [command] --agent cursor` as valid argument",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-1"
+      ]
+    },
+    {
+      "id": "TC-US001-02",
+      "description": "`parseProvider(\"cursor\")` returns `\"cursor\"` and `buildCommand(\"cursor\")` returns `{ cmd: \"agent\", args: [] }`",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-2"
+      ]
+    },
+    {
+      "id": "TC-US001-03",
+      "description": "Invalid provider error message lists `cursor` among valid providers",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-1"
+      ]
+    },
+    {
+      "id": "TC-US001-04",
+      "description": "When `cursor` provider is used, prompt context is passed to agent invocation",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-3"
+      ]
+    },
+    {
+      "id": "TC-US001-05",
+      "description": "Agent stdout output is captured and written to the target file (e.g. test-plan)",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-4"
+      ]
+    },
+    {
+      "id": "TC-US001-06",
+      "description": "Create test-plan flow works end-to-end with cursor provider",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-5"
+      ]
+    },
+    {
+      "id": "TC-US001-07",
+      "description": "Define requirement and create prototype commands accept and forward `--agent cursor`",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-1"
+      ]
+    },
+    {
+      "id": "TC-US002-01",
+      "description": "When `--agent cursor` is used but `agent` is not in PATH, a clear error is returned",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-002",
+        "FR-6"
+      ]
+    },
+    {
+      "id": "TC-US002-02",
+      "description": "CLI exits with code 1 and displays error when cursor provider is selected and agent is unavailable",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-002",
+        "FR-6"
+      ]
+    }
+  ],
+  "exploratoryManualTests": []
+}

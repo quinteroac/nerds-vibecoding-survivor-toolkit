@@ -140,6 +140,61 @@ describe("create test-plan command", () => {
     expect(state.updated_by).toBe("nvst:create-test-plan");
   });
 
+  test("supports --agent cursor and writes stdout output to the test-plan file", async () => {
+    const projectRoot = await createProjectRoot();
+    createdRoots.push(projectRoot);
+    await seedState(projectRoot, "created");
+
+    const outputPath = join(projectRoot, ".agents", "flow", "it_000003_test-plan.md");
+    let capturedPrompt = "";
+    let capturedProvider = "";
+
+    await withCwd(projectRoot, async () => {
+      await runCreateTestPlan(
+        { provider: "cursor" },
+        {
+          loadSkillFn: async () => "Create a test plan using iteration and project context.",
+          invokeAgentFn: async (options): Promise<AgentResult> => {
+            capturedPrompt = options.prompt;
+            capturedProvider = options.provider;
+            return {
+              exitCode: 0,
+              stdout: [
+                "# Test Plan - Iteration 000003",
+                "## User Story: US-001 - Cursor flow",
+                "| Test Case ID | Description | Type (unit/integration/e2e) | Mode (automated/manual) | Correlated Requirements (US-XXX, FR-X) | Expected Result |",
+                "|---|---|---|---|---|---|",
+                "| TC-US001-01 | Validate cursor provider flow | integration | automated | US-001, FR-1 | Cursor provider generates plan output |",
+                "## Scope",
+                "- Cursor provider compatibility",
+                "## Environment and data",
+                "- Local dev shell",
+              ].join("\n"),
+              stderr: "",
+            };
+          },
+          nowFn: () => new Date("2026-02-21T03:30:00.000Z"),
+        },
+      );
+    });
+
+    expect(capturedProvider).toBe("cursor");
+    expect(capturedPrompt).toContain("### iteration");
+    expect(capturedPrompt).toContain("000003");
+    expect(capturedPrompt).toContain("### project_context");
+    expect(capturedPrompt).toContain("# Context");
+
+    const content = await readFile(outputPath, "utf8");
+    expect(content).toContain("TC-US001-01");
+    expect(content).toContain("Cursor provider compatibility");
+
+    const state = await readState(projectRoot);
+    expect(state.phases.prototype.test_plan.status).toBe("pending_approval");
+    expect(state.phases.prototype.test_plan.file).toBe("it_000003_test-plan.md");
+    expect(state.last_updated).toBe("2026-02-21T03:30:00.000Z");
+    expect(state.updated_by).toBe("nvst:create-test-plan");
+  });
+
   test("requires project_context.status to be created", async () => {
     const projectRoot = await createProjectRoot();
     createdRoots.push(projectRoot);
