@@ -7,7 +7,7 @@ import { exists } from "./state";
 // Types
 // ---------------------------------------------------------------------------
 
-export type AgentProvider = "claude" | "codex" | "gemini";
+export type AgentProvider = "claude" | "codex" | "gemini" | "cursor";
 
 export interface AgentInvokeOptions {
   provider: AgentProvider;
@@ -31,6 +31,7 @@ const PROVIDERS: Record<AgentProvider, { cmd: string; args: string[] }> = {
   claude: { cmd: "claude", args: ["--dangerously-skip-permissions", "--print"] },
   codex: { cmd: "codex", args: ["exec", "--dangerously-bypass-approvals-and-sandbox"] },
   gemini: { cmd: "gemini", args: ["--yolo"] },
+  cursor: { cmd: "agent", args: [] },
 };
 
 export function parseProvider(name: string): AgentProvider {

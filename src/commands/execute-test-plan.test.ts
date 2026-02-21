@@ -632,10 +632,11 @@ describe("execute test-plan command", () => {
     expect(state.phases.prototype.test_execution.status).toBe("failed");
   });
 
-  test("supports claude, codex, and gemini providers", () => {
+  test("supports claude, codex, gemini, and cursor providers", () => {
     expect(parseProvider("claude")).toBe("claude");
     expect(parseProvider("codex")).toBe("codex");
     expect(parseProvider("gemini")).toBe("gemini");
+    expect(parseProvider("cursor")).toBe("cursor");
   });
 
   test("updates execution progress file after each test case result from batch", async () => {
