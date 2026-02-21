@@ -1,0 +1,246 @@
+{
+  "goals": [
+    "Provide a complete CLI lifecycle for test plans: create, refine (with challenge mode), and approve.",
+    "Follow the existing command patterns (`create`, `refine --challenge`, `approve`) so the experience is consistent.",
+    "Create a skill that instructs the agent to maximize test automation (prefer automated checks over manual verification).",
+    "Update `state.json` correctly at each stage (`test_plan` and `tp_generation` fields)."
+  ],
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Create a test plan",
+      "description": "As a end user, I want to run `bun nvst create test-plan --agent <provider>` so that an agent generates a test plan document for my prototype.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-001-AC01",
+          "text": "Command `create test-plan` is registered in `src/cli.ts` and dispatched correctly."
+        },
+        {
+          "id": "US-001-AC02",
+          "text": "Command loads the `create-test-plan` skill from `.agents/skills/create-test-plan/SKILL.md`."
+        },
+        {
+          "id": "US-001-AC03",
+          "text": "Command invokes the agent interactively with the skill prompt and iteration context."
+        },
+        {
+          "id": "US-001-AC04",
+          "text": "On completion, file `it_{iteration}_test-plan.md` is written to `.agents/flow/`."
+        },
+        {
+          "id": "US-001-AC05",
+          "text": "Command checks if the test plan file already exists; if it does, it requires a `--force` flag or user confirmation to overwrite."
+        },
+        {
+          "id": "US-001-AC06",
+          "text": "`state.json` → `test_plan.status` is set to `\"pending_approval\"` and `test_plan.file` is set to the filename."
+        },
+        {
+          "id": "US-001-AC07",
+          "text": "`state.json` → `last_updated` and `updated_by` are set."
+        },
+        {
+          "id": "US-001-AC08",
+          "text": "Command validates precondition: `project_context.status === \"created\"` (prototype phase prerequisites met)."
+        },
+        {
+          "id": "US-001-AC09",
+          "text": "Command fails with a clear error if precondition is not met."
+        },
+        {
+          "id": "US-001-AC10",
+          "text": "Typecheck / lint passes."
+        }
+      ]
+    },
+    {
+      "id": "US-002",
+      "title": "Refine a test plan",
+      "description": "As a end user, I want to run `bun nvst refine test-plan --agent <provider>` so that an agent improves the existing test plan.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-002-AC01",
+          "text": "Command `refine test-plan` is registered in `src/cli.ts` and dispatched correctly."
+        },
+        {
+          "id": "US-002-AC02",
+          "text": "Command loads the `refine-test-plan` skill from `.agents/skills/refine-test-plan/SKILL.md`."
+        },
+        {
+          "id": "US-002-AC03",
+          "text": "Command reads the current test plan file from `.agents/flow/` and passes its content as context."
+        },
+        {
+          "id": "US-002-AC04",
+          "text": "Command invokes the agent interactively."
+        },
+        {
+          "id": "US-002-AC05",
+          "text": "State is **not** updated (allows multiple refinement iterations while status stays `\"pending_approval\"`)."
+        },
+        {
+          "id": "US-002-AC06",
+          "text": "Command validates precondition: `test_plan.status === \"pending_approval\"`."
+        },
+        {
+          "id": "US-002-AC07",
+          "text": "Typecheck / lint passes."
+        }
+      ]
+    },
+    {
+      "id": "US-003",
+      "title": "Challenge a test plan",
+      "description": "As a end user, I want to run `bun nvst refine test-plan --agent <provider> --challenge` so that an agent performs an adversarial review of the test plan, questioning coverage gaps and weak assertions.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-003-AC01",
+          "text": "The `--challenge` flag is parsed and passed as `mode: \"challenger\"` in the prompt context."
+        },
+        {
+          "id": "US-003-AC02",
+          "text": "The `refine-test-plan` skill includes a challenger mode section that instructs the agent to critically evaluate the plan."
+        },
+        {
+          "id": "US-003-AC03",
+          "text": "State is **not** updated."
+        },
+        {
+          "id": "US-003-AC04",
+          "text": "Typecheck / lint passes."
+        }
+      ]
+    },
+    {
+      "id": "US-004",
+      "title": "Approve a test plan",
+      "description": "As a end user, I want to run `bun nvst approve test-plan` so that the test plan is finalized and the workflow can proceed to prototype building.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-004-AC01",
+          "text": "Command `approve test-plan` is registered in `src/cli.ts` and dispatched correctly."
+        },
+        {
+          "id": "US-004-AC02",
+          "text": "Command validates precondition: `test_plan.status === \"pending_approval\"`."
+        },
+        {
+          "id": "US-004-AC03",
+          "text": "On approval, `state.json` → `test_plan.status` is set to `\"created\"`."
+        },
+        {
+          "id": "US-004-AC04",
+          "text": "On approval, a structured JSON version `it_{iteration}_TP.json` is generated (following a new test-plan schema)."
+        },
+        {
+          "id": "US-004-AC05",
+          "text": "`state.json` → `tp_generation.status` is set to `\"created\"` and `tp_generation.file` is set to the JSON filename."
+        },
+        {
+          "id": "US-004-AC06",
+          "text": "`state.json` → `last_updated` and `updated_by` are set."
+        },
+        {
+          "id": "US-004-AC07",
+          "text": "Command fails with a clear error if precondition is not met."
+        },
+        {
+          "id": "US-004-AC08",
+          "text": "Typecheck / lint passes."
+        }
+      ]
+    },
+    {
+      "id": "US-005",
+      "title": "Create the `create-test-plan` skill",
+      "description": "As a end user, I want the test plan skill to instruct the agent to prioritize automated testing so that the generated test plan maximizes automated verification and minimizes manual steps.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-005-AC01",
+          "text": "Skill file exists at `.agents/skills/create-test-plan/SKILL.md` with proper YAML frontmatter."
+        },
+        {
+          "id": "US-005-AC02",
+          "text": "Skill instructs the agent to read the PRD (`it_{iteration}_PRD.json`) and project context to understand what needs testing."
+        },
+        {
+          "id": "US-005-AC03",
+          "text": "Skill instructs the agent to produce a structured test plan in markdown with test cases grouped by user story."
+        },
+        {
+          "id": "US-005-AC04",
+          "text": "Each test case specifies: ID, description, type (unit/integration/e2e), whether it is automated or manual, and expected result."
+        },
+        {
+          "id": "US-005-AC05",
+          "text": "Skill explicitly instructs the agent to prefer automated tests: functional requirements (FR-N) must be automated; manual tests are only permitted for UI/UX nuances that cannot be verified via DOM/state assertions (e.g., visual \"feel\")."
+        },
+        {
+          "id": "US-005-AC06",
+          "text": "Skill instructs the agent to output the file to `.agents/flow/it_{iteration}_test-plan.md`."
+        }
+      ]
+    },
+    {
+      "id": "US-006",
+      "title": "Create the `refine-test-plan` skill",
+      "description": "As a end user, I want a refine skill with editor and challenger modes so that I can iteratively improve or critically review the test plan.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-006-AC01",
+          "text": "Skill file exists at `.agents/skills/refine-test-plan/SKILL.md` with proper YAML frontmatter."
+        },
+        {
+          "id": "US-006-AC02",
+          "text": "Editor mode (default): instructs the agent to improve the plan based on user feedback while preserving structure."
+        },
+        {
+          "id": "US-006-AC03",
+          "text": "Challenger mode (`--challenge`): instructs the agent to identify coverage gaps, weak assertions, missing edge cases, and over-reliance on manual testing."
+        },
+        {
+          "id": "US-006-AC04",
+          "text": "Skill instructs the agent to keep the same output file path."
+        }
+      ]
+    }
+  ],
+  "functionalRequirements": [
+    {
+      "id": "FR-1",
+      "description": "The `create test-plan` command must be implemented in `src/commands/create-test-plan.ts` following the same pattern as `create-project-context.ts`."
+    },
+    {
+      "id": "FR-2",
+      "description": "The `refine test-plan` command must be implemented in `src/commands/refine-test-plan.ts` following the same pattern as `refine-requirement.ts`."
+    },
+    {
+      "id": "FR-3",
+      "description": "The `approve test-plan` command must be implemented in `src/commands/approve-test-plan.ts` following the same pattern as `approve-requirement.ts`, including JSON conversion and schema validation."
+    },
+    {
+      "id": "FR-4",
+      "description": "All commands must use `readState()` / `writeState()` for state management with Zod schema validation."
+    },
+    {
+      "id": "FR-5",
+      "description": "All commands must use `loadSkill()` and `buildPrompt()` for skill-based agent invocation."
+    },
+    {
+      "id": "FR-6",
+      "description": "The `create-test-plan` skill must instruct the agent to maximize automation: every test case must be evaluated for automation feasibility, and manual-only tests require explicit justification based on the UI/UX exception rule."
+    },
+    {
+      "id": "FR-7",
+      "description": "File naming must follow the convention `it_{iteration}_test-plan.md` and `it_{iteration}_TP.json`."
+    },
+    {
+      "id": "FR-8",
+      "description": "State transitions must follow: `pending` → `pending_approval` (create) → `created` (approve), with refine not changing state."
+    },
+    {
+      "id": "FR-9",
+      "description": "CLI dispatch in `src/cli.ts` must register `create test-plan`, `refine test-plan`, and `approve test-plan` as valid commands."
+    }
+  ]
+}

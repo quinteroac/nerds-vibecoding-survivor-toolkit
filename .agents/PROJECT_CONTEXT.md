@@ -17,16 +17,16 @@
 - Build / tooling: no build step; Bun runs `.ts` files directly; `tsconfig.json` used for type checking only (`outDir: "dist"` unused)
 
 ## Code Standards
-- Style patterns: one file per CLI command in `src/commands/`; pure orchestration in `src/agent.ts`; pure state I/O in `src/state.ts`; routing-only `src/cli.ts`
+- Style patterns: one file per CLI command in `src/commands/`; pure orchestration in `src/agent.ts`; pure state I/O in `src/state.ts`; argv parsing and routing in `src/cli.ts`
 - Error handling: commands throw `Error` with descriptive messages; `cli.ts` wraps in `try/catch` and sets `process.exitCode = 1` (never `process.exit()`); `schema.safeParse()` for validation (not `.parse()`)
 - Module organisation: `src/` for toolkit code; `scaffold/schemas/` for Zod schemas used by `state.ts` and `write-json`; `schemas/` for validation scripts/copies; `scaffold/` for project templates; `.agents/` for runtime agent state/skills/flow
 - Forbidden patterns: no `process.exit()` calls (use `process.exitCode`); no synchronous I/O; no third-party CLI frameworks (keep deps minimal)
 
 ## Testing Strategy
-- Approach: no automated test suite implemented yet; current checks rely on schema validation scripts and manual CLI verification
-- Runner: none currently configured; target runner when tests are added is `bun:test` (Bun built-in)
+- Approach: initial unit tests for core modules; schema validation scripts and manual CLI verification for the rest
+- Runner: `bun:test` (Bun built-in)
 - Coverage targets: none defined yet
-- Test location convention: not yet applied (no `*.test.ts`/`*.spec.ts` files in repo)
+- Test location convention: co-located `*.test.ts` files alongside source (e.g. `src/state.test.ts`)
 
 ## Product Architecture
 - NVST is a CLI toolkit (`bun nvst <command>`) that orchestrates an iterative development workflow through three phases: Define → Prototype → Refactor
@@ -49,7 +49,7 @@
 ## Constraints
 - CLI-only: must remain a pure CLI tool, no web UI
 - Minimal dependencies: avoid adding third-party packages unless strictly necessary
-- Bun-native: use `Bun.spawn` for process spawning and `Bun.write`/`Bun.file` for file copying; `node:fs/promises` and `node:path` are the primary file I/O layer
+- Bun-native: use `Bun.spawn` for direct process spawning and `Bun.$` (shell tagged template) for shell pipelines; `Bun.write`/`Bun.file` for file copying; `node:fs/promises` and `node:path` are the primary file I/O layer
 
 ## Implemented Capabilities
 <!-- Updated at the end of each iteration by bun nvst create project-context -->
@@ -57,6 +57,7 @@
 - `nvst start iteration`: begin a new iteration cycle
 - `nvst create project-context` / `refine project-context` / `approve project-context`: full project context definition and refinement flow
 - `nvst define requirement` / `refine requirement` / `approve requirement`: full requirement definition flow with interactive refinement and challenge mode
+- `nvst create prototype`: iterative agent-driven implementation of user stories with progress tracking, quality checks, and git automation
 - `nvst write-json`: schema-validated JSON generation from agent output
 - Agent invocation system: multi-provider support (Claude, Codex, Gemini) with skill-based prompt loading
 - State management: Zod-validated `state.json` with phase/status tracking
