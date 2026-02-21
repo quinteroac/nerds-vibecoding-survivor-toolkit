@@ -1,7 +1,5 @@
 # Nerds Vibecoding Survivor Toolkit
 
-All content in this repo is in English.
-
 ## Purpose
 
 This repository contains nerds-vst (Nerd's Vibecoding Survivor Toolkit).
