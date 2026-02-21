@@ -46,10 +46,13 @@ interface FlatTestCase {
   id: string;
   description: string;
   mode: "automated" | "exploratory_manual";
+  correlatedRequirements: string[];
 }
 
 interface TestExecutionResult {
   testCaseId: string;
+  description: string;
+  correlatedRequirements: string[];
   mode: "automated" | "exploratory_manual";
   payload: {
     status: "passed" | "failed" | "skipped" | "invocation_failed";
@@ -58,6 +61,7 @@ interface TestExecutionResult {
   };
   passFail: "pass" | "fail" | null;
   agentExitCode: number;
+  artifactReferences: string[];
 }
 
 interface TestExecutionReport {
@@ -90,11 +94,13 @@ function flattenTests(testPlan: TestPlan): FlatTestCase[] {
     id: item.id,
     description: item.description,
     mode: "automated" as const,
+    correlatedRequirements: item.correlatedRequirements,
   }));
   const manual = testPlan.exploratoryManualTests.map((item) => ({
     id: item.id,
     description: item.description,
     mode: "exploratory_manual" as const,
+    correlatedRequirements: item.correlatedRequirements,
   }));
   return [...automated, ...manual];
 }
@@ -156,6 +162,45 @@ function idsMatchExactly(left: string[], right: string[]): boolean {
   return true;
 }
 
+function toArtifactSafeSegment(value: string): string {
+  return value.replace(/[^a-zA-Z0-9_-]/g, "_");
+}
+
+function buildArtifactFileName(testCaseId: string, attemptNumber: number): string {
+  const safeId = toArtifactSafeSegment(testCaseId);
+  const paddedAttempt = attemptNumber.toString().padStart(3, "0");
+  return `${safeId}_attempt_${paddedAttempt}.json`;
+}
+
+function buildMarkdownReport(report: TestExecutionReport): string {
+  const totalTests = report.results.length;
+  const passedCount = report.results.filter((result) => result.payload.status === "passed").length;
+  const failedCount = totalTests - passedCount;
+
+  const lines = [
+    `# Test Execution Report (Iteration ${report.iteration})`,
+    "",
+    `- Test Plan: \`${report.testPlanFile}\``,
+    `- Total Tests: ${totalTests}`,
+    `- Passed: ${passedCount}`,
+    `- Failed: ${failedCount}`,
+    "",
+    "| Test ID | Description | Status | Correlated Requirements | Artifacts |",
+    "| --- | --- | --- | --- | --- |",
+  ];
+
+  for (const result of report.results) {
+    const correlatedRequirements = result.correlatedRequirements.join(", ");
+    const artifactReferences = result.artifactReferences.map((path) => `\`${path}\``).join("<br>");
+    lines.push(
+      `| ${result.testCaseId} | ${result.description} | ${result.payload.status} | ${correlatedRequirements} | ${artifactReferences} |`,
+    );
+  }
+
+  lines.push("");
+  return `${lines.join("\n")}\n`;
+}
+
 export async function runExecuteTestPlan(
   opts: ExecuteTestPlanOptions,
   deps: Partial<ExecuteTestPlanDeps> = {},
@@ -207,6 +252,8 @@ export async function runExecuteTestPlan(
   const now = new Date().toISOString();
   const progressFileName = `it_${state.current_iteration}_test-execution-progress.json`;
   const progressPath = join(projectRoot, FLOW_REL_DIR, progressFileName);
+  const artifactsDirName = `it_${state.current_iteration}_test-execution-artifacts`;
+  const artifactsDirPath = join(projectRoot, FLOW_REL_DIR, artifactsDirName);
 
   state.phases.prototype.test_execution.status = "in_progress";
   state.phases.prototype.test_execution.file = progressFileName;
@@ -256,7 +303,7 @@ export async function runExecuteTestPlan(
     };
   }
 
-  const results: TestExecutionResult[] = [];
+  const executionByTestId = new Map<string, TestExecutionResult>();
   const executedTestIds: string[] = [];
 
   const writeProgress = async () => {
@@ -264,6 +311,7 @@ export async function runExecuteTestPlan(
   };
 
   await mergedDeps.mkdirFn(join(projectRoot, FLOW_REL_DIR), { recursive: true });
+  await mergedDeps.mkdirFn(artifactsDirPath, { recursive: true });
   await writeProgress();
 
   for (const testCase of testCases) {
@@ -289,6 +337,10 @@ export async function runExecuteTestPlan(
     });
 
     executedTestIds.push(testCase.id);
+    const attemptNumber = progressEntry.attempt_count + 1;
+    const artifactFileName = buildArtifactFileName(testCase.id, attemptNumber);
+    const artifactRelativePath = join(FLOW_REL_DIR, artifactsDirName, artifactFileName);
+    const artifactAbsolutePath = join(projectRoot, artifactRelativePath);
 
     if (agentResult.exitCode !== 0) {
       progressEntry.attempt_count += 1;
@@ -298,8 +350,31 @@ export async function runExecuteTestPlan(
       progressEntry.updated_at = new Date().toISOString();
       await writeProgress();
 
-      results.push({
+      await mergedDeps.writeFileFn(
+        artifactAbsolutePath,
+        `${JSON.stringify(
+          {
+            testCaseId: testCase.id,
+            attemptNumber,
+            prompt,
+            agentExitCode: agentResult.exitCode,
+            stdout: agentResult.stdout,
+            stderr: agentResult.stderr,
+            payload: {
+              status: "invocation_failed",
+              evidence: "",
+              notes: progressEntry.last_error_summary,
+            },
+          },
+          null,
+          2,
+        )}\n`,
+      );
+
+      executionByTestId.set(testCase.id, {
         testCaseId: testCase.id,
+        description: testCase.description,
+        correlatedRequirements: testCase.correlatedRequirements,
         mode: testCase.mode,
         payload: {
           status: "invocation_failed",
@@ -308,6 +383,7 @@ export async function runExecuteTestPlan(
         },
         passFail: null,
         agentExitCode: agentResult.exitCode,
+        artifactReferences: [artifactRelativePath],
       });
       continue;
     }
@@ -324,8 +400,31 @@ export async function runExecuteTestPlan(
       progressEntry.updated_at = new Date().toISOString();
       await writeProgress();
 
-      results.push({
+      await mergedDeps.writeFileFn(
+        artifactAbsolutePath,
+        `${JSON.stringify(
+          {
+            testCaseId: testCase.id,
+            attemptNumber,
+            prompt,
+            agentExitCode: agentResult.exitCode,
+            stdout: agentResult.stdout,
+            stderr: agentResult.stderr,
+            payload: {
+              status: "invocation_failed",
+              evidence: "",
+              notes: summary,
+            },
+          },
+          null,
+          2,
+        )}\n`,
+      );
+
+      executionByTestId.set(testCase.id, {
         testCaseId: testCase.id,
+        description: testCase.description,
+        correlatedRequirements: testCase.correlatedRequirements,
         mode: testCase.mode,
         payload: {
           status: "invocation_failed",
@@ -334,6 +433,7 @@ export async function runExecuteTestPlan(
         },
         passFail: null,
         agentExitCode: agentResult.exitCode,
+        artifactReferences: [artifactRelativePath],
       });
       continue;
     }
@@ -345,14 +445,67 @@ export async function runExecuteTestPlan(
     progressEntry.updated_at = new Date().toISOString();
     await writeProgress();
 
-    results.push({
+    await mergedDeps.writeFileFn(
+      artifactAbsolutePath,
+      `${JSON.stringify(
+        {
+          testCaseId: testCase.id,
+          attemptNumber,
+          prompt,
+          agentExitCode: agentResult.exitCode,
+          stdout: agentResult.stdout,
+          stderr: agentResult.stderr,
+          payload,
+        },
+        null,
+        2,
+      )}\n`,
+    );
+
+    executionByTestId.set(testCase.id, {
       testCaseId: testCase.id,
+      description: testCase.description,
+      correlatedRequirements: testCase.correlatedRequirements,
       mode: testCase.mode,
       payload,
       passFail: derivePassFail(payload.status),
       agentExitCode: agentResult.exitCode,
+      artifactReferences: [artifactRelativePath],
     });
   }
+
+  const results: TestExecutionResult[] = testCases.map((testCase) => {
+    const progressEntry = progress.entries.find((entry) => entry.id === testCase.id);
+    if (!progressEntry) {
+      throw new Error(`Missing progress entry for test case '${testCase.id}' after execution.`);
+    }
+
+    const latestExecution = executionByTestId.get(testCase.id);
+    if (latestExecution) {
+      return latestExecution;
+    }
+
+    const attemptArtifacts = Array.from({ length: progressEntry.attempt_count }, (_, index) => {
+      const attemptNumber = index + 1;
+      const artifactFileName = buildArtifactFileName(testCase.id, attemptNumber);
+      return join(FLOW_REL_DIR, artifactsDirName, artifactFileName);
+    });
+
+    return {
+      testCaseId: testCase.id,
+      description: testCase.description,
+      correlatedRequirements: testCase.correlatedRequirements,
+      mode: testCase.mode,
+      payload: {
+        status: progressEntry.status === "passed" ? "passed" : "failed",
+        evidence: "",
+        notes: progressEntry.last_error_summary,
+      },
+      passFail: progressEntry.status === "passed" ? "pass" : "fail",
+      agentExitCode: progressEntry.last_agent_exit_code ?? 0,
+      artifactReferences: attemptArtifacts,
+    };
+  });
 
   const report: TestExecutionReport = {
     iteration: state.current_iteration,
@@ -364,6 +517,9 @@ export async function runExecuteTestPlan(
   const outFileName = `it_${state.current_iteration}_test-execution-results.json`;
   const outPath = join(projectRoot, FLOW_REL_DIR, outFileName);
   await mergedDeps.writeFileFn(outPath, `${JSON.stringify(report, null, 2)}\n`);
+  const markdownReportFileName = `it_${state.current_iteration}_test-execution-report.md`;
+  const markdownReportPath = join(projectRoot, FLOW_REL_DIR, markdownReportFileName);
+  await mergedDeps.writeFileFn(markdownReportPath, buildMarkdownReport(report));
 
   const hasFailedTests = progress.entries.some((entry) => entry.status === "failed");
   state.phases.prototype.test_execution.status = hasFailedTests ? "failed" : "completed";
@@ -372,5 +528,9 @@ export async function runExecuteTestPlan(
   state.updated_by = "nvst:execute-test-plan";
   await writeState(projectRoot, state);
 
-  console.log(`Executed ${results.length} test case(s). Results saved to ${join(FLOW_REL_DIR, outFileName)}.`);
+  const passedCount = results.filter((result) => result.payload.status === "passed").length;
+  const failedCount = results.length - passedCount;
+  console.log(
+    `${passedCount}/${results.length} tests passed, ${failedCount} failed. Report: ${join(FLOW_REL_DIR, markdownReportFileName)}`,
+  );
 }

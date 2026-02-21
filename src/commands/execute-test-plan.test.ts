@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -143,43 +143,55 @@ describe("execute test-plan command", () => {
 
     const invocationTestIds: string[] = [];
 
-    await withCwd(projectRoot, async () => {
-      let sawInProgressState = false;
-      await runExecuteTestPlan(
-        { provider: "gemini" },
-        {
-          invokeAgentFn: async (options): Promise<AgentResult> => {
-            if (!sawInProgressState) {
-              const liveState = await readState(projectRoot);
-              expect(liveState.phases.prototype.test_execution.status).toBe("in_progress");
-              expect(liveState.phases.prototype.test_execution.file).toBe(
-                "it_000005_test-execution-progress.json",
-              );
-              sawInProgressState = true;
-            }
-            expect(options.interactive).toBe(false);
-            expect(options.prompt).toContain("### project_context_reference");
-            expect(options.prompt).toContain("Use bun test and tsc checks.");
+    const capturedLogs: string[] = [];
+    const originalConsoleLog = console.log;
+    console.log = (...args: unknown[]) => {
+      capturedLogs.push(args.map((arg) => String(arg)).join(" "));
+    };
 
-            if (options.prompt.includes("TC-US001-01")) invocationTestIds.push("TC-US001-01");
-            if (options.prompt.includes("TC-US001-02")) invocationTestIds.push("TC-US001-02");
-            if (options.prompt.includes("TC-US001-03")) invocationTestIds.push("TC-US001-03");
+    try {
+      await withCwd(projectRoot, async () => {
+        let sawInProgressState = false;
+        await runExecuteTestPlan(
+          { provider: "gemini" },
+          {
+            invokeAgentFn: async (options): Promise<AgentResult> => {
+              if (!sawInProgressState) {
+                const liveState = await readState(projectRoot);
+                expect(liveState.phases.prototype.test_execution.status).toBe("in_progress");
+                expect(liveState.phases.prototype.test_execution.file).toBe(
+                  "it_000005_test-execution-progress.json",
+                );
+                sawInProgressState = true;
+              }
+              expect(options.interactive).toBe(false);
+              expect(options.prompt).toContain("### project_context_reference");
+              expect(options.prompt).toContain("Use bun test and tsc checks.");
 
-            return {
-              exitCode: 0,
-              stdout: JSON.stringify({
-                status: "passed",
-                evidence: "Command output captured",
-                notes: "Executed successfully",
-              }),
-              stderr: "",
-            };
+              if (options.prompt.includes("TC-US001-01")) invocationTestIds.push("TC-US001-01");
+              if (options.prompt.includes("TC-US001-02")) invocationTestIds.push("TC-US001-02");
+              if (options.prompt.includes("TC-US001-03")) invocationTestIds.push("TC-US001-03");
+
+              return {
+                exitCode: 0,
+                stdout: JSON.stringify({
+                  status: "passed",
+                  evidence: "Command output captured",
+                  notes: "Executed successfully",
+                }),
+                stderr: "",
+              };
+            },
           },
-        },
-      );
-    });
+        );
+      });
+    } finally {
+      console.log = originalConsoleLog;
+    }
 
     expect(invocationTestIds).toEqual(["TC-US001-01", "TC-US001-02", "TC-US001-03"]);
+    expect(capturedLogs.at(-1)).toContain("3/3 tests passed, 0 failed");
+    expect(capturedLogs.at(-1)).toContain(".agents/flow/it_000005_test-execution-report.md");
 
     const reportRaw = await readFile(
       join(projectRoot, ".agents", "flow", "it_000005_test-execution-results.json"),
@@ -187,7 +199,13 @@ describe("execute test-plan command", () => {
     );
     const report = JSON.parse(reportRaw) as {
       executedTestIds: string[];
-      results: Array<{ testCaseId: string; payload: { status: string; evidence: string; notes: string } }>;
+      results: Array<{
+        testCaseId: string;
+        description: string;
+        correlatedRequirements: string[];
+        payload: { status: string; evidence: string; notes: string };
+        artifactReferences: string[];
+      }>;
     };
 
     expect(report.executedTestIds).toEqual(["TC-US001-01", "TC-US001-02", "TC-US001-03"]);
@@ -197,6 +215,42 @@ describe("execute test-plan command", () => {
       evidence: "Command output captured",
       notes: "Executed successfully",
     });
+    expect(report.results[0]?.description).toBe("Automated case one");
+    expect(report.results[0]?.correlatedRequirements).toEqual(["US-001", "FR-1"]);
+    expect(report.results[0]?.artifactReferences).toHaveLength(1);
+
+    const artifactsDirPath = join(projectRoot, ".agents", "flow", "it_000005_test-execution-artifacts");
+    const artifactFileNames = await readdir(artifactsDirPath);
+    expect(artifactFileNames.length).toBe(3);
+    for (const result of report.results) {
+      expect(result.artifactReferences.length).toBeGreaterThan(0);
+      for (const artifactReference of result.artifactReferences) {
+        const artifactRaw = await readFile(join(projectRoot, artifactReference), "utf8");
+        const artifact = JSON.parse(artifactRaw) as {
+          testCaseId: string;
+          attemptNumber: number;
+          prompt: string;
+          agentExitCode: number;
+        };
+        expect(artifact.testCaseId).toBe(result.testCaseId);
+        expect(artifact.attemptNumber).toBe(1);
+        expect(artifact.prompt).toContain(result.testCaseId);
+        expect(artifact.agentExitCode).toBe(0);
+      }
+    }
+
+    const markdownReportRaw = await readFile(
+      join(projectRoot, ".agents", "flow", "it_000005_test-execution-report.md"),
+      "utf8",
+    );
+    expect(markdownReportRaw).toContain("# Test Execution Report (Iteration 000005)");
+    expect(markdownReportRaw).toContain("- Total Tests: 3");
+    expect(markdownReportRaw).toContain("- Passed: 3");
+    expect(markdownReportRaw).toContain("- Failed: 0");
+    expect(markdownReportRaw).toContain("| Test ID | Description | Status | Correlated Requirements | Artifacts |");
+    expect(markdownReportRaw).toContain(
+      "| TC-US001-01 | Automated case one | passed | US-001, FR-1 | `.agents/flow/it_000005_test-execution-artifacts/TC-US001-01_attempt_001.json` |",
+    );
 
     const progressRaw = await readFile(
       join(projectRoot, ".agents", "flow", "it_000005_test-execution-progress.json"),
@@ -299,6 +353,7 @@ describe("execute test-plan command", () => {
         payload: { status: string; evidence: string; notes: string };
         passFail: "pass" | "fail" | null;
         agentExitCode: number;
+        artifactReferences: string[];
       }>;
     };
 
@@ -310,6 +365,9 @@ describe("execute test-plan command", () => {
     expect(report.results[1]?.payload.notes).toContain("Agent invocation failed with exit code 1");
     expect(report.results[1]?.passFail).toBeNull();
     expect(report.results[1]?.agentExitCode).toBe(1);
+    expect(report.results[1]?.artifactReferences[0]).toContain(
+      ".agents/flow/it_000005_test-execution-artifacts/TC-US001-02_attempt_001.json",
+    );
 
     expect(report.results[2]?.payload.status).toBe("skipped");
     expect(report.results[2]?.passFail).toBeNull();
