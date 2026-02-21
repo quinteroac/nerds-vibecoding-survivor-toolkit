@@ -1,0 +1,250 @@
+{
+  "overallStatus": "pending",
+  "scope": [
+    "Schema updates to `TestPlanSchema` (new object-based structure with `overallStatus`, `scope`, `environmentData`, `automatedTests`, `exploratoryManualTests`)",
+    "CLI command registration and dispatch for `create test-plan` and `approve test-plan`",
+    "Markdown-to-JSON parser logic (`parseTestPlan`, `parseTestPlanForValidation`)",
+    "Requirement traceability enforcement (FR-2) through `correlatedRequirements` arrays",
+    "State machine transitions (`test_plan.status`, `tp_generation.status`)",
+    "SKILL.md content and automation-first instruction validation"
+  ],
+  "environmentData": [
+    "Runtime: Bun (latest stable)",
+    "Test framework: `bun:test`",
+    "File system access required for reading SKILL.md, cli.ts, markdown test plan files, and writing JSON output",
+    "State file: `.agents/state.json` (mocked in unit/integration tests)",
+    "Test fixtures: inline markdown strings containing test plan tables with valid, invalid, and edge-case requirement IDs"
+  ],
+  "automatedTests": [
+    {
+      "id": "TC-001",
+      "description": "Verify `TestPlanSchema` accepts enhanced test plan metadata structure (new fields: `overallStatus`, `scope`, `environmentData`, `automatedTests`, `exploratoryManualTests`)",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-1",
+        "FR-2",
+        "FR-3"
+      ]
+    },
+    {
+      "id": "TC-002",
+      "description": "Verify `TestPlanSchema` rejects legacy flat-list schema shape",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-1"
+      ]
+    },
+    {
+      "id": "TC-003",
+      "description": "Verify typecheck passes after schema updates",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-001"
+      ]
+    },
+    {
+      "id": "TC-004",
+      "description": "Verify `create-test-plan` skill has YAML frontmatter and required automation-first instructions",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-002",
+        "FR-2"
+      ]
+    },
+    {
+      "id": "TC-005",
+      "description": "Verify `create-test-plan` command registers in CLI dispatch",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-002"
+      ]
+    },
+    {
+      "id": "TC-006",
+      "description": "Verify `create-test-plan` command loads skill, invokes agent with iteration context, and writes state",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-002"
+      ]
+    },
+    {
+      "id": "TC-007",
+      "description": "Verify `create-test-plan` requires `project_context.status` to be `created`",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-002"
+      ]
+    },
+    {
+      "id": "TC-008",
+      "description": "Verify overwrite confirmation prompt and cancel behavior",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-002"
+      ]
+    },
+    {
+      "id": "TC-009",
+      "description": "Verify force flag bypasses overwrite confirmation",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-002"
+      ]
+    },
+    {
+      "id": "TC-010",
+      "description": "Verify command fails when generated markdown omits correlated requirement IDs",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-002",
+        "FR-2"
+      ]
+    },
+    {
+      "id": "TC-011",
+      "description": "Verify `parseTestPlanForValidation` maps requirement traceability into schema-compatible test items",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-002",
+        "FR-2"
+      ]
+    },
+    {
+      "id": "TC-013",
+      "description": "Verify `approve-test-plan.test.ts` validates parsed JSON against new schema",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-003",
+        "FR-1",
+        "FR-2"
+      ]
+    },
+    {
+      "id": "TC-014",
+      "description": "Verify `approve-test-plan.test.ts` validates `correlatedRequirements` population",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-003",
+        "FR-2"
+      ]
+    },
+    {
+      "id": "TC-015",
+      "description": "Verify `create-test-plan.test.ts` checks skill prompt for traceability instructions",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-003"
+      ]
+    },
+    {
+      "id": "TC-016",
+      "description": "Verify `approve-test-plan` command registers in CLI dispatch",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-004"
+      ]
+    },
+    {
+      "id": "TC-017",
+      "description": "Verify `approve-test-plan` requires `test_plan.status` to be `pending_approval`",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-004"
+      ]
+    },
+    {
+      "id": "TC-018",
+      "description": "Verify `parseTestPlan()` extracts objects from markdown tables with correct field mapping",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-004",
+        "FR-2"
+      ]
+    },
+    {
+      "id": "TC-019",
+      "description": "Verify parser initializes all statuses to `pending`",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-004",
+        "FR-4"
+      ]
+    },
+    {
+      "id": "TC-020",
+      "description": "Verify parser normalizes requirement IDs and filters invalid entries",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-004",
+        "FR-2"
+      ]
+    },
+    {
+      "id": "TC-021",
+      "description": "Verify full approve flow: parse markdown, validate schema, and update state",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-004",
+        "FR-1",
+        "FR-2",
+        "FR-4"
+      ]
+    },
+    {
+      "id": "TC-022",
+      "description": "Verify parser extracts `scope` and `environmentData` sections from markdown",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-004",
+        "FR-3"
+      ]
+    },
+    {
+      "id": "TC-024",
+      "description": "Verify parser handles rows where all requirement IDs are invalid",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-004",
+        "FR-2"
+      ]
+    },
+    {
+      "id": "TC-025",
+      "description": "Verify `approve-test-plan` rejects markdown with zero valid test table rows",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-004",
+        "FR-2"
+      ]
+    },
+    {
+      "id": "TC-026",
+      "description": "Verify `parseTestPlan` and `parseTestPlanForValidation` produce identical output",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-004",
+        "US-002"
+      ]
+    }
+  ],
+  "exploratoryManualTests": [
+    {
+      "id": "TC-012",
+      "description": "Manual verification of `bun nvst create test-plan` output",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-002"
+      ]
+    },
+    {
+      "id": "TC-023",
+      "description": "Manual verification of `bun nvst approve test-plan` with sample markdown",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-004"
+      ]
+    }
+  ]
+}

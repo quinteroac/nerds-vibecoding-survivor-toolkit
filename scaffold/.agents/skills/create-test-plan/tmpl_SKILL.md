@@ -34,12 +34,24 @@ Use this structure:
 ```markdown
 # Test Plan - Iteration {iteration}
 
+## Scope
+
+- (What is in scope for testing this iteration; at least one bullet.)
+- ...
+
+## Environment and data
+
+- (Environment and data prerequisites; at least one bullet, e.g. runtime, DB, fixtures.)
+- ...
+
 ## User Story: <id> - <title>
 
 | Test Case ID | Description | Type (unit/integration/e2e) | Mode (automated/manual) | Correlated Requirements (US-XXX, FR-X) | Expected Result |
 |---|---|---|---|---|---|
 | TC-... | ... | ... | ... | US-001, FR-1 | ... |
 ```
+
+**Scope**, **Environment and data**, and **User Story** sections (each with its test case table) are mandatory. Scope and Environment and data must each have at least one bullet item; each User Story must have at least one test case.
 
 Every test case must include:
 - `Test Case ID`
@@ -65,6 +77,8 @@ Every test case must include:
 
 - [ ] Read `it_{iteration}_PRD.json`
 - [ ] Read `.agents/PROJECT_CONTEXT.md`
+- [ ] Plan includes **Scope** section with at least one bullet
+- [ ] Plan includes **Environment and data** section with at least one bullet
 - [ ] Test cases are grouped by user story
 - [ ] Every `FR-N` is covered by automated test cases
 - [ ] Every test case includes correlated requirement IDs (`US-XXX`, `FR-X`)
