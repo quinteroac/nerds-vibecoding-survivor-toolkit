@@ -142,6 +142,7 @@ describe("execute test-plan command", () => {
     await writeApprovedTpJson(projectRoot, tpFileName);
 
     const invocationTestIds: string[] = [];
+    let loadedSkill = "";
 
     const capturedLogs: string[] = [];
     const originalConsoleLog = console.log;
@@ -155,6 +156,10 @@ describe("execute test-plan command", () => {
         await runExecuteTestPlan(
           { provider: "gemini" },
           {
+            loadSkillFn: async (_projectRoot, skillName) => {
+              loadedSkill = skillName;
+              return "Run this test case and output strict JSON.";
+            },
             invokeAgentFn: async (options): Promise<AgentResult> => {
               if (!sawInProgressState) {
                 const liveState = await readState(projectRoot);
@@ -165,8 +170,9 @@ describe("execute test-plan command", () => {
                 sawInProgressState = true;
               }
               expect(options.interactive).toBe(false);
-              expect(options.prompt).toContain("### project_context_reference");
+              expect(options.prompt).toContain("### project_context");
               expect(options.prompt).toContain("Use bun test and tsc checks.");
+              expect(options.prompt).toContain("### test_case_definition");
 
               if (options.prompt.includes("TC-US001-01")) invocationTestIds.push("TC-US001-01");
               if (options.prompt.includes("TC-US001-02")) invocationTestIds.push("TC-US001-02");
@@ -189,6 +195,7 @@ describe("execute test-plan command", () => {
       console.log = originalConsoleLog;
     }
 
+    expect(loadedSkill).toBe("execute-test-case");
     expect(invocationTestIds).toEqual(["TC-US001-01", "TC-US001-02", "TC-US001-03"]);
     expect(capturedLogs.at(-1)).toContain("3/3 tests passed, 0 failed");
     expect(capturedLogs.at(-1)).toContain(".agents/flow/it_000005_test-execution-report.md");
@@ -307,6 +314,7 @@ describe("execute test-plan command", () => {
       await runExecuteTestPlan(
         { provider: "claude" },
         {
+          loadSkillFn: async () => "skill",
           invokeAgentFn: async () => {
             call += 1;
             if (call === 1) {
@@ -398,6 +406,7 @@ describe("execute test-plan command", () => {
       await runExecuteTestPlan(
         { provider: "codex" },
         {
+          loadSkillFn: async () => "skill",
           invokeAgentFn: async (): Promise<AgentResult> => ({
             exitCode: 0,
             stdout: JSON.stringify({
@@ -438,6 +447,7 @@ describe("execute test-plan command", () => {
       await runExecuteTestPlan(
         { provider: "claude" },
         {
+          loadSkillFn: async () => "skill",
           invokeAgentFn: async (): Promise<AgentResult> => {
             firstRunCall += 1;
             if (firstRunCall === 2) {
@@ -469,6 +479,7 @@ describe("execute test-plan command", () => {
       await runExecuteTestPlan(
         { provider: "claude" },
         {
+          loadSkillFn: async () => "skill",
           invokeAgentFn: async (options): Promise<AgentResult> => {
             if (options.prompt.includes("TC-US001-01")) rerunInvokedIds.push("TC-US001-01");
             if (options.prompt.includes("TC-US001-02")) rerunInvokedIds.push("TC-US001-02");
@@ -512,5 +523,54 @@ describe("execute test-plan command", () => {
       status: "passed",
       attempt_count: 1,
     });
+  });
+
+  test("fails with a descriptive error when execute-test-case skill is missing", async () => {
+    const projectRoot = await createProjectRoot();
+    createdRoots.push(projectRoot);
+
+    await seedState(projectRoot, "created", "it_000005_TP.json");
+    await writeProjectContext(projectRoot);
+    await writeApprovedTpJson(projectRoot, "it_000005_TP.json");
+
+    await withCwd(projectRoot, async () => {
+      await expect(
+        runExecuteTestPlan(
+          { provider: "codex" },
+          {
+            loadSkillFn: async () => {
+              throw new Error("missing");
+            },
+          },
+        ),
+      ).rejects.toThrow(
+        "Required skill missing: expected .agents/skills/execute-test-case/SKILL.md.",
+      );
+    });
+  });
+});
+
+describe("execute-test-case skill definition", () => {
+  test("includes required execution guidance and strict JSON contract", async () => {
+    const skillPath = join(
+      process.cwd(),
+      ".agents",
+      "skills",
+      "execute-test-case",
+      "SKILL.md",
+    );
+    const source = await readFile(skillPath, "utf8");
+
+    expect(source.startsWith("---\n")).toBe(true);
+    expect(source).toContain("name: execute-test-case");
+    expect(source).toContain("description:");
+    expect(source).toContain("user-invocable: false");
+    expect(source).toContain("`test_case_definition`");
+    expect(source).toContain("`project_context`");
+    expect(source).toContain("Execute exactly one test case");
+    expect(source).toContain('"status": "passed|failed|skipped"');
+    expect(source).toContain('"evidence": "string"');
+    expect(source).toContain('"notes": "string"');
+    expect(source).toContain("Do not output markdown or additional text outside the JSON object.");
   });
 });

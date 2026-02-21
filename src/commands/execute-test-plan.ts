@@ -5,6 +5,7 @@ import { z } from "zod";
 import {
   buildPrompt,
   invokeAgent,
+  loadSkill,
   type AgentInvokeOptions,
   type AgentProvider,
   type AgentResult,
@@ -74,6 +75,7 @@ interface TestExecutionReport {
 interface ExecuteTestPlanDeps {
   existsFn: (path: string) => Promise<boolean>;
   invokeAgentFn: (options: AgentInvokeOptions) => Promise<AgentResult>;
+  loadSkillFn: (projectRoot: string, skillName: string) => Promise<string>;
   mkdirFn: typeof mkdir;
   nowFn: () => Date;
   readFileFn: typeof readFile;
@@ -83,6 +85,7 @@ interface ExecuteTestPlanDeps {
 const defaultDeps: ExecuteTestPlanDeps = {
   existsFn: exists,
   invokeAgentFn: invokeAgent,
+  loadSkillFn: loadSkill,
   mkdirFn: mkdir,
   nowFn: () => new Date(),
   readFileFn: readFile,
@@ -105,19 +108,15 @@ function flattenTests(testPlan: TestPlan): FlatTestCase[] {
   return [...automated, ...manual];
 }
 
-function buildExecutionPrompt(testCase: FlatTestCase, projectContextContent: string): string {
-  return buildPrompt(
-    [
-      "Execute exactly this test case from an approved test plan.",
-      "Return only JSON with this exact shape:",
-      '{"status":"passed|failed|skipped","evidence":"...","notes":"..."}',
-      "Do not output markdown.",
-    ].join("\n"),
-    {
-      project_context_reference: projectContextContent,
-      test_case: JSON.stringify(testCase, null, 2),
-    },
-  );
+function buildExecutionPrompt(
+  skillBody: string,
+  testCase: FlatTestCase,
+  projectContextContent: string,
+): string {
+  return buildPrompt(skillBody, {
+    project_context: projectContextContent,
+    test_case_definition: JSON.stringify(testCase, null, 2),
+  });
 }
 
 function parseExecutionPayload(raw: string): ExecutionPayload {
@@ -247,6 +246,14 @@ export async function runExecuteTestPlan(
     throw new Error("Project context missing: expected .agents/PROJECT_CONTEXT.md.");
   }
   const projectContextContent = await mergedDeps.readFileFn(projectContextPath, "utf8");
+  let skillBody: string;
+  try {
+    skillBody = await mergedDeps.loadSkillFn(projectRoot, "execute-test-case");
+  } catch {
+    throw new Error(
+      "Required skill missing: expected .agents/skills/execute-test-case/SKILL.md.",
+    );
+  }
 
   const testCases = flattenTests(testPlanValidation.data);
   const now = new Date().toISOString();
@@ -328,7 +335,7 @@ export async function runExecuteTestPlan(
     progressEntry.updated_at = new Date().toISOString();
     await writeProgress();
 
-    const prompt = buildExecutionPrompt(testCase, projectContextContent);
+    const prompt = buildExecutionPrompt(skillBody, testCase, projectContextContent);
     const agentResult = await mergedDeps.invokeAgentFn({
       provider: opts.provider,
       prompt,
