@@ -159,17 +159,6 @@ function flattenTests(testPlan: TestPlan): FlatTestCase[] {
   return [...automated, ...manual];
 }
 
-function buildExecutionPrompt(
-  skillBody: string,
-  testCase: FlatTestCase,
-  projectContextContent: string,
-): string {
-  return buildPrompt(skillBody, {
-    project_context: projectContextContent,
-    test_case_definition: JSON.stringify(testCase, null, 2),
-  });
-}
-
 function buildBatchExecutionPrompt(
   skillBody: string,
   testCases: FlatTestCase[],
@@ -179,24 +168,6 @@ function buildBatchExecutionPrompt(
     project_context: projectContextContent,
     test_cases: JSON.stringify(testCases, null, 2),
   });
-}
-
-function parseExecutionPayload(raw: string): ExecutionPayload {
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(raw);
-  } catch (error) {
-    throw new Error("Agent output was not valid JSON.", { cause: error });
-  }
-
-  const validation = ExecutionPayloadSchema.safeParse(parsed);
-  if (!validation.success) {
-    throw new Error("Agent output did not match required execution payload schema.", {
-      cause: validation.error,
-    });
-  }
-
-  return validation.data;
 }
 
 function parseBatchExecutionPayload(raw: string): BatchResultItem[] {
@@ -389,9 +360,8 @@ export async function runExecuteTestPlan(
   }
   const projectContextContent = await mergedDeps.readFileFn(projectContextPath, "utf8");
 
-  let singleSkillBody: string;
   try {
-    singleSkillBody = await mergedDeps.loadSkillFn(projectRoot, "execute-test-case");
+    await mergedDeps.loadSkillFn(projectRoot, "execute-test-case");
   } catch {
     throw new Error(
       "Required skill missing: expected .agents/skills/execute-test-case/SKILL.md.",

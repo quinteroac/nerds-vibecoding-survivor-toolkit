@@ -803,8 +803,9 @@ describe("execute test-plan command", () => {
   });
 });
 
-describe("execute-test-case skill definition", () => {
-  test("includes required execution guidance and strict JSON contract", async () => {
+describe("US-003: execute-test-case skill batch mode", () => {
+  // US-003-AC01: skill accepts an array of test case definitions
+  test("AC01: skill instructs agent to accept an array of test case definitions", async () => {
     const skillPath = join(
       process.cwd(),
       ".agents",
@@ -818,13 +819,69 @@ describe("execute-test-case skill definition", () => {
     expect(source).toContain("name: execute-test-case");
     expect(source).toContain("description:");
     expect(source).toContain("user-invocable: false");
-    expect(source).toContain("`test_case_definition`");
+    expect(source).toContain("`test_cases`");
     expect(source).toContain("`project_context`");
-    expect(source).toContain("Execute exactly one test case");
+    expect(source).toContain("JSON array of test case objects");
+  });
+
+  // US-003-AC02: skill instructs return of JSON array with {testCaseId, status, evidence, notes}
+  test("AC02: skill instructs agent to return JSON array with testCaseId, status, evidence, notes", async () => {
+    const skillPath = join(
+      process.cwd(),
+      ".agents",
+      "skills",
+      "execute-test-case",
+      "SKILL.md",
+    );
+    const source = await readFile(skillPath, "utf8");
+
+    expect(source).toContain('"testCaseId"');
     expect(source).toContain('"status": "passed|failed|skipped"');
     expect(source).toContain('"evidence": "string"');
     expect(source).toContain('"notes": "string"');
-    expect(source).toContain("Do not output markdown or additional text outside the JSON object.");
+    expect(source).toContain("Do not output markdown or additional text outside the JSON array.");
+  });
+
+  // US-003-AC03: skill states agent must execute each test in order and report individual results
+  test("AC03: skill states agent must execute each test in order and report individual results", async () => {
+    const skillPath = join(
+      process.cwd(),
+      ".agents",
+      "skills",
+      "execute-test-case",
+      "SKILL.md",
+    );
+    const source = await readFile(skillPath, "utf8");
+
+    expect(source).toContain("Execute each test case in order");
+    expect(source).toContain("one result object per test case");
+    expect(source).toContain("Every test case in the input must have a corresponding result in the output array.");
+  });
+
+  // US-003-AC04: backward references to single-test-case mode are removed
+  test("AC04: no backward references to single-test-case mode in skill", async () => {
+    const skillPath = join(
+      process.cwd(),
+      ".agents",
+      "skills",
+      "execute-test-case",
+      "SKILL.md",
+    );
+    const source = await readFile(skillPath, "utf8");
+
+    expect(source).not.toContain("Execute exactly one test case");
+    expect(source).not.toContain("`test_case_definition`");
+    expect(source).not.toContain("single test case");
+    expect(source).not.toContain("outside the JSON object");
+  });
+
+  // US-003-AC04: backward references removed from production code
+  test("AC04: unused single-test-case functions removed from production code", async () => {
+    const source = await readFile(join(process.cwd(), "src", "commands", "execute-test-plan.ts"), "utf8");
+
+    expect(source).not.toContain("function buildExecutionPrompt(");
+    expect(source).not.toContain("function parseExecutionPayload(");
+    expect(source).not.toContain("test_case_definition");
   });
 });
 
