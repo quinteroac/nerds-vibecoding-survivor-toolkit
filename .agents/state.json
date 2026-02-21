@@ -26,7 +26,7 @@
         "file": null
       },
       "prototype_build": {
-        "status": "in_progress",
+        "status": "created",
         "file": "it_000002_progress.json"
       },
       "prototype_approved": false
@@ -50,7 +50,7 @@
       }
     }
   },
-  "last_updated": "2026-02-20T23:53:40.269Z",
+  "last_updated": "2026-02-21T00:01:58.044Z",
   "updated_by": "nvst:create-prototype",
   "history": [
     {
