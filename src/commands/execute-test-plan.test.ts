@@ -187,6 +187,41 @@ describe("execute test-plan command", () => {
       evidence: "Command output captured",
       notes: "Executed successfully",
     });
+
+    const progressRaw = await readFile(
+      join(projectRoot, ".agents", "flow", "it_000005_test-execution-progress.json"),
+      "utf8",
+    );
+    const progress = JSON.parse(progressRaw) as {
+      entries: Array<{
+        id: string;
+        type: "automated" | "exploratory_manual";
+        status: "pending" | "in_progress" | "passed" | "failed";
+        attempt_count: number;
+        last_agent_exit_code: number | null;
+        last_error_summary: string;
+        updated_at: string;
+      }>;
+    };
+
+    expect(progress.entries).toHaveLength(3);
+    expect(progress.entries[0]).toMatchObject({
+      id: "TC-US001-01",
+      type: "automated",
+      status: "passed",
+      attempt_count: 1,
+      last_agent_exit_code: 0,
+      last_error_summary: "",
+    });
+    expect(progress.entries[2]).toMatchObject({
+      id: "TC-US001-03",
+      type: "exploratory_manual",
+      status: "passed",
+      attempt_count: 1,
+      last_agent_exit_code: 0,
+      last_error_summary: "",
+    });
+    expect(typeof progress.entries[0]?.updated_at).toBe("string");
   });
 
   test("derives pass/fail from payload status and treats non-zero agent exit as invocation failure", async () => {
@@ -269,5 +304,136 @@ describe("execute test-plan command", () => {
     expect(parseProvider("claude")).toBe("claude");
     expect(parseProvider("codex")).toBe("codex");
     expect(parseProvider("gemini")).toBe("gemini");
+  });
+
+  test("updates execution progress file after each test case execution attempt", async () => {
+    const projectRoot = await createProjectRoot();
+    createdRoots.push(projectRoot);
+
+    const tpFileName = "it_000005_TP.json";
+    await seedState(projectRoot, "created", tpFileName);
+    await writeProjectContext(projectRoot);
+    await writeApprovedTpJson(projectRoot, tpFileName);
+
+    const progressSnapshots: string[] = [];
+
+    await withCwd(projectRoot, async () => {
+      await runExecuteTestPlan(
+        { provider: "codex" },
+        {
+          invokeAgentFn: async (): Promise<AgentResult> => ({
+            exitCode: 0,
+            stdout: JSON.stringify({
+              status: "passed",
+              evidence: "ok",
+              notes: "ok",
+            }),
+            stderr: "",
+          }),
+          writeFileFn: async (path, data) => {
+            const pathAsString = path.toString();
+            if (pathAsString.endsWith("it_000005_test-execution-progress.json")) {
+              progressSnapshots.push(data.toString());
+            }
+            await writeFile(pathAsString, data.toString(), "utf8");
+            return 0;
+          },
+        },
+      );
+    });
+
+    expect(progressSnapshots.length).toBeGreaterThanOrEqual(7);
+    expect(progressSnapshots.at(-1)).toContain('"attempt_count": 1');
+    expect(progressSnapshots.at(-1)).toContain('"status": "passed"');
+  });
+
+  test("resumes only pending or failed tests on re-run and skips previously passed tests", async () => {
+    const projectRoot = await createProjectRoot();
+    createdRoots.push(projectRoot);
+
+    const tpFileName = "it_000005_TP.json";
+    await seedState(projectRoot, "created", tpFileName);
+    await writeProjectContext(projectRoot);
+    await writeApprovedTpJson(projectRoot, tpFileName);
+
+    await withCwd(projectRoot, async () => {
+      let firstRunCall = 0;
+      await runExecuteTestPlan(
+        { provider: "claude" },
+        {
+          invokeAgentFn: async (): Promise<AgentResult> => {
+            firstRunCall += 1;
+            if (firstRunCall === 2) {
+              return {
+                exitCode: 0,
+                stdout: JSON.stringify({
+                  status: "failed",
+                  evidence: "assertion mismatch",
+                  notes: "failed on second case",
+                }),
+                stderr: "",
+              };
+            }
+
+            return {
+              exitCode: 0,
+              stdout: JSON.stringify({
+                status: "passed",
+                evidence: "ok",
+                notes: "ok",
+              }),
+              stderr: "",
+            };
+          },
+        },
+      );
+
+      const rerunInvokedIds: string[] = [];
+      await runExecuteTestPlan(
+        { provider: "claude" },
+        {
+          invokeAgentFn: async (options): Promise<AgentResult> => {
+            if (options.prompt.includes("TC-US001-01")) rerunInvokedIds.push("TC-US001-01");
+            if (options.prompt.includes("TC-US001-02")) rerunInvokedIds.push("TC-US001-02");
+            if (options.prompt.includes("TC-US001-03")) rerunInvokedIds.push("TC-US001-03");
+            return {
+              exitCode: 0,
+              stdout: JSON.stringify({
+                status: "passed",
+                evidence: "retry ok",
+                notes: "retry succeeded",
+              }),
+              stderr: "",
+            };
+          },
+        },
+      );
+
+      expect(rerunInvokedIds).toEqual(["TC-US001-02"]);
+    });
+
+    const progressRaw = await readFile(
+      join(projectRoot, ".agents", "flow", "it_000005_test-execution-progress.json"),
+      "utf8",
+    );
+    const progress = JSON.parse(progressRaw) as {
+      entries: Array<{ id: string; status: string; attempt_count: number }>;
+    };
+
+    expect(progress.entries.find((entry) => entry.id === "TC-US001-01")).toMatchObject({
+      id: "TC-US001-01",
+      status: "passed",
+      attempt_count: 1,
+    });
+    expect(progress.entries.find((entry) => entry.id === "TC-US001-02")).toMatchObject({
+      id: "TC-US001-02",
+      status: "passed",
+      attempt_count: 2,
+    });
+    expect(progress.entries.find((entry) => entry.id === "TC-US001-03")).toMatchObject({
+      id: "TC-US001-03",
+      status: "passed",
+      attempt_count: 1,
+    });
   });
 });

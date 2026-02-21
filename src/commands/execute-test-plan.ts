@@ -24,6 +24,24 @@ const ExecutionPayloadSchema = z.object({
 
 type ExecutionPayload = z.infer<typeof ExecutionPayloadSchema>;
 
+const TestExecutionProgressStatusSchema = z.enum(["pending", "in_progress", "passed", "failed"]);
+
+const TestExecutionProgressEntrySchema = z.object({
+  id: z.string(),
+  type: z.enum(["automated", "exploratory_manual"]),
+  status: TestExecutionProgressStatusSchema,
+  attempt_count: z.number().int().nonnegative(),
+  last_agent_exit_code: z.number().int().nullable(),
+  last_error_summary: z.string(),
+  updated_at: z.string(),
+});
+
+const TestExecutionProgressSchema = z.object({
+  entries: z.array(TestExecutionProgressEntrySchema),
+});
+
+type TestExecutionProgress = z.infer<typeof TestExecutionProgressSchema>;
+
 interface FlatTestCase {
   id: string;
   description: string;
@@ -118,6 +136,24 @@ function derivePassFail(status: ExecutionPayload["status"]): "pass" | "fail" | n
   return null;
 }
 
+function sortedValues(values: string[]): string[] {
+  return [...values].sort((a, b) => a.localeCompare(b));
+}
+
+function idsMatchExactly(left: string[], right: string[]): boolean {
+  if (left.length !== right.length) {
+    return false;
+  }
+
+  for (let i = 0; i < left.length; i += 1) {
+    if (left[i] !== right[i]) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
 export async function runExecuteTestPlan(
   opts: ExecuteTestPlanOptions,
   deps: Partial<ExecuteTestPlanDeps> = {},
@@ -166,11 +202,76 @@ export async function runExecuteTestPlan(
   const projectContextContent = await mergedDeps.readFileFn(projectContextPath, "utf8");
 
   const testCases = flattenTests(testPlanValidation.data);
+  const now = new Date().toISOString();
+  const progressFileName = `it_${state.current_iteration}_test-execution-progress.json`;
+  const progressPath = join(projectRoot, FLOW_REL_DIR, progressFileName);
+
+  let progress: TestExecutionProgress;
+  if (await mergedDeps.existsFn(progressPath)) {
+    let parsedProgress: unknown;
+    try {
+      parsedProgress = JSON.parse(await mergedDeps.readFileFn(progressPath, "utf8"));
+    } catch (error) {
+      throw new Error(`Invalid progress JSON at ${join(FLOW_REL_DIR, progressFileName)}.`, {
+        cause: error,
+      });
+    }
+
+    const progressValidation = TestExecutionProgressSchema.safeParse(parsedProgress);
+    if (!progressValidation.success) {
+      throw new Error(
+        `Progress JSON schema mismatch at ${join(FLOW_REL_DIR, progressFileName)}.`,
+        { cause: progressValidation.error },
+      );
+    }
+
+    const expectedIds = sortedValues(testCases.map((testCase) => testCase.id));
+    const existingIds = sortedValues(progressValidation.data.entries.map((entry) => entry.id));
+    if (!idsMatchExactly(existingIds, expectedIds)) {
+      throw new Error(
+        "Test execution progress file out of sync: entry ids do not match approved test plan test ids.",
+      );
+    }
+
+    progress = progressValidation.data;
+  } else {
+    progress = {
+      entries: testCases.map((testCase) => ({
+        id: testCase.id,
+        type: testCase.mode,
+        status: "pending",
+        attempt_count: 0,
+        last_agent_exit_code: null,
+        last_error_summary: "",
+        updated_at: now,
+      })),
+    };
+  }
 
   const results: TestExecutionResult[] = [];
   const executedTestIds: string[] = [];
 
+  const writeProgress = async () => {
+    await mergedDeps.writeFileFn(progressPath, `${JSON.stringify(progress, null, 2)}\n`);
+  };
+
+  await mergedDeps.mkdirFn(join(projectRoot, FLOW_REL_DIR), { recursive: true });
+  await writeProgress();
+
   for (const testCase of testCases) {
+    const progressEntry = progress.entries.find((entry) => entry.id === testCase.id);
+    if (!progressEntry) {
+      throw new Error(`Missing progress entry for test case '${testCase.id}'.`);
+    }
+
+    if (progressEntry.status === "passed") {
+      continue;
+    }
+
+    progressEntry.status = "in_progress";
+    progressEntry.updated_at = new Date().toISOString();
+    await writeProgress();
+
     const prompt = buildExecutionPrompt(testCase, projectContextContent);
     const agentResult = await mergedDeps.invokeAgentFn({
       provider: opts.provider,
@@ -182,13 +283,20 @@ export async function runExecuteTestPlan(
     executedTestIds.push(testCase.id);
 
     if (agentResult.exitCode !== 0) {
+      progressEntry.attempt_count += 1;
+      progressEntry.last_agent_exit_code = agentResult.exitCode;
+      progressEntry.last_error_summary = `Agent invocation failed with exit code ${agentResult.exitCode}.`;
+      progressEntry.status = "failed";
+      progressEntry.updated_at = new Date().toISOString();
+      await writeProgress();
+
       results.push({
         testCaseId: testCase.id,
         mode: testCase.mode,
         payload: {
           status: "invocation_failed",
           evidence: "",
-          notes: `Agent invocation failed with exit code ${agentResult.exitCode}.`,
+          notes: progressEntry.last_error_summary,
         },
         passFail: null,
         agentExitCode: agentResult.exitCode,
@@ -196,7 +304,39 @@ export async function runExecuteTestPlan(
       continue;
     }
 
-    const payload = parseExecutionPayload(agentResult.stdout.trim());
+    let payload: ExecutionPayload;
+    try {
+      payload = parseExecutionPayload(agentResult.stdout.trim());
+    } catch (error) {
+      const summary = error instanceof Error ? error.message : "Unknown execution parsing error.";
+      progressEntry.attempt_count += 1;
+      progressEntry.last_agent_exit_code = agentResult.exitCode;
+      progressEntry.last_error_summary = summary;
+      progressEntry.status = "failed";
+      progressEntry.updated_at = new Date().toISOString();
+      await writeProgress();
+
+      results.push({
+        testCaseId: testCase.id,
+        mode: testCase.mode,
+        payload: {
+          status: "invocation_failed",
+          evidence: "",
+          notes: summary,
+        },
+        passFail: null,
+        agentExitCode: agentResult.exitCode,
+      });
+      continue;
+    }
+
+    progressEntry.attempt_count += 1;
+    progressEntry.last_agent_exit_code = agentResult.exitCode;
+    progressEntry.last_error_summary = payload.status === "passed" ? "" : payload.notes;
+    progressEntry.status = payload.status === "passed" ? "passed" : "failed";
+    progressEntry.updated_at = new Date().toISOString();
+    await writeProgress();
+
     results.push({
       testCaseId: testCase.id,
       mode: testCase.mode,
@@ -213,7 +353,6 @@ export async function runExecuteTestPlan(
     results,
   };
 
-  await mergedDeps.mkdirFn(join(projectRoot, FLOW_REL_DIR), { recursive: true });
   const outFileName = `it_${state.current_iteration}_test-execution-results.json`;
   const outPath = join(projectRoot, FLOW_REL_DIR, outFileName);
   await mergedDeps.writeFileFn(outPath, `${JSON.stringify(report, null, 2)}\n`);
