@@ -20,6 +20,7 @@ function createInitialState(nowIso: string): State {
         test_plan: { status: "pending", file: null },
         tp_generation: { status: "pending", file: null },
         prototype_build: { status: "pending", file: null },
+        test_execution: { status: "pending", file: null },
         prototype_approved: false,
       },
       refactor: {

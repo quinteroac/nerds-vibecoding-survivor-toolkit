@@ -9,7 +9,7 @@ import {
   type AgentProvider,
   type AgentResult,
 } from "../agent";
-import { exists, FLOW_REL_DIR, readState } from "../state";
+import { exists, FLOW_REL_DIR, readState, writeState } from "../state";
 import { TestPlanSchema, type TestPlan } from "../../schemas/test-plan";
 
 export interface ExecuteTestPlanOptions {
@@ -71,6 +71,7 @@ interface ExecuteTestPlanDeps {
   existsFn: (path: string) => Promise<boolean>;
   invokeAgentFn: (options: AgentInvokeOptions) => Promise<AgentResult>;
   mkdirFn: typeof mkdir;
+  nowFn: () => Date;
   readFileFn: typeof readFile;
   writeFileFn: typeof Bun.write;
 }
@@ -79,6 +80,7 @@ const defaultDeps: ExecuteTestPlanDeps = {
   existsFn: exists,
   invokeAgentFn: invokeAgent,
   mkdirFn: mkdir,
+  nowFn: () => new Date(),
   readFileFn: readFile,
   writeFileFn: Bun.write,
 };
@@ -205,6 +207,12 @@ export async function runExecuteTestPlan(
   const now = new Date().toISOString();
   const progressFileName = `it_${state.current_iteration}_test-execution-progress.json`;
   const progressPath = join(projectRoot, FLOW_REL_DIR, progressFileName);
+
+  state.phases.prototype.test_execution.status = "in_progress";
+  state.phases.prototype.test_execution.file = progressFileName;
+  state.last_updated = mergedDeps.nowFn().toISOString();
+  state.updated_by = "nvst:execute-test-plan";
+  await writeState(projectRoot, state);
 
   let progress: TestExecutionProgress;
   if (await mergedDeps.existsFn(progressPath)) {
@@ -356,6 +364,13 @@ export async function runExecuteTestPlan(
   const outFileName = `it_${state.current_iteration}_test-execution-results.json`;
   const outPath = join(projectRoot, FLOW_REL_DIR, outFileName);
   await mergedDeps.writeFileFn(outPath, `${JSON.stringify(report, null, 2)}\n`);
+
+  const hasFailedTests = progress.entries.some((entry) => entry.status === "failed");
+  state.phases.prototype.test_execution.status = hasFailedTests ? "failed" : "completed";
+  state.phases.prototype.test_execution.file = progressFileName;
+  state.last_updated = mergedDeps.nowFn().toISOString();
+  state.updated_by = "nvst:execute-test-plan";
+  await writeState(projectRoot, state);
 
   console.log(`Executed ${results.length} test case(s). Results saved to ${join(FLOW_REL_DIR, outFileName)}.`);
 }

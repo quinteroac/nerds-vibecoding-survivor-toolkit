@@ -34,6 +34,9 @@ const prototypePhase = z.object({
   prototype_build: statusFile.extend({
     status: z.enum(["pending", "in_progress", "created"]),
   }),
+  test_execution: statusFile.extend({
+    status: z.enum(["pending", "in_progress", "completed", "failed"]),
+  }),
   prototype_approved: z.boolean(),
 });
 

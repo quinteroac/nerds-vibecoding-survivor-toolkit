@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { parseProvider, type AgentResult } from "../agent";
-import { writeState } from "../state";
+import { readState, writeState } from "../state";
 import { runExecuteTestPlan } from "./execute-test-plan";
 
 async function createProjectRoot(): Promise<string> {
@@ -41,6 +41,7 @@ async function seedState(
         test_plan: { status: "created", file: "it_000005_test-plan.md" },
         tp_generation: { status: tpStatus, file: tpFile },
         prototype_build: { status: "pending", file: null },
+        test_execution: { status: "pending", file: null },
         prototype_approved: false,
       },
       refactor: {
@@ -143,10 +144,19 @@ describe("execute test-plan command", () => {
     const invocationTestIds: string[] = [];
 
     await withCwd(projectRoot, async () => {
+      let sawInProgressState = false;
       await runExecuteTestPlan(
         { provider: "gemini" },
         {
           invokeAgentFn: async (options): Promise<AgentResult> => {
+            if (!sawInProgressState) {
+              const liveState = await readState(projectRoot);
+              expect(liveState.phases.prototype.test_execution.status).toBe("in_progress");
+              expect(liveState.phases.prototype.test_execution.file).toBe(
+                "it_000005_test-execution-progress.json",
+              );
+              sawInProgressState = true;
+            }
             expect(options.interactive).toBe(false);
             expect(options.prompt).toContain("### project_context_reference");
             expect(options.prompt).toContain("Use bun test and tsc checks.");
@@ -222,6 +232,11 @@ describe("execute test-plan command", () => {
       last_error_summary: "",
     });
     expect(typeof progress.entries[0]?.updated_at).toBe("string");
+
+    const state = await readState(projectRoot);
+    expect(state.phases.prototype.test_execution.status).toBe("completed");
+    expect(state.phases.prototype.test_execution.file).toBe("it_000005_test-execution-progress.json");
+    expect(state.updated_by).toBe("nvst:execute-test-plan");
   });
 
   test("derives pass/fail from payload status and treats non-zero agent exit as invocation failure", async () => {
@@ -298,6 +313,10 @@ describe("execute test-plan command", () => {
 
     expect(report.results[2]?.payload.status).toBe("skipped");
     expect(report.results[2]?.passFail).toBeNull();
+
+    const state = await readState(projectRoot);
+    expect(state.phases.prototype.test_execution.status).toBe("failed");
+    expect(state.phases.prototype.test_execution.file).toBe("it_000005_test-execution-progress.json");
   });
 
   test("supports claude, codex, and gemini providers", () => {

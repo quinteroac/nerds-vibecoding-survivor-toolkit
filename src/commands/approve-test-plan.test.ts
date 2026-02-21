@@ -40,6 +40,7 @@ async function seedState(
         test_plan: { status, file },
         tp_generation: { status: "pending", file: null },
         prototype_build: { status: "pending", file: null },
+        test_execution: { status: "pending", file: null },
         prototype_approved: false,
       },
       refactor: {
