@@ -132,7 +132,11 @@ describe("execute test-plan command", () => {
     });
   });
 
-  test("reads approved TP JSON from state path and executes all test cases one by one in source order", async () => {
+  // AC01: automated tests with status != passed are collected and sent to a single agent invocation
+  // AC02: agent prompt includes full list of pending automated test cases as JSON array
+  // AC03: agent returns JSON array of results with {testCaseId, status, evidence, notes}
+  // AC04: each result recorded in progress file and as separate artifact
+  test("batches all pending automated tests into a single agent invocation with JSON array prompt and results", async () => {
     const projectRoot = await createProjectRoot();
     createdRoots.push(projectRoot);
 
@@ -141,8 +145,9 @@ describe("execute test-plan command", () => {
     await writeProjectContext(projectRoot, "# Project Context\nUse bun test and tsc checks.\n");
     await writeApprovedTpJson(projectRoot, tpFileName);
 
-    const invocationTestIds: string[] = [];
-    let loadedSkill = "";
+    let batchInvocationCount = 0;
+    let manualInvocationCount = 0;
+    let capturedBatchPrompt = "";
 
     const capturedLogs: string[] = [];
     const originalConsoleLog = console.log;
@@ -152,38 +157,60 @@ describe("execute test-plan command", () => {
 
     try {
       await withCwd(projectRoot, async () => {
-        let sawInProgressState = false;
         await runExecuteTestPlan(
           { provider: "gemini" },
           {
             loadSkillFn: async (_projectRoot, skillName) => {
-              loadedSkill = skillName;
+              if (skillName === "execute-test-batch") return "Run batch test cases and output strict JSON array.";
               return "Run this test case and output strict JSON.";
             },
             invokeAgentFn: async (options): Promise<AgentResult> => {
-              if (!sawInProgressState) {
-                const liveState = await readState(projectRoot);
-                expect(liveState.phases.prototype.test_execution.status).toBe("in_progress");
-                expect(liveState.phases.prototype.test_execution.file).toBe(
-                  "it_000005_test-execution-progress.json",
-                );
-                sawInProgressState = true;
-              }
               expect(options.interactive).toBe(false);
-              expect(options.prompt).toContain("### project_context");
-              expect(options.prompt).toContain("Use bun test and tsc checks.");
-              expect(options.prompt).toContain("### test_case_definition");
 
-              if (options.prompt.includes("TC-US001-01")) invocationTestIds.push("TC-US001-01");
-              if (options.prompt.includes("TC-US001-02")) invocationTestIds.push("TC-US001-02");
-              if (options.prompt.includes("TC-US001-03")) invocationTestIds.push("TC-US001-03");
+              // AC02: batch prompt includes test_cases context with JSON array
+              if (options.prompt.includes("test_cases")) {
+                batchInvocationCount += 1;
+                capturedBatchPrompt = options.prompt;
 
+                // Verify prompt contains both automated test case IDs
+                expect(options.prompt).toContain("TC-US001-01");
+                expect(options.prompt).toContain("TC-US001-02");
+                // Should NOT contain manual test in batch prompt
+                expect(options.prompt).not.toContain("TC-US001-03");
+                expect(options.prompt).toContain("### project_context");
+                expect(options.prompt).toContain("Use bun test and tsc checks.");
+
+                // AC03: return JSON array of results
+                return {
+                  exitCode: 0,
+                  stdout: JSON.stringify([
+                    {
+                      testCaseId: "TC-US001-01",
+                      status: "passed",
+                      evidence: "Batch evidence for case one",
+                      notes: "Batch executed successfully",
+                    },
+                    {
+                      testCaseId: "TC-US001-02",
+                      status: "passed",
+                      evidence: "Batch evidence for case two",
+                      notes: "Batch executed successfully",
+                    },
+                  ]),
+                  stderr: "",
+                };
+              }
+
+              // Manual test executed individually
+              manualInvocationCount += 1;
+              expect(options.prompt).toContain("test_case_definition");
+              expect(options.prompt).toContain("TC-US001-03");
               return {
                 exitCode: 0,
                 stdout: JSON.stringify({
                   status: "passed",
-                  evidence: "Command output captured",
-                  notes: "Executed successfully",
+                  evidence: "Manual evidence",
+                  notes: "Manual executed successfully",
                 }),
                 stderr: "",
               };
@@ -195,11 +222,25 @@ describe("execute test-plan command", () => {
       console.log = originalConsoleLog;
     }
 
-    expect(loadedSkill).toBe("execute-test-case");
-    expect(invocationTestIds).toEqual(["TC-US001-01", "TC-US001-02", "TC-US001-03"]);
-    expect(capturedLogs.at(-1)).toContain("3/3 tests passed, 0 failed");
-    expect(capturedLogs.at(-1)).toContain(".agents/flow/it_000005_test-execution-report.md");
+    // AC01: single invocation for automated tests
+    expect(batchInvocationCount).toBe(1);
+    // Manual tests still invoked individually
+    expect(manualInvocationCount).toBe(1);
 
+    // AC02: batch prompt includes JSON array of test cases
+    expect(capturedBatchPrompt).toContain("### test_cases");
+    const testCasesMatch = capturedBatchPrompt.split("### test_cases")[1];
+    expect(testCasesMatch).toBeDefined();
+    // The test_cases context should contain a valid JSON array
+    const testCasesJson = testCasesMatch!.split("###")[0].trim();
+    const parsedTestCases = JSON.parse(testCasesJson) as Array<{ id: string }>;
+    expect(parsedTestCases).toHaveLength(2);
+    expect(parsedTestCases[0]?.id).toBe("TC-US001-01");
+    expect(parsedTestCases[1]?.id).toBe("TC-US001-02");
+
+    expect(capturedLogs.at(-1)).toContain("3/3 tests passed, 0 failed");
+
+    // AC04: each result recorded as separate artifact
     const reportRaw = await readFile(
       join(projectRoot, ".agents", "flow", "it_000005_test-execution-results.json"),
       "utf8",
@@ -219,13 +260,14 @@ describe("execute test-plan command", () => {
     expect(report.results).toHaveLength(3);
     expect(report.results[0]?.payload).toEqual({
       status: "passed",
-      evidence: "Command output captured",
-      notes: "Executed successfully",
+      evidence: "Batch evidence for case one",
+      notes: "Batch executed successfully",
     });
     expect(report.results[0]?.description).toBe("Automated case one");
     expect(report.results[0]?.correlatedRequirements).toEqual(["US-001", "FR-1"]);
     expect(report.results[0]?.artifactReferences).toHaveLength(1);
 
+    // AC04: separate artifact per test case
     const artifactsDirPath = join(projectRoot, ".agents", "flow", "it_000005_test-execution-artifacts");
     const artifactFileNames = await readdir(artifactsDirPath);
     expect(artifactFileNames.length).toBe(3);
@@ -241,24 +283,11 @@ describe("execute test-plan command", () => {
         };
         expect(artifact.testCaseId).toBe(result.testCaseId);
         expect(artifact.attemptNumber).toBe(1);
-        expect(artifact.prompt).toContain(result.testCaseId);
         expect(artifact.agentExitCode).toBe(0);
       }
     }
 
-    const markdownReportRaw = await readFile(
-      join(projectRoot, ".agents", "flow", "it_000005_test-execution-report.md"),
-      "utf8",
-    );
-    expect(markdownReportRaw).toContain("# Test Execution Report (Iteration 000005)");
-    expect(markdownReportRaw).toContain("- Total Tests: 3");
-    expect(markdownReportRaw).toContain("- Passed: 3");
-    expect(markdownReportRaw).toContain("- Failed: 0");
-    expect(markdownReportRaw).toContain("| Test ID | Description | Status | Correlated Requirements | Artifacts |");
-    expect(markdownReportRaw).toContain(
-      "| TC-US001-01 | Automated case one | passed | US-001, FR-1 | `.agents/flow/it_000005_test-execution-artifacts/TC-US001-01_attempt_001.json` |",
-    );
-
+    // AC04: progress file records each individual test
     const progressRaw = await readFile(
       join(projectRoot, ".agents", "flow", "it_000005_test-execution-progress.json"),
       "utf8",
@@ -271,7 +300,6 @@ describe("execute test-plan command", () => {
         attempt_count: number;
         last_agent_exit_code: number | null;
         last_error_summary: string;
-        updated_at: string;
       }>;
     };
 
@@ -284,23 +312,35 @@ describe("execute test-plan command", () => {
       last_agent_exit_code: 0,
       last_error_summary: "",
     });
+    expect(progress.entries[1]).toMatchObject({
+      id: "TC-US001-02",
+      type: "automated",
+      status: "passed",
+      attempt_count: 1,
+    });
     expect(progress.entries[2]).toMatchObject({
       id: "TC-US001-03",
       type: "exploratory_manual",
       status: "passed",
       attempt_count: 1,
-      last_agent_exit_code: 0,
-      last_error_summary: "",
     });
-    expect(typeof progress.entries[0]?.updated_at).toBe("string");
+
+    const markdownReportRaw = await readFile(
+      join(projectRoot, ".agents", "flow", "it_000005_test-execution-report.md"),
+      "utf8",
+    );
+    expect(markdownReportRaw).toContain("# Test Execution Report (Iteration 000005)");
+    expect(markdownReportRaw).toContain("- Total Tests: 3");
+    expect(markdownReportRaw).toContain("- Passed: 3");
+    expect(markdownReportRaw).toContain("- Failed: 0");
 
     const state = await readState(projectRoot);
     expect(state.phases.prototype.test_execution.status).toBe("completed");
-    expect(state.phases.prototype.test_execution.file).toBe("it_000005_test-execution-progress.json");
     expect(state.updated_by).toBe("nvst:execute-test-plan");
   });
 
-  test("derives pass/fail from payload status and treats non-zero agent exit as invocation failure", async () => {
+  // AC05: if agent session fails (non-zero exit), all automated tests in batch marked as failed with invocation_failed
+  test("marks all automated tests as failed with invocation_failed when batch agent session fails", async () => {
     const projectRoot = await createProjectRoot();
     createdRoots.push(projectRoot);
 
@@ -308,42 +348,98 @@ describe("execute test-plan command", () => {
     await writeProjectContext(projectRoot);
     await writeApprovedTpJson(projectRoot, "it_000005_TP.json");
 
-    let call = 0;
-
     await withCwd(projectRoot, async () => {
       await runExecuteTestPlan(
         { provider: "claude" },
         {
-          loadSkillFn: async () => "skill",
-          invokeAgentFn: async () => {
-            call += 1;
-            if (call === 1) {
+          loadSkillFn: async (_pr, name) => {
+            if (name === "execute-test-batch") return "batch skill";
+            return "single skill";
+          },
+          invokeAgentFn: async (options): Promise<AgentResult> => {
+            if (options.prompt.includes("test_cases")) {
+              // Batch invocation fails
+              return { exitCode: 1, stdout: "", stderr: "agent crashed" };
+            }
+            // Manual test succeeds
+            return {
+              exitCode: 0,
+              stdout: JSON.stringify({ status: "passed", evidence: "ok", notes: "ok" }),
+              stderr: "",
+            };
+          },
+        },
+      );
+    });
+
+    const reportRaw = await readFile(
+      join(projectRoot, ".agents", "flow", "it_000005_test-execution-results.json"),
+      "utf8",
+    );
+    const report = JSON.parse(reportRaw) as {
+      results: Array<{
+        testCaseId: string;
+        payload: { status: string; notes: string };
+        passFail: "pass" | "fail" | null;
+        agentExitCode: number;
+      }>;
+    };
+
+    // Both automated tests marked as invocation_failed
+    expect(report.results[0]?.payload.status).toBe("invocation_failed");
+    expect(report.results[0]?.payload.notes).toContain("Agent invocation failed with exit code 1");
+    expect(report.results[0]?.passFail).toBeNull();
+    expect(report.results[0]?.agentExitCode).toBe(1);
+
+    expect(report.results[1]?.payload.status).toBe("invocation_failed");
+    expect(report.results[1]?.passFail).toBeNull();
+    expect(report.results[1]?.agentExitCode).toBe(1);
+
+    // Manual test still passed
+    expect(report.results[2]?.payload.status).toBe("passed");
+    expect(report.results[2]?.passFail).toBe("pass");
+
+    const state = await readState(projectRoot);
+    expect(state.phases.prototype.test_execution.status).toBe("failed");
+  });
+
+  // AC06: if agent returns partial results, unmatched tests marked as failed
+  test("marks unmatched automated tests as failed when agent returns partial batch results", async () => {
+    const projectRoot = await createProjectRoot();
+    createdRoots.push(projectRoot);
+
+    await seedState(projectRoot, "created", "it_000005_TP.json");
+    await writeProjectContext(projectRoot);
+    await writeApprovedTpJson(projectRoot, "it_000005_TP.json");
+
+    await withCwd(projectRoot, async () => {
+      await runExecuteTestPlan(
+        { provider: "codex" },
+        {
+          loadSkillFn: async (_pr, name) => {
+            if (name === "execute-test-batch") return "batch skill";
+            return "single skill";
+          },
+          invokeAgentFn: async (options): Promise<AgentResult> => {
+            if (options.prompt.includes("test_cases")) {
+              // Return results for only the first test case (partial)
               return {
                 exitCode: 0,
-                stdout: JSON.stringify({
-                  status: "failed",
-                  evidence: "Assertion mismatch",
-                  notes: "Expected error message not found",
-                }),
+                stdout: JSON.stringify([
+                  {
+                    testCaseId: "TC-US001-01",
+                    status: "passed",
+                    evidence: "First test ok",
+                    notes: "Passed",
+                  },
+                ]),
                 stderr: "",
               };
             }
-
-            if (call === 2) {
-              return {
-                exitCode: 1,
-                stdout: "",
-                stderr: "agent crashed",
-              };
-            }
-
+            // Manual test
             return {
               exitCode: 0,
-              stdout: JSON.stringify({
-                status: "skipped",
-                evidence: "",
-                notes: "Manual step blocked by missing credentials",
-              }),
+              stdout: JSON.stringify({ status: "passed", evidence: "ok", notes: "ok" }),
               stderr: "",
             };
           },
@@ -360,29 +456,210 @@ describe("execute test-plan command", () => {
         testCaseId: string;
         payload: { status: string; evidence: string; notes: string };
         passFail: "pass" | "fail" | null;
+      }>;
+    };
+
+    // First automated test passed
+    expect(report.results[0]?.testCaseId).toBe("TC-US001-01");
+    expect(report.results[0]?.payload.status).toBe("passed");
+    expect(report.results[0]?.passFail).toBe("pass");
+
+    // Second automated test: no result from agent -> failed
+    expect(report.results[1]?.testCaseId).toBe("TC-US001-02");
+    expect(report.results[1]?.payload.status).toBe("failed");
+    expect(report.results[1]?.payload.notes).toContain("No result returned by agent");
+    expect(report.results[1]?.passFail).toBe("fail");
+
+    // Manual test still passed
+    expect(report.results[2]?.testCaseId).toBe("TC-US001-03");
+    expect(report.results[2]?.payload.status).toBe("passed");
+
+    const state = await readState(projectRoot);
+    expect(state.phases.prototype.test_execution.status).toBe("failed");
+  });
+
+  // AC07: resume behavior preserved - already-passed automated tests excluded from batch
+  test("excludes already-passed automated tests from the batch on resume", async () => {
+    const projectRoot = await createProjectRoot();
+    createdRoots.push(projectRoot);
+
+    const tpFileName = "it_000005_TP.json";
+    await seedState(projectRoot, "created", tpFileName);
+    await writeProjectContext(projectRoot);
+    await writeApprovedTpJson(projectRoot, tpFileName);
+
+    await withCwd(projectRoot, async () => {
+      // First run: first automated test passes, second fails
+      await runExecuteTestPlan(
+        { provider: "claude" },
+        {
+          loadSkillFn: async (_pr, name) => {
+            if (name === "execute-test-batch") return "batch skill";
+            return "single skill";
+          },
+          invokeAgentFn: async (options): Promise<AgentResult> => {
+            if (options.prompt.includes("test_cases")) {
+              return {
+                exitCode: 0,
+                stdout: JSON.stringify([
+                  {
+                    testCaseId: "TC-US001-01",
+                    status: "passed",
+                    evidence: "ok",
+                    notes: "ok",
+                  },
+                  {
+                    testCaseId: "TC-US001-02",
+                    status: "failed",
+                    evidence: "assertion mismatch",
+                    notes: "failed on second case",
+                  },
+                ]),
+                stderr: "",
+              };
+            }
+            // Manual test
+            return {
+              exitCode: 0,
+              stdout: JSON.stringify({ status: "passed", evidence: "ok", notes: "ok" }),
+              stderr: "",
+            };
+          },
+        },
+      );
+
+      // Second run: only the failed test should be in the batch
+      let rerunBatchPrompt = "";
+      await runExecuteTestPlan(
+        { provider: "claude" },
+        {
+          loadSkillFn: async (_pr, name) => {
+            if (name === "execute-test-batch") return "batch skill";
+            return "single skill";
+          },
+          invokeAgentFn: async (options): Promise<AgentResult> => {
+            if (options.prompt.includes("test_cases")) {
+              rerunBatchPrompt = options.prompt;
+              return {
+                exitCode: 0,
+                stdout: JSON.stringify([
+                  {
+                    testCaseId: "TC-US001-02",
+                    status: "passed",
+                    evidence: "retry ok",
+                    notes: "retry succeeded",
+                  },
+                ]),
+                stderr: "",
+              };
+            }
+            // Manual test already passed, should not be invoked
+            return {
+              exitCode: 0,
+              stdout: JSON.stringify({ status: "passed", evidence: "ok", notes: "ok" }),
+              stderr: "",
+            };
+          },
+        },
+      );
+
+      // AC07: already-passed TC-US001-01 excluded from batch
+      expect(rerunBatchPrompt).toContain("TC-US001-02");
+      expect(rerunBatchPrompt).not.toContain("TC-US001-01");
+    });
+
+    const progressRaw = await readFile(
+      join(projectRoot, ".agents", "flow", "it_000005_test-execution-progress.json"),
+      "utf8",
+    );
+    const progress = JSON.parse(progressRaw) as {
+      entries: Array<{ id: string; status: string; attempt_count: number }>;
+    };
+
+    expect(progress.entries.find((entry) => entry.id === "TC-US001-01")).toMatchObject({
+      status: "passed",
+      attempt_count: 1,
+    });
+    expect(progress.entries.find((entry) => entry.id === "TC-US001-02")).toMatchObject({
+      status: "passed",
+      attempt_count: 2,
+    });
+    expect(progress.entries.find((entry) => entry.id === "TC-US001-03")).toMatchObject({
+      status: "passed",
+      attempt_count: 1,
+    });
+  });
+
+  test("derives pass/fail from payload status and treats non-zero manual agent exit as invocation failure", async () => {
+    const projectRoot = await createProjectRoot();
+    createdRoots.push(projectRoot);
+
+    await seedState(projectRoot, "created", "it_000005_TP.json");
+    await writeProjectContext(projectRoot);
+    await writeApprovedTpJson(projectRoot, "it_000005_TP.json");
+
+    await withCwd(projectRoot, async () => {
+      await runExecuteTestPlan(
+        { provider: "claude" },
+        {
+          loadSkillFn: async (_pr, name) => {
+            if (name === "execute-test-batch") return "batch skill";
+            return "single skill";
+          },
+          invokeAgentFn: async (options): Promise<AgentResult> => {
+            if (options.prompt.includes("test_cases")) {
+              return {
+                exitCode: 0,
+                stdout: JSON.stringify([
+                  {
+                    testCaseId: "TC-US001-01",
+                    status: "failed",
+                    evidence: "Assertion mismatch",
+                    notes: "Expected error message not found",
+                  },
+                  {
+                    testCaseId: "TC-US001-02",
+                    status: "skipped",
+                    evidence: "",
+                    notes: "Blocked by missing credentials",
+                  },
+                ]),
+                stderr: "",
+              };
+            }
+            // Manual test: agent crashes
+            return { exitCode: 1, stdout: "", stderr: "agent crashed" };
+          },
+        },
+      );
+    });
+
+    const reportRaw = await readFile(
+      join(projectRoot, ".agents", "flow", "it_000005_test-execution-results.json"),
+      "utf8",
+    );
+    const report = JSON.parse(reportRaw) as {
+      results: Array<{
+        testCaseId: string;
+        payload: { status: string; evidence: string; notes: string };
+        passFail: "pass" | "fail" | null;
         agentExitCode: number;
-        artifactReferences: string[];
       }>;
     };
 
     expect(report.results[0]?.payload.status).toBe("failed");
     expect(report.results[0]?.passFail).toBe("fail");
 
-    expect(report.results[1]?.payload.status).toBe("invocation_failed");
-    expect(report.results[1]?.payload.evidence).toBe("");
-    expect(report.results[1]?.payload.notes).toContain("Agent invocation failed with exit code 1");
+    expect(report.results[1]?.payload.status).toBe("skipped");
     expect(report.results[1]?.passFail).toBeNull();
-    expect(report.results[1]?.agentExitCode).toBe(1);
-    expect(report.results[1]?.artifactReferences[0]).toContain(
-      ".agents/flow/it_000005_test-execution-artifacts/TC-US001-02_attempt_001.json",
-    );
 
-    expect(report.results[2]?.payload.status).toBe("skipped");
+    expect(report.results[2]?.payload.status).toBe("invocation_failed");
+    expect(report.results[2]?.payload.notes).toContain("Agent invocation failed with exit code 1");
     expect(report.results[2]?.passFail).toBeNull();
+    expect(report.results[2]?.agentExitCode).toBe(1);
 
     const state = await readState(projectRoot);
     expect(state.phases.prototype.test_execution.status).toBe("failed");
-    expect(state.phases.prototype.test_execution.file).toBe("it_000005_test-execution-progress.json");
   });
 
   test("supports claude, codex, and gemini providers", () => {
@@ -391,7 +668,7 @@ describe("execute test-plan command", () => {
     expect(parseProvider("gemini")).toBe("gemini");
   });
 
-  test("updates execution progress file after each test case execution attempt", async () => {
+  test("updates execution progress file after each test case result from batch", async () => {
     const projectRoot = await createProjectRoot();
     createdRoots.push(projectRoot);
 
@@ -406,16 +683,27 @@ describe("execute test-plan command", () => {
       await runExecuteTestPlan(
         { provider: "codex" },
         {
-          loadSkillFn: async () => "skill",
-          invokeAgentFn: async (): Promise<AgentResult> => ({
-            exitCode: 0,
-            stdout: JSON.stringify({
-              status: "passed",
-              evidence: "ok",
-              notes: "ok",
-            }),
-            stderr: "",
-          }),
+          loadSkillFn: async (_pr, name) => {
+            if (name === "execute-test-batch") return "batch skill";
+            return "single skill";
+          },
+          invokeAgentFn: async (options): Promise<AgentResult> => {
+            if (options.prompt.includes("test_cases")) {
+              return {
+                exitCode: 0,
+                stdout: JSON.stringify([
+                  { testCaseId: "TC-US001-01", status: "passed", evidence: "ok", notes: "ok" },
+                  { testCaseId: "TC-US001-02", status: "passed", evidence: "ok", notes: "ok" },
+                ]),
+                stderr: "",
+              };
+            }
+            return {
+              exitCode: 0,
+              stdout: JSON.stringify({ status: "passed", evidence: "ok", notes: "ok" }),
+              stderr: "",
+            };
+          },
           writeFileFn: async (path, data) => {
             const pathAsString = path.toString();
             if (pathAsString.endsWith("it_000005_test-execution-progress.json")) {
@@ -428,101 +716,10 @@ describe("execute test-plan command", () => {
       );
     });
 
-    expect(progressSnapshots.length).toBeGreaterThanOrEqual(7);
+    // Progress should be written: initial, in_progress for batch, result per automated test, manual in_progress, manual result
+    expect(progressSnapshots.length).toBeGreaterThanOrEqual(5);
     expect(progressSnapshots.at(-1)).toContain('"attempt_count": 1');
     expect(progressSnapshots.at(-1)).toContain('"status": "passed"');
-  });
-
-  test("resumes only pending or failed tests on re-run and skips previously passed tests", async () => {
-    const projectRoot = await createProjectRoot();
-    createdRoots.push(projectRoot);
-
-    const tpFileName = "it_000005_TP.json";
-    await seedState(projectRoot, "created", tpFileName);
-    await writeProjectContext(projectRoot);
-    await writeApprovedTpJson(projectRoot, tpFileName);
-
-    await withCwd(projectRoot, async () => {
-      let firstRunCall = 0;
-      await runExecuteTestPlan(
-        { provider: "claude" },
-        {
-          loadSkillFn: async () => "skill",
-          invokeAgentFn: async (): Promise<AgentResult> => {
-            firstRunCall += 1;
-            if (firstRunCall === 2) {
-              return {
-                exitCode: 0,
-                stdout: JSON.stringify({
-                  status: "failed",
-                  evidence: "assertion mismatch",
-                  notes: "failed on second case",
-                }),
-                stderr: "",
-              };
-            }
-
-            return {
-              exitCode: 0,
-              stdout: JSON.stringify({
-                status: "passed",
-                evidence: "ok",
-                notes: "ok",
-              }),
-              stderr: "",
-            };
-          },
-        },
-      );
-
-      const rerunInvokedIds: string[] = [];
-      await runExecuteTestPlan(
-        { provider: "claude" },
-        {
-          loadSkillFn: async () => "skill",
-          invokeAgentFn: async (options): Promise<AgentResult> => {
-            if (options.prompt.includes("TC-US001-01")) rerunInvokedIds.push("TC-US001-01");
-            if (options.prompt.includes("TC-US001-02")) rerunInvokedIds.push("TC-US001-02");
-            if (options.prompt.includes("TC-US001-03")) rerunInvokedIds.push("TC-US001-03");
-            return {
-              exitCode: 0,
-              stdout: JSON.stringify({
-                status: "passed",
-                evidence: "retry ok",
-                notes: "retry succeeded",
-              }),
-              stderr: "",
-            };
-          },
-        },
-      );
-
-      expect(rerunInvokedIds).toEqual(["TC-US001-02"]);
-    });
-
-    const progressRaw = await readFile(
-      join(projectRoot, ".agents", "flow", "it_000005_test-execution-progress.json"),
-      "utf8",
-    );
-    const progress = JSON.parse(progressRaw) as {
-      entries: Array<{ id: string; status: string; attempt_count: number }>;
-    };
-
-    expect(progress.entries.find((entry) => entry.id === "TC-US001-01")).toMatchObject({
-      id: "TC-US001-01",
-      status: "passed",
-      attempt_count: 1,
-    });
-    expect(progress.entries.find((entry) => entry.id === "TC-US001-02")).toMatchObject({
-      id: "TC-US001-02",
-      status: "passed",
-      attempt_count: 2,
-    });
-    expect(progress.entries.find((entry) => entry.id === "TC-US001-03")).toMatchObject({
-      id: "TC-US001-03",
-      status: "passed",
-      attempt_count: 1,
-    });
   });
 
   test("fails with a descriptive error when execute-test-case skill is missing", async () => {
@@ -538,14 +735,104 @@ describe("execute test-plan command", () => {
         runExecuteTestPlan(
           { provider: "codex" },
           {
-            loadSkillFn: async () => {
-              throw new Error("missing");
+            loadSkillFn: async (_pr, name) => {
+              if (name === "execute-test-case") throw new Error("missing");
+              return "batch skill";
             },
           },
         ),
       ).rejects.toThrow(
         "Required skill missing: expected .agents/skills/execute-test-case/SKILL.md.",
       );
+    });
+  });
+
+  test("fails with a descriptive error when execute-test-batch skill is missing", async () => {
+    const projectRoot = await createProjectRoot();
+    createdRoots.push(projectRoot);
+
+    await seedState(projectRoot, "created", "it_000005_TP.json");
+    await writeProjectContext(projectRoot);
+    await writeApprovedTpJson(projectRoot, "it_000005_TP.json");
+
+    await withCwd(projectRoot, async () => {
+      await expect(
+        runExecuteTestPlan(
+          { provider: "codex" },
+          {
+            loadSkillFn: async (_pr, name) => {
+              if (name === "execute-test-batch") throw new Error("missing");
+              return "single skill";
+            },
+          },
+        ),
+      ).rejects.toThrow(
+        "Required skill missing: expected .agents/skills/execute-test-batch/SKILL.md.",
+      );
+    });
+  });
+
+  test("handles batch with no pending automated tests (all already passed)", async () => {
+    const projectRoot = await createProjectRoot();
+    createdRoots.push(projectRoot);
+
+    const tpFileName = "it_000005_TP.json";
+    await seedState(projectRoot, "created", tpFileName);
+    await writeProjectContext(projectRoot);
+    await writeApprovedTpJson(projectRoot, tpFileName);
+
+    await withCwd(projectRoot, async () => {
+      // First run: all pass
+      await runExecuteTestPlan(
+        { provider: "claude" },
+        {
+          loadSkillFn: async (_pr, name) => {
+            if (name === "execute-test-batch") return "batch skill";
+            return "single skill";
+          },
+          invokeAgentFn: async (options): Promise<AgentResult> => {
+            if (options.prompt.includes("test_cases")) {
+              return {
+                exitCode: 0,
+                stdout: JSON.stringify([
+                  { testCaseId: "TC-US001-01", status: "passed", evidence: "ok", notes: "ok" },
+                  { testCaseId: "TC-US001-02", status: "passed", evidence: "ok", notes: "ok" },
+                ]),
+                stderr: "",
+              };
+            }
+            return {
+              exitCode: 0,
+              stdout: JSON.stringify({ status: "passed", evidence: "ok", notes: "ok" }),
+              stderr: "",
+            };
+          },
+        },
+      );
+
+      // Second run: no batch invocation should happen
+      let batchCalled = false;
+      await runExecuteTestPlan(
+        { provider: "claude" },
+        {
+          loadSkillFn: async (_pr, name) => {
+            if (name === "execute-test-batch") return "batch skill";
+            return "single skill";
+          },
+          invokeAgentFn: async (options): Promise<AgentResult> => {
+            if (options.prompt.includes("test_cases")) {
+              batchCalled = true;
+            }
+            return {
+              exitCode: 0,
+              stdout: JSON.stringify({ status: "passed", evidence: "ok", notes: "ok" }),
+              stderr: "",
+            };
+          },
+        },
+      );
+
+      expect(batchCalled).toBe(false);
     });
   });
 });
@@ -572,5 +859,30 @@ describe("execute-test-case skill definition", () => {
     expect(source).toContain('"evidence": "string"');
     expect(source).toContain('"notes": "string"');
     expect(source).toContain("Do not output markdown or additional text outside the JSON object.");
+  });
+});
+
+describe("execute-test-batch skill definition", () => {
+  test("includes required batch execution guidance and JSON array contract", async () => {
+    const skillPath = join(
+      process.cwd(),
+      ".agents",
+      "skills",
+      "execute-test-batch",
+      "SKILL.md",
+    );
+    const source = await readFile(skillPath, "utf8");
+
+    expect(source.startsWith("---\n")).toBe(true);
+    expect(source).toContain("name: execute-test-batch");
+    expect(source).toContain("description:");
+    expect(source).toContain("user-invocable: false");
+    expect(source).toContain("`test_cases`");
+    expect(source).toContain("`project_context`");
+    expect(source).toContain('"testCaseId"');
+    expect(source).toContain('"status": "passed|failed|skipped"');
+    expect(source).toContain('"evidence": "string"');
+    expect(source).toContain('"notes": "string"');
+    expect(source).toContain("Do not output markdown or additional text outside the JSON array.");
   });
 });

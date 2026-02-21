@@ -25,6 +25,17 @@ const ExecutionPayloadSchema = z.object({
 
 type ExecutionPayload = z.infer<typeof ExecutionPayloadSchema>;
 
+const BatchResultItemSchema = z.object({
+  testCaseId: z.string(),
+  status: z.enum(["passed", "failed", "skipped"]),
+  evidence: z.string(),
+  notes: z.string(),
+});
+
+const BatchResultSchema = z.array(BatchResultItemSchema);
+
+type BatchResultItem = z.infer<typeof BatchResultItemSchema>;
+
 const TestExecutionProgressStatusSchema = z.enum(["pending", "in_progress", "passed", "failed"]);
 
 const TestExecutionProgressEntrySchema = z.object({
@@ -119,6 +130,17 @@ function buildExecutionPrompt(
   });
 }
 
+function buildBatchExecutionPrompt(
+  skillBody: string,
+  testCases: FlatTestCase[],
+  projectContextContent: string,
+): string {
+  return buildPrompt(skillBody, {
+    project_context: projectContextContent,
+    test_cases: JSON.stringify(testCases, null, 2),
+  });
+}
+
 function parseExecutionPayload(raw: string): ExecutionPayload {
   let parsed: unknown;
   try {
@@ -130,6 +152,24 @@ function parseExecutionPayload(raw: string): ExecutionPayload {
   const validation = ExecutionPayloadSchema.safeParse(parsed);
   if (!validation.success) {
     throw new Error("Agent output did not match required execution payload schema.", {
+      cause: validation.error,
+    });
+  }
+
+  return validation.data;
+}
+
+function parseBatchExecutionPayload(raw: string): BatchResultItem[] {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch (error) {
+    throw new Error("Agent batch output was not valid JSON.", { cause: error });
+  }
+
+  const validation = BatchResultSchema.safeParse(parsed);
+  if (!validation.success) {
+    throw new Error("Agent batch output did not match required batch result schema.", {
       cause: validation.error,
     });
   }
@@ -200,6 +240,68 @@ function buildMarkdownReport(report: TestExecutionReport): string {
   return `${lines.join("\n")}\n`;
 }
 
+async function recordTestResult(
+  testCase: FlatTestCase,
+  payload: { status: "passed" | "failed" | "skipped" | "invocation_failed"; evidence: string; notes: string },
+  agentExitCode: number,
+  batchPrompt: string,
+  agentStdout: string,
+  agentStderr: string,
+  progressEntry: TestExecutionProgress["entries"][number],
+  artifactsDirName: string,
+  projectRoot: string,
+  executionByTestId: Map<string, TestExecutionResult>,
+  executedTestIds: string[],
+  writeProgress: () => Promise<void>,
+  mergedDeps: ExecuteTestPlanDeps,
+): Promise<void> {
+  const attemptNumber = progressEntry.attempt_count + 1;
+  const artifactFileName = buildArtifactFileName(testCase.id, attemptNumber);
+  const artifactRelativePath = join(FLOW_REL_DIR, artifactsDirName, artifactFileName);
+  const artifactAbsolutePath = join(projectRoot, artifactRelativePath);
+
+  progressEntry.attempt_count += 1;
+  progressEntry.last_agent_exit_code = agentExitCode;
+  if (payload.status === "invocation_failed") {
+    progressEntry.last_error_summary = payload.notes;
+    progressEntry.status = "failed";
+  } else {
+    progressEntry.last_error_summary = payload.status === "passed" ? "" : payload.notes;
+    progressEntry.status = payload.status === "passed" ? "passed" : "failed";
+  }
+  progressEntry.updated_at = new Date().toISOString();
+  await writeProgress();
+
+  await mergedDeps.writeFileFn(
+    artifactAbsolutePath,
+    `${JSON.stringify(
+      {
+        testCaseId: testCase.id,
+        attemptNumber,
+        prompt: batchPrompt,
+        agentExitCode,
+        stdout: agentStdout,
+        stderr: agentStderr,
+        payload,
+      },
+      null,
+      2,
+    )}\n`,
+  );
+
+  executedTestIds.push(testCase.id);
+  executionByTestId.set(testCase.id, {
+    testCaseId: testCase.id,
+    description: testCase.description,
+    correlatedRequirements: testCase.correlatedRequirements,
+    mode: testCase.mode,
+    payload,
+    passFail: payload.status === "invocation_failed" ? null : derivePassFail(payload.status),
+    agentExitCode,
+    artifactReferences: [artifactRelativePath],
+  });
+}
+
 export async function runExecuteTestPlan(
   opts: ExecuteTestPlanOptions,
   deps: Partial<ExecuteTestPlanDeps> = {},
@@ -246,12 +348,22 @@ export async function runExecuteTestPlan(
     throw new Error("Project context missing: expected .agents/PROJECT_CONTEXT.md.");
   }
   const projectContextContent = await mergedDeps.readFileFn(projectContextPath, "utf8");
-  let skillBody: string;
+
+  let singleSkillBody: string;
   try {
-    skillBody = await mergedDeps.loadSkillFn(projectRoot, "execute-test-case");
+    singleSkillBody = await mergedDeps.loadSkillFn(projectRoot, "execute-test-case");
   } catch {
     throw new Error(
       "Required skill missing: expected .agents/skills/execute-test-case/SKILL.md.",
+    );
+  }
+
+  let batchSkillBody: string;
+  try {
+    batchSkillBody = await mergedDeps.loadSkillFn(projectRoot, "execute-test-batch");
+  } catch {
+    throw new Error(
+      "Required skill missing: expected .agents/skills/execute-test-batch/SKILL.md.",
     );
   }
 
@@ -321,7 +433,144 @@ export async function runExecuteTestPlan(
   await mergedDeps.mkdirFn(artifactsDirPath, { recursive: true });
   await writeProgress();
 
-  for (const testCase of testCases) {
+  // --- Batch execution for automated tests ---
+  const pendingAutomatedTests = testCases.filter((tc) => {
+    if (tc.mode !== "automated") return false;
+    const entry = progress.entries.find((e) => e.id === tc.id);
+    return entry !== undefined && entry.status !== "passed";
+  });
+
+  if (pendingAutomatedTests.length > 0) {
+    // Mark all pending automated tests as in_progress
+    for (const tc of pendingAutomatedTests) {
+      const entry = progress.entries.find((e) => e.id === tc.id);
+      if (entry) {
+        entry.status = "in_progress";
+        entry.updated_at = new Date().toISOString();
+      }
+    }
+    await writeProgress();
+
+    const batchPrompt = buildBatchExecutionPrompt(
+      batchSkillBody,
+      pendingAutomatedTests,
+      projectContextContent,
+    );
+
+    const agentResult = await mergedDeps.invokeAgentFn({
+      provider: opts.provider,
+      prompt: batchPrompt,
+      cwd: projectRoot,
+      interactive: false,
+    });
+
+    if (agentResult.exitCode !== 0) {
+      // All automated tests in the batch fail with invocation_failed
+      for (const tc of pendingAutomatedTests) {
+        const entry = progress.entries.find((e) => e.id === tc.id);
+        if (!entry) continue;
+        const errorSummary = `Agent invocation failed with exit code ${agentResult.exitCode}.`;
+        await recordTestResult(
+          tc,
+          { status: "invocation_failed", evidence: "", notes: errorSummary },
+          agentResult.exitCode,
+          batchPrompt,
+          agentResult.stdout,
+          agentResult.stderr,
+          entry,
+          artifactsDirName,
+          projectRoot,
+          executionByTestId,
+          executedTestIds,
+          writeProgress,
+          mergedDeps,
+        );
+      }
+    } else {
+      // Parse batch results
+      let batchResults: BatchResultItem[];
+      try {
+        batchResults = parseBatchExecutionPayload(agentResult.stdout.trim());
+      } catch (error) {
+        // Parse failure: mark all as failed
+        const summary = error instanceof Error ? error.message : "Unknown batch parsing error.";
+        for (const tc of pendingAutomatedTests) {
+          const entry = progress.entries.find((e) => e.id === tc.id);
+          if (!entry) continue;
+          await recordTestResult(
+            tc,
+            { status: "invocation_failed", evidence: "", notes: summary },
+            agentResult.exitCode,
+            batchPrompt,
+            agentResult.stdout,
+            agentResult.stderr,
+            entry,
+            artifactsDirName,
+            projectRoot,
+            executionByTestId,
+            executedTestIds,
+            writeProgress,
+            mergedDeps,
+          );
+        }
+        batchResults = [];
+      }
+
+      if (batchResults.length > 0) {
+        // Build a map from testCaseId to result
+        const resultMap = new Map<string, BatchResultItem>();
+        for (const item of batchResults) {
+          resultMap.set(item.testCaseId, item);
+        }
+
+        for (const tc of pendingAutomatedTests) {
+          const entry = progress.entries.find((e) => e.id === tc.id);
+          if (!entry) continue;
+
+          const batchItem = resultMap.get(tc.id);
+          if (batchItem) {
+            // Matched result
+            await recordTestResult(
+              tc,
+              { status: batchItem.status, evidence: batchItem.evidence, notes: batchItem.notes },
+              agentResult.exitCode,
+              batchPrompt,
+              agentResult.stdout,
+              agentResult.stderr,
+              entry,
+              artifactsDirName,
+              projectRoot,
+              executionByTestId,
+              executedTestIds,
+              writeProgress,
+              mergedDeps,
+            );
+          } else {
+            // Partial results: unmatched test marked as failed
+            await recordTestResult(
+              tc,
+              { status: "failed", evidence: "", notes: "No result returned by agent for this test case." },
+              agentResult.exitCode,
+              batchPrompt,
+              agentResult.stdout,
+              agentResult.stderr,
+              entry,
+              artifactsDirName,
+              projectRoot,
+              executionByTestId,
+              executedTestIds,
+              writeProgress,
+              mergedDeps,
+            );
+          }
+        }
+      }
+    }
+  }
+
+  // --- One-by-one execution for manual/exploratory tests ---
+  const manualTests = testCases.filter((tc) => tc.mode === "exploratory_manual");
+  for (const testCase of manualTests) {
     const progressEntry = progress.entries.find((entry) => entry.id === testCase.id);
     if (!progressEntry) {
       throw new Error(`Missing progress entry for test case '${testCase.id}'.`);
@@ -335,7 +584,7 @@ export async function runExecuteTestPlan(
     progressEntry.updated_at = new Date().toISOString();
     await writeProgress();
 
-    const prompt = buildExecutionPrompt(skillBody, testCase, projectContextContent);
+    const prompt = buildExecutionPrompt(singleSkillBody, testCase, projectContextContent);
     const agentResult = await mergedDeps.invokeAgentFn({
       provider: opts.provider,
       prompt,
@@ -343,7 +592,6 @@ export async function runExecuteTestPlan(
       interactive: false,
     });
 
-    executedTestIds.push(testCase.id);
     const attemptNumber = progressEntry.attempt_count + 1;
     const artifactFileName = buildArtifactFileName(testCase.id, attemptNumber);
     const artifactRelativePath = join(FLOW_REL_DIR, artifactsDirName, artifactFileName);
@@ -378,6 +626,7 @@ export async function runExecuteTestPlan(
         )}\n`,
       );
 
+      executedTestIds.push(testCase.id);
       executionByTestId.set(testCase.id, {
         testCaseId: testCase.id,
         description: testCase.description,
@@ -428,6 +677,7 @@ export async function runExecuteTestPlan(
         )}\n`,
       );
 
+      executedTestIds.push(testCase.id);
       executionByTestId.set(testCase.id, {
         testCaseId: testCase.id,
         description: testCase.description,
@@ -469,6 +719,7 @@ export async function runExecuteTestPlan(
       )}\n`,
     );
 
+    executedTestIds.push(testCase.id);
     executionByTestId.set(testCase.id, {
       testCaseId: testCase.id,
       description: testCase.description,
