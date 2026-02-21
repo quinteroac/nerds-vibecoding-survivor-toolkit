@@ -205,3 +205,31 @@ describe("create test-plan command", () => {
     expect(await readFile(outputPath, "utf8")).toBe("new");
   });
 });
+
+describe("create-test-plan skill definition", () => {
+  test("has YAML frontmatter and required automation-first instructions", async () => {
+    const skillPath = join(
+      process.cwd(),
+      ".agents",
+      "skills",
+      "create-test-plan",
+      "SKILL.md",
+    );
+    const source = await readFile(skillPath, "utf8");
+
+    expect(source.startsWith("---\n")).toBe(true);
+    expect(source).toContain("name: create-test-plan");
+    expect(source).toContain("description:");
+    expect(source).toContain("user-invocable: true");
+    expect(source).toContain("Read these first to understand what must be tested:");
+    expect(source).toContain("`it_{iteration}_PRD.json`");
+    expect(source).toContain("`.agents/PROJECT_CONTEXT.md`");
+    expect(source).toContain("structured by user story");
+    expect(source).toContain("| Test Case ID | Description | Type (unit/integration/e2e) | Mode (automated/manual) | Expected Result |");
+    expect(source).toContain("Every functional requirement (`FR-N`) must have automated coverage.");
+    expect(source).toContain(
+      "Manual tests are allowed only for UI/UX nuances that cannot be reliably validated through DOM/state assertions",
+    );
+    expect(source).toContain("`.agents/flow/it_{iteration}_test-plan.md`");
+  });
+});
