@@ -13,6 +13,7 @@ import { exists, FLOW_REL_DIR, readState } from "../state";
 
 export interface RefineTestPlanOptions {
   provider: AgentProvider;
+  challenge: boolean;
 }
 
 interface RefineTestPlanDeps {
@@ -33,7 +34,7 @@ export async function runRefineTestPlan(
   opts: RefineTestPlanOptions,
   deps: Partial<RefineTestPlanDeps> = {},
 ): Promise<void> {
-  const { provider } = opts;
+  const { provider, challenge } = opts;
   const projectRoot = process.cwd();
   const state = await readState(projectRoot);
   const mergedDeps: RefineTestPlanDeps = { ...defaultDeps, ...deps };
@@ -65,11 +66,17 @@ export async function runRefineTestPlan(
   }
 
   const testPlanContent = await mergedDeps.readFileFn(testPlanPath, "utf8");
-  const prompt = buildPrompt(skillBody, {
+  const context: Record<string, string> = {
     current_iteration: state.current_iteration,
     test_plan_file: testPlanFile,
     test_plan_content: testPlanContent,
-  });
+  };
+
+  if (challenge) {
+    context.mode = "challenger";
+  }
+
+  const prompt = buildPrompt(skillBody, context);
 
   const result = await mergedDeps.invokeAgentFn({
     provider,

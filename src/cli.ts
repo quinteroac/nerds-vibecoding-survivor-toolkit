@@ -90,7 +90,7 @@ Commands:
                      Create requirement document via agent
   refine requirement --agent <provider> [--challenge]
                      Refine requirement document via agent
-  refine test-plan --agent <provider>
+  refine test-plan --agent <provider> [--challenge]
                      Refine test plan document via agent
   approve requirement
                      Mark requirement definition as approved
@@ -339,14 +339,17 @@ async function main() {
     if (subcommand === "test-plan") {
       try {
         const { provider, remainingArgs: postAgentArgs } = parseAgentArg(args.slice(1));
-        if (postAgentArgs.length > 0) {
-          console.error(`Unknown option(s) for refine test-plan: ${postAgentArgs.join(" ")}`);
+        const challenge = postAgentArgs.includes("--challenge");
+        const unknownArgs = postAgentArgs.filter((arg) => arg !== "--challenge");
+
+        if (unknownArgs.length > 0) {
+          console.error(`Unknown option(s) for refine test-plan: ${unknownArgs.join(" ")}`);
           printUsage();
           process.exitCode = 1;
           return;
         }
 
-        await runRefineTestPlan({ provider });
+        await runRefineTestPlan({ provider, challenge });
         return;
       } catch (error) {
         console.error(error instanceof Error ? error.message : String(error));

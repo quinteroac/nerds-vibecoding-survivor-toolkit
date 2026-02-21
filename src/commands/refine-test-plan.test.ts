@@ -68,7 +68,8 @@ describe("refine test-plan command", () => {
 
     expect(source).toContain('import { runRefineTestPlan } from "./commands/refine-test-plan";');
     expect(source).toContain('if (subcommand === "test-plan") {');
-    expect(source).toContain("await runRefineTestPlan({ provider });");
+    expect(source).toContain('const challenge = postAgentArgs.includes("--challenge");');
+    expect(source).toContain("await runRefineTestPlan({ provider, challenge });");
   });
 
   test("loads refine-test-plan skill, reads test plan file context, invokes agent interactively, and does not update state", async () => {
@@ -85,7 +86,7 @@ describe("refine test-plan command", () => {
 
     await withCwd(projectRoot, async () => {
       await runRefineTestPlan(
-        { provider: "codex" },
+        { provider: "codex", challenge: false },
         {
           loadSkillFn: async (_root, skillName) => {
             loadedSkill = skillName;
@@ -119,6 +120,37 @@ describe("refine test-plan command", () => {
     expect(stateAfter).toBe(stateBefore);
   });
 
+  test("passes mode=challenger in prompt context when challenge mode is enabled without updating state", async () => {
+    const projectRoot = await createProjectRoot();
+    createdRoots.push(projectRoot);
+    await seedState(projectRoot, "pending_approval", "it_000003_test-plan.md");
+
+    const testPlanPath = join(projectRoot, ".agents", "flow", "it_000003_test-plan.md");
+    await writeFile(testPlanPath, "# Existing Test Plan\n- Case B\n", "utf8");
+
+    let invocationPrompt = "";
+    const stateBefore = JSON.stringify(await readState(projectRoot));
+
+    await withCwd(projectRoot, async () => {
+      await runRefineTestPlan(
+        { provider: "codex", challenge: true },
+        {
+          loadSkillFn: async () => "Refine test plan skill",
+          invokeAgentFn: async (options): Promise<AgentResult> => {
+            invocationPrompt = options.prompt;
+            return { exitCode: 0, stdout: "", stderr: "" };
+          },
+        },
+      );
+    });
+
+    expect(invocationPrompt).toContain("### mode");
+    expect(invocationPrompt).toContain("challenger");
+
+    const stateAfter = JSON.stringify(await readState(projectRoot));
+    expect(stateAfter).toBe(stateBefore);
+  });
+
   test("requires test_plan.status to be pending_approval", async () => {
     const projectRoot = await createProjectRoot();
     createdRoots.push(projectRoot);
@@ -127,7 +159,7 @@ describe("refine test-plan command", () => {
     await withCwd(projectRoot, async () => {
       await expect(
         runRefineTestPlan(
-          { provider: "codex" },
+          { provider: "codex", challenge: false },
           {
             loadSkillFn: async () => "unused",
             invokeAgentFn: async () => ({ exitCode: 0, stdout: "", stderr: "" }),
