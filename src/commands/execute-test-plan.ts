@@ -1,5 +1,6 @@
 import { mkdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
+import { createInterface } from "node:readline/promises";
 import { z } from "zod";
 
 import {
@@ -61,6 +62,43 @@ interface FlatTestCase {
   correlatedRequirements: string[];
 }
 
+export interface ManualTestUserInput {
+  status: "passed" | "failed" | "skipped";
+  evidence: string;
+  notes: string;
+}
+
+async function promptManualTest(testCase: FlatTestCase): Promise<ManualTestUserInput> {
+  const rl = createInterface({ input: process.stdin, output: process.stdout });
+  try {
+    console.log("");
+    console.log("─".repeat(60));
+    console.log(`Manual Test: ${testCase.id}`);
+    console.log(`Description: ${testCase.description}`);
+    console.log(`Correlated Requirements: ${testCase.correlatedRequirements.join(", ")}`);
+    console.log(`Expected Result: ${testCase.description}`);
+    console.log("─".repeat(60));
+
+    let status: "passed" | "failed" | "skipped" | undefined;
+    while (!status) {
+      const answer = await rl.question("Status (passed / failed / skipped): ");
+      const trimmed = answer.trim().toLowerCase();
+      if (trimmed === "passed" || trimmed === "failed" || trimmed === "skipped") {
+        status = trimmed;
+      } else {
+        console.log("Invalid status. Please enter: passed, failed, or skipped.");
+      }
+    }
+
+    const evidence = (await rl.question("Evidence (what you observed): ")).trim();
+    const notes = (await rl.question("Notes (optional, press Enter to skip): ")).trim();
+
+    return { status, evidence, notes };
+  } finally {
+    rl.close();
+  }
+}
+
 interface TestExecutionResult {
   testCaseId: string;
   description: string;
@@ -89,6 +127,7 @@ interface ExecuteTestPlanDeps {
   loadSkillFn: (projectRoot: string, skillName: string) => Promise<string>;
   mkdirFn: typeof mkdir;
   nowFn: () => Date;
+  promptManualTestFn: (testCase: FlatTestCase) => Promise<ManualTestUserInput>;
   readFileFn: typeof readFile;
   writeFileFn: typeof Bun.write;
 }
@@ -99,6 +138,7 @@ const defaultDeps: ExecuteTestPlanDeps = {
   loadSkillFn: loadSkill,
   mkdirFn: mkdir,
   nowFn: () => new Date(),
+  promptManualTestFn: promptManualTest,
   readFileFn: readFile,
   writeFileFn: Bun.write,
 };
@@ -568,7 +608,7 @@ export async function runExecuteTestPlan(
     }
   }
 
-  // --- One-by-one execution for manual/exploratory tests ---
+  // --- One-by-one user-interactive execution for manual/exploratory tests ---
   const manualTests = testCases.filter((tc) => tc.mode === "exploratory_manual");
   for (const testCase of manualTests) {
     const progressEntry = progress.entries.find((entry) => entry.id === testCase.id);
@@ -584,119 +624,21 @@ export async function runExecuteTestPlan(
     progressEntry.updated_at = new Date().toISOString();
     await writeProgress();
 
-    const prompt = buildExecutionPrompt(singleSkillBody, testCase, projectContextContent);
-    const agentResult = await mergedDeps.invokeAgentFn({
-      provider: opts.provider,
-      prompt,
-      cwd: projectRoot,
-      interactive: false,
-    });
+    const userInput = await mergedDeps.promptManualTestFn(testCase);
 
     const attemptNumber = progressEntry.attempt_count + 1;
     const artifactFileName = buildArtifactFileName(testCase.id, attemptNumber);
     const artifactRelativePath = join(FLOW_REL_DIR, artifactsDirName, artifactFileName);
     const artifactAbsolutePath = join(projectRoot, artifactRelativePath);
 
-    if (agentResult.exitCode !== 0) {
-      progressEntry.attempt_count += 1;
-      progressEntry.last_agent_exit_code = agentResult.exitCode;
-      progressEntry.last_error_summary = `Agent invocation failed with exit code ${agentResult.exitCode}.`;
-      progressEntry.status = "failed";
-      progressEntry.updated_at = new Date().toISOString();
-      await writeProgress();
-
-      await mergedDeps.writeFileFn(
-        artifactAbsolutePath,
-        `${JSON.stringify(
-          {
-            testCaseId: testCase.id,
-            attemptNumber,
-            prompt,
-            agentExitCode: agentResult.exitCode,
-            stdout: agentResult.stdout,
-            stderr: agentResult.stderr,
-            payload: {
-              status: "invocation_failed",
-              evidence: "",
-              notes: progressEntry.last_error_summary,
-            },
-          },
-          null,
-          2,
-        )}\n`,
-      );
-
-      executedTestIds.push(testCase.id);
-      executionByTestId.set(testCase.id, {
-        testCaseId: testCase.id,
-        description: testCase.description,
-        correlatedRequirements: testCase.correlatedRequirements,
-        mode: testCase.mode,
-        payload: {
-          status: "invocation_failed",
-          evidence: "",
-          notes: progressEntry.last_error_summary,
-        },
-        passFail: null,
-        agentExitCode: agentResult.exitCode,
-        artifactReferences: [artifactRelativePath],
-      });
-      continue;
-    }
-
-    let payload: ExecutionPayload;
-    try {
-      payload = parseExecutionPayload(agentResult.stdout.trim());
-    } catch (error) {
-      const summary = error instanceof Error ? error.message : "Unknown execution parsing error.";
-      progressEntry.attempt_count += 1;
-      progressEntry.last_agent_exit_code = agentResult.exitCode;
-      progressEntry.last_error_summary = summary;
-      progressEntry.status = "failed";
-      progressEntry.updated_at = new Date().toISOString();
-      await writeProgress();
-
-      await mergedDeps.writeFileFn(
-        artifactAbsolutePath,
-        `${JSON.stringify(
-          {
-            testCaseId: testCase.id,
-            attemptNumber,
-            prompt,
-            agentExitCode: agentResult.exitCode,
-            stdout: agentResult.stdout,
-            stderr: agentResult.stderr,
-            payload: {
-              status: "invocation_failed",
-              evidence: "",
-              notes: summary,
-            },
-          },
-          null,
-          2,
-        )}\n`,
-      );
-
-      executedTestIds.push(testCase.id);
-      executionByTestId.set(testCase.id, {
-        testCaseId: testCase.id,
-        description: testCase.description,
-        correlatedRequirements: testCase.correlatedRequirements,
-        mode: testCase.mode,
-        payload: {
-          status: "invocation_failed",
-          evidence: "",
-          notes: summary,
-        },
-        passFail: null,
-        agentExitCode: agentResult.exitCode,
-        artifactReferences: [artifactRelativePath],
-      });
-      continue;
-    }
+    const payload: ExecutionPayload = {
+      status: userInput.status,
+      evidence: userInput.evidence,
+      notes: userInput.notes,
+    };
 
     progressEntry.attempt_count += 1;
-    progressEntry.last_agent_exit_code = agentResult.exitCode;
+    progressEntry.last_agent_exit_code = null;
     progressEntry.last_error_summary = payload.status === "passed" ? "" : payload.notes;
     progressEntry.status = payload.status === "passed" ? "passed" : "failed";
     progressEntry.updated_at = new Date().toISOString();
@@ -708,10 +650,10 @@ export async function runExecuteTestPlan(
         {
           testCaseId: testCase.id,
           attemptNumber,
-          prompt,
-          agentExitCode: agentResult.exitCode,
-          stdout: agentResult.stdout,
-          stderr: agentResult.stderr,
+          prompt: "manual-user-input",
+          agentExitCode: 0,
+          stdout: JSON.stringify(userInput),
+          stderr: "",
           payload,
         },
         null,
@@ -727,7 +669,7 @@ export async function runExecuteTestPlan(
       mode: testCase.mode,
       payload,
       passFail: derivePassFail(payload.status),
-      agentExitCode: agentResult.exitCode,
+      agentExitCode: 0,
       artifactReferences: [artifactRelativePath],
     });
   }

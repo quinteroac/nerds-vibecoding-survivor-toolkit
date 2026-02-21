@@ -5,7 +5,7 @@ import { join } from "node:path";
 
 import { parseProvider, type AgentResult } from "../agent";
 import { readState, writeState } from "../state";
-import { runExecuteTestPlan } from "./execute-test-plan";
+import { runExecuteTestPlan, type ManualTestUserInput } from "./execute-test-plan";
 
 async function createProjectRoot(): Promise<string> {
   return mkdtemp(join(tmpdir(), "nvst-execute-test-plan-"));
@@ -146,7 +146,7 @@ describe("execute test-plan command", () => {
     await writeApprovedTpJson(projectRoot, tpFileName);
 
     let batchInvocationCount = 0;
-    let manualInvocationCount = 0;
+    let manualPromptCount = 0;
     let capturedBatchPrompt = "";
 
     const capturedLogs: string[] = [];
@@ -168,52 +168,40 @@ describe("execute test-plan command", () => {
               expect(options.interactive).toBe(false);
 
               // AC02: batch prompt includes test_cases context with JSON array
-              if (options.prompt.includes("test_cases")) {
-                batchInvocationCount += 1;
-                capturedBatchPrompt = options.prompt;
+              batchInvocationCount += 1;
+              capturedBatchPrompt = options.prompt;
 
-                // Verify prompt contains both automated test case IDs
-                expect(options.prompt).toContain("TC-US001-01");
-                expect(options.prompt).toContain("TC-US001-02");
-                // Should NOT contain manual test in batch prompt
-                expect(options.prompt).not.toContain("TC-US001-03");
-                expect(options.prompt).toContain("### project_context");
-                expect(options.prompt).toContain("Use bun test and tsc checks.");
+              // Verify prompt contains both automated test case IDs
+              expect(options.prompt).toContain("TC-US001-01");
+              expect(options.prompt).toContain("TC-US001-02");
+              // Should NOT contain manual test in batch prompt
+              expect(options.prompt).not.toContain("TC-US001-03");
+              expect(options.prompt).toContain("### project_context");
+              expect(options.prompt).toContain("Use bun test and tsc checks.");
 
-                // AC03: return JSON array of results
-                return {
-                  exitCode: 0,
-                  stdout: JSON.stringify([
-                    {
-                      testCaseId: "TC-US001-01",
-                      status: "passed",
-                      evidence: "Batch evidence for case one",
-                      notes: "Batch executed successfully",
-                    },
-                    {
-                      testCaseId: "TC-US001-02",
-                      status: "passed",
-                      evidence: "Batch evidence for case two",
-                      notes: "Batch executed successfully",
-                    },
-                  ]),
-                  stderr: "",
-                };
-              }
-
-              // Manual test executed individually
-              manualInvocationCount += 1;
-              expect(options.prompt).toContain("test_case_definition");
-              expect(options.prompt).toContain("TC-US001-03");
+              // AC03: return JSON array of results
               return {
                 exitCode: 0,
-                stdout: JSON.stringify({
-                  status: "passed",
-                  evidence: "Manual evidence",
-                  notes: "Manual executed successfully",
-                }),
+                stdout: JSON.stringify([
+                  {
+                    testCaseId: "TC-US001-01",
+                    status: "passed",
+                    evidence: "Batch evidence for case one",
+                    notes: "Batch executed successfully",
+                  },
+                  {
+                    testCaseId: "TC-US001-02",
+                    status: "passed",
+                    evidence: "Batch evidence for case two",
+                    notes: "Batch executed successfully",
+                  },
+                ]),
                 stderr: "",
               };
+            },
+            promptManualTestFn: async () => {
+              manualPromptCount += 1;
+              return { status: "passed", evidence: "Manual evidence", notes: "Manual executed successfully" };
             },
           },
         );
@@ -224,8 +212,8 @@ describe("execute test-plan command", () => {
 
     // AC01: single invocation for automated tests
     expect(batchInvocationCount).toBe(1);
-    // Manual tests still invoked individually
-    expect(manualInvocationCount).toBe(1);
+    // Manual tests prompted individually to user
+    expect(manualPromptCount).toBe(1);
 
     // AC02: batch prompt includes JSON array of test cases
     expect(capturedBatchPrompt).toContain("### test_cases");
@@ -357,16 +345,11 @@ describe("execute test-plan command", () => {
             return "single skill";
           },
           invokeAgentFn: async (options): Promise<AgentResult> => {
-            if (options.prompt.includes("test_cases")) {
-              // Batch invocation fails
-              return { exitCode: 1, stdout: "", stderr: "agent crashed" };
-            }
-            // Manual test succeeds
-            return {
-              exitCode: 0,
-              stdout: JSON.stringify({ status: "passed", evidence: "ok", notes: "ok" }),
-              stderr: "",
-            };
+            // Batch invocation fails
+            return { exitCode: 1, stdout: "", stderr: "agent crashed" };
+          },
+          promptManualTestFn: async () => {
+            return { status: "passed", evidence: "ok", notes: "ok" };
           },
         },
       );
@@ -395,7 +378,7 @@ describe("execute test-plan command", () => {
     expect(report.results[1]?.passFail).toBeNull();
     expect(report.results[1]?.agentExitCode).toBe(1);
 
-    // Manual test still passed
+    // Manual test still passed (via user prompt)
     expect(report.results[2]?.payload.status).toBe("passed");
     expect(report.results[2]?.passFail).toBe("pass");
 
@@ -421,27 +404,22 @@ describe("execute test-plan command", () => {
             return "single skill";
           },
           invokeAgentFn: async (options): Promise<AgentResult> => {
-            if (options.prompt.includes("test_cases")) {
-              // Return results for only the first test case (partial)
-              return {
-                exitCode: 0,
-                stdout: JSON.stringify([
-                  {
-                    testCaseId: "TC-US001-01",
-                    status: "passed",
-                    evidence: "First test ok",
-                    notes: "Passed",
-                  },
-                ]),
-                stderr: "",
-              };
-            }
-            // Manual test
+            // Return results for only the first test case (partial)
             return {
               exitCode: 0,
-              stdout: JSON.stringify({ status: "passed", evidence: "ok", notes: "ok" }),
+              stdout: JSON.stringify([
+                {
+                  testCaseId: "TC-US001-01",
+                  status: "passed",
+                  evidence: "First test ok",
+                  notes: "Passed",
+                },
+              ]),
               stderr: "",
             };
+          },
+          promptManualTestFn: async () => {
+            return { status: "passed", evidence: "ok", notes: "ok" };
           },
         },
       );
@@ -497,33 +475,28 @@ describe("execute test-plan command", () => {
             if (name === "execute-test-batch") return "batch skill";
             return "single skill";
           },
-          invokeAgentFn: async (options): Promise<AgentResult> => {
-            if (options.prompt.includes("test_cases")) {
-              return {
-                exitCode: 0,
-                stdout: JSON.stringify([
-                  {
-                    testCaseId: "TC-US001-01",
-                    status: "passed",
-                    evidence: "ok",
-                    notes: "ok",
-                  },
-                  {
-                    testCaseId: "TC-US001-02",
-                    status: "failed",
-                    evidence: "assertion mismatch",
-                    notes: "failed on second case",
-                  },
-                ]),
-                stderr: "",
-              };
-            }
-            // Manual test
+          invokeAgentFn: async (): Promise<AgentResult> => {
             return {
               exitCode: 0,
-              stdout: JSON.stringify({ status: "passed", evidence: "ok", notes: "ok" }),
+              stdout: JSON.stringify([
+                {
+                  testCaseId: "TC-US001-01",
+                  status: "passed",
+                  evidence: "ok",
+                  notes: "ok",
+                },
+                {
+                  testCaseId: "TC-US001-02",
+                  status: "failed",
+                  evidence: "assertion mismatch",
+                  notes: "failed on second case",
+                },
+              ]),
               stderr: "",
             };
+          },
+          promptManualTestFn: async () => {
+            return { status: "passed", evidence: "ok", notes: "ok" };
           },
         },
       );
@@ -538,27 +511,23 @@ describe("execute test-plan command", () => {
             return "single skill";
           },
           invokeAgentFn: async (options): Promise<AgentResult> => {
-            if (options.prompt.includes("test_cases")) {
-              rerunBatchPrompt = options.prompt;
-              return {
-                exitCode: 0,
-                stdout: JSON.stringify([
-                  {
-                    testCaseId: "TC-US001-02",
-                    status: "passed",
-                    evidence: "retry ok",
-                    notes: "retry succeeded",
-                  },
-                ]),
-                stderr: "",
-              };
-            }
-            // Manual test already passed, should not be invoked
+            rerunBatchPrompt = options.prompt;
             return {
               exitCode: 0,
-              stdout: JSON.stringify({ status: "passed", evidence: "ok", notes: "ok" }),
+              stdout: JSON.stringify([
+                {
+                  testCaseId: "TC-US001-02",
+                  status: "passed",
+                  evidence: "retry ok",
+                  notes: "retry succeeded",
+                },
+              ]),
               stderr: "",
             };
+          },
+          promptManualTestFn: async () => {
+            // Manual test already passed, should not be called
+            throw new Error("Should not prompt for already-passed manual test");
           },
         },
       );
@@ -590,7 +559,7 @@ describe("execute test-plan command", () => {
     });
   });
 
-  test("derives pass/fail from payload status and treats non-zero manual agent exit as invocation failure", async () => {
+  test("derives pass/fail from payload status for automated batch and manual user input", async () => {
     const projectRoot = await createProjectRoot();
     createdRoots.push(projectRoot);
 
@@ -606,29 +575,28 @@ describe("execute test-plan command", () => {
             if (name === "execute-test-batch") return "batch skill";
             return "single skill";
           },
-          invokeAgentFn: async (options): Promise<AgentResult> => {
-            if (options.prompt.includes("test_cases")) {
-              return {
-                exitCode: 0,
-                stdout: JSON.stringify([
-                  {
-                    testCaseId: "TC-US001-01",
-                    status: "failed",
-                    evidence: "Assertion mismatch",
-                    notes: "Expected error message not found",
-                  },
-                  {
-                    testCaseId: "TC-US001-02",
-                    status: "skipped",
-                    evidence: "",
-                    notes: "Blocked by missing credentials",
-                  },
-                ]),
-                stderr: "",
-              };
-            }
-            // Manual test: agent crashes
-            return { exitCode: 1, stdout: "", stderr: "agent crashed" };
+          invokeAgentFn: async (): Promise<AgentResult> => {
+            return {
+              exitCode: 0,
+              stdout: JSON.stringify([
+                {
+                  testCaseId: "TC-US001-01",
+                  status: "failed",
+                  evidence: "Assertion mismatch",
+                  notes: "Expected error message not found",
+                },
+                {
+                  testCaseId: "TC-US001-02",
+                  status: "skipped",
+                  evidence: "",
+                  notes: "Blocked by missing credentials",
+                },
+              ]),
+              stderr: "",
+            };
+          },
+          promptManualTestFn: async () => {
+            return { status: "failed", evidence: "UI broken", notes: "Button not clickable" };
           },
         },
       );
@@ -653,10 +621,12 @@ describe("execute test-plan command", () => {
     expect(report.results[1]?.payload.status).toBe("skipped");
     expect(report.results[1]?.passFail).toBeNull();
 
-    expect(report.results[2]?.payload.status).toBe("invocation_failed");
-    expect(report.results[2]?.payload.notes).toContain("Agent invocation failed with exit code 1");
-    expect(report.results[2]?.passFail).toBeNull();
-    expect(report.results[2]?.agentExitCode).toBe(1);
+    // Manual test: user reported failed
+    expect(report.results[2]?.payload.status).toBe("failed");
+    expect(report.results[2]?.payload.evidence).toBe("UI broken");
+    expect(report.results[2]?.payload.notes).toBe("Button not clickable");
+    expect(report.results[2]?.passFail).toBe("fail");
+    expect(report.results[2]?.agentExitCode).toBe(0);
 
     const state = await readState(projectRoot);
     expect(state.phases.prototype.test_execution.status).toBe("failed");
@@ -687,22 +657,18 @@ describe("execute test-plan command", () => {
             if (name === "execute-test-batch") return "batch skill";
             return "single skill";
           },
-          invokeAgentFn: async (options): Promise<AgentResult> => {
-            if (options.prompt.includes("test_cases")) {
-              return {
-                exitCode: 0,
-                stdout: JSON.stringify([
-                  { testCaseId: "TC-US001-01", status: "passed", evidence: "ok", notes: "ok" },
-                  { testCaseId: "TC-US001-02", status: "passed", evidence: "ok", notes: "ok" },
-                ]),
-                stderr: "",
-              };
-            }
+          invokeAgentFn: async (): Promise<AgentResult> => {
             return {
               exitCode: 0,
-              stdout: JSON.stringify({ status: "passed", evidence: "ok", notes: "ok" }),
+              stdout: JSON.stringify([
+                { testCaseId: "TC-US001-01", status: "passed", evidence: "ok", notes: "ok" },
+                { testCaseId: "TC-US001-02", status: "passed", evidence: "ok", notes: "ok" },
+              ]),
               stderr: "",
             };
+          },
+          promptManualTestFn: async () => {
+            return { status: "passed", evidence: "ok", notes: "ok" };
           },
           writeFileFn: async (path, data) => {
             const pathAsString = path.toString();
@@ -790,22 +756,18 @@ describe("execute test-plan command", () => {
             if (name === "execute-test-batch") return "batch skill";
             return "single skill";
           },
-          invokeAgentFn: async (options): Promise<AgentResult> => {
-            if (options.prompt.includes("test_cases")) {
-              return {
-                exitCode: 0,
-                stdout: JSON.stringify([
-                  { testCaseId: "TC-US001-01", status: "passed", evidence: "ok", notes: "ok" },
-                  { testCaseId: "TC-US001-02", status: "passed", evidence: "ok", notes: "ok" },
-                ]),
-                stderr: "",
-              };
-            }
+          invokeAgentFn: async (): Promise<AgentResult> => {
             return {
               exitCode: 0,
-              stdout: JSON.stringify({ status: "passed", evidence: "ok", notes: "ok" }),
+              stdout: JSON.stringify([
+                { testCaseId: "TC-US001-01", status: "passed", evidence: "ok", notes: "ok" },
+                { testCaseId: "TC-US001-02", status: "passed", evidence: "ok", notes: "ok" },
+              ]),
               stderr: "",
             };
+          },
+          promptManualTestFn: async () => {
+            return { status: "passed", evidence: "ok", notes: "ok" };
           },
         },
       );
@@ -825,9 +787,13 @@ describe("execute test-plan command", () => {
             }
             return {
               exitCode: 0,
-              stdout: JSON.stringify({ status: "passed", evidence: "ok", notes: "ok" }),
+              stdout: JSON.stringify([]),
               stderr: "",
             };
+          },
+          promptManualTestFn: async () => {
+            // Manual test already passed, should not be called
+            throw new Error("Should not prompt for already-passed manual test");
           },
         },
       );
@@ -859,6 +825,398 @@ describe("execute-test-case skill definition", () => {
     expect(source).toContain('"evidence": "string"');
     expect(source).toContain('"notes": "string"');
     expect(source).toContain("Do not output markdown or additional text outside the JSON object.");
+  });
+});
+
+describe("US-002: manual tests with user interaction", () => {
+  // US-002-AC01: After automated tests complete, each pending manual test is presented sequentially
+  test("presents pending manual tests sequentially after automated tests complete", async () => {
+    const projectRoot = await createProjectRoot();
+    createdRoots.push(projectRoot);
+
+    const tpFileName = "it_000005_TP.json";
+    await seedState(projectRoot, "created", tpFileName);
+    await writeProjectContext(projectRoot);
+
+    // Test plan with two manual tests
+    const tpPath = join(projectRoot, ".agents", "flow", tpFileName);
+    await writeFile(
+      tpPath,
+      JSON.stringify({
+        overallStatus: "pending",
+        scope: ["Scope A"],
+        environmentData: ["Env A"],
+        automatedTests: [
+          { id: "TC-AUTO-01", description: "Auto test", status: "pending", correlatedRequirements: ["US-001"] },
+        ],
+        exploratoryManualTests: [
+          { id: "TC-MAN-01", description: "First manual test", status: "pending", correlatedRequirements: ["US-002", "FR-1"] },
+          { id: "TC-MAN-02", description: "Second manual test", status: "pending", correlatedRequirements: ["US-002", "FR-2"] },
+        ],
+      }, null, 2) + "\n",
+      "utf8",
+    );
+
+    const promptedTestIds: string[] = [];
+
+    await withCwd(projectRoot, async () => {
+      await runExecuteTestPlan(
+        { provider: "claude" },
+        {
+          loadSkillFn: async (_pr, name) => {
+            if (name === "execute-test-batch") return "batch skill";
+            return "single skill";
+          },
+          invokeAgentFn: async (): Promise<AgentResult> => {
+            return {
+              exitCode: 0,
+              stdout: JSON.stringify([
+                { testCaseId: "TC-AUTO-01", status: "passed", evidence: "ok", notes: "ok" },
+              ]),
+              stderr: "",
+            };
+          },
+          promptManualTestFn: async (testCase) => {
+            promptedTestIds.push(testCase.id);
+            return { status: "passed", evidence: "Looks good", notes: "" };
+          },
+        },
+      );
+    });
+
+    // AC01: both manual tests were prompted sequentially
+    expect(promptedTestIds).toEqual(["TC-MAN-01", "TC-MAN-02"]);
+  });
+
+  // US-002-AC02: For each manual test, user sees test ID, description, correlated requirements, and expected result
+  test("passes test ID, description, and correlated requirements to user prompt function", async () => {
+    const projectRoot = await createProjectRoot();
+    createdRoots.push(projectRoot);
+
+    const tpFileName = "it_000005_TP.json";
+    await seedState(projectRoot, "created", tpFileName);
+    await writeProjectContext(projectRoot);
+    await writeApprovedTpJson(projectRoot, tpFileName);
+
+    interface CapturedTestCase {
+      id: string;
+      description: string;
+      correlatedRequirements: string[];
+    }
+    const capturedTestCases: CapturedTestCase[] = [];
+
+    await withCwd(projectRoot, async () => {
+      await runExecuteTestPlan(
+        { provider: "claude" },
+        {
+          loadSkillFn: async (_pr, name) => {
+            if (name === "execute-test-batch") return "batch skill";
+            return "single skill";
+          },
+          invokeAgentFn: async (): Promise<AgentResult> => {
+            return {
+              exitCode: 0,
+              stdout: JSON.stringify([
+                { testCaseId: "TC-US001-01", status: "passed", evidence: "ok", notes: "ok" },
+                { testCaseId: "TC-US001-02", status: "passed", evidence: "ok", notes: "ok" },
+              ]),
+              stderr: "",
+            };
+          },
+          promptManualTestFn: async (testCase) => {
+            capturedTestCases.push({
+              id: testCase.id,
+              description: testCase.description,
+              correlatedRequirements: testCase.correlatedRequirements,
+            });
+            return { status: "passed", evidence: "ok", notes: "" };
+          },
+        },
+      );
+    });
+
+    // AC02: prompt received the full test case info
+    expect(capturedTestCases).toHaveLength(1);
+    expect(capturedTestCases[0]?.id).toBe("TC-US001-03");
+    expect(capturedTestCases[0]?.description).toBe("Manual case");
+    expect(capturedTestCases[0]?.correlatedRequirements).toEqual(["US-001", "FR-3"]);
+  });
+
+  // US-002-AC03: user enters status, evidence, and notes
+  test("records user-provided status, evidence, and notes for manual tests", async () => {
+    const projectRoot = await createProjectRoot();
+    createdRoots.push(projectRoot);
+
+    const tpFileName = "it_000005_TP.json";
+    await seedState(projectRoot, "created", tpFileName);
+    await writeProjectContext(projectRoot);
+    await writeApprovedTpJson(projectRoot, tpFileName);
+
+    await withCwd(projectRoot, async () => {
+      await runExecuteTestPlan(
+        { provider: "claude" },
+        {
+          loadSkillFn: async (_pr, name) => {
+            if (name === "execute-test-batch") return "batch skill";
+            return "single skill";
+          },
+          invokeAgentFn: async (): Promise<AgentResult> => {
+            return {
+              exitCode: 0,
+              stdout: JSON.stringify([
+                { testCaseId: "TC-US001-01", status: "passed", evidence: "ok", notes: "ok" },
+                { testCaseId: "TC-US001-02", status: "passed", evidence: "ok", notes: "ok" },
+              ]),
+              stderr: "",
+            };
+          },
+          promptManualTestFn: async () => {
+            return {
+              status: "failed" as const,
+              evidence: "Button did not respond to click",
+              notes: "Tested on Chrome 120",
+            };
+          },
+        },
+      );
+    });
+
+    const reportRaw = await readFile(
+      join(projectRoot, ".agents", "flow", "it_000005_test-execution-results.json"),
+      "utf8",
+    );
+    const report = JSON.parse(reportRaw) as {
+      results: Array<{
+        testCaseId: string;
+        payload: { status: string; evidence: string; notes: string };
+        passFail: "pass" | "fail" | null;
+      }>;
+    };
+
+    const manualResult = report.results.find((r) => r.testCaseId === "TC-US001-03");
+    expect(manualResult).toBeDefined();
+    expect(manualResult!.payload.status).toBe("failed");
+    expect(manualResult!.payload.evidence).toBe("Button did not respond to click");
+    expect(manualResult!.payload.notes).toBe("Tested on Chrome 120");
+    expect(manualResult!.passFail).toBe("fail");
+  });
+
+  // US-002-AC04: each manual test result recorded in progress file and as separate artifact
+  test("records each manual test in progress file and writes artifact", async () => {
+    const projectRoot = await createProjectRoot();
+    createdRoots.push(projectRoot);
+
+    const tpFileName = "it_000005_TP.json";
+    await seedState(projectRoot, "created", tpFileName);
+    await writeProjectContext(projectRoot);
+    await writeApprovedTpJson(projectRoot, tpFileName);
+
+    await withCwd(projectRoot, async () => {
+      await runExecuteTestPlan(
+        { provider: "claude" },
+        {
+          loadSkillFn: async (_pr, name) => {
+            if (name === "execute-test-batch") return "batch skill";
+            return "single skill";
+          },
+          invokeAgentFn: async (): Promise<AgentResult> => {
+            return {
+              exitCode: 0,
+              stdout: JSON.stringify([
+                { testCaseId: "TC-US001-01", status: "passed", evidence: "ok", notes: "ok" },
+                { testCaseId: "TC-US001-02", status: "passed", evidence: "ok", notes: "ok" },
+              ]),
+              stderr: "",
+            };
+          },
+          promptManualTestFn: async () => {
+            return { status: "passed", evidence: "All good", notes: "Verified manually" };
+          },
+        },
+      );
+    });
+
+    // Check progress file
+    const progressRaw = await readFile(
+      join(projectRoot, ".agents", "flow", "it_000005_test-execution-progress.json"),
+      "utf8",
+    );
+    const progress = JSON.parse(progressRaw) as {
+      entries: Array<{
+        id: string;
+        type: string;
+        status: string;
+        attempt_count: number;
+        last_agent_exit_code: number | null;
+      }>;
+    };
+
+    const manualEntry = progress.entries.find((e) => e.id === "TC-US001-03");
+    expect(manualEntry).toBeDefined();
+    expect(manualEntry!.type).toBe("exploratory_manual");
+    expect(manualEntry!.status).toBe("passed");
+    expect(manualEntry!.attempt_count).toBe(1);
+    expect(manualEntry!.last_agent_exit_code).toBeNull();
+
+    // Check artifact file
+    const artifactsDirPath = join(projectRoot, ".agents", "flow", "it_000005_test-execution-artifacts");
+    const artifactFileNames = await readdir(artifactsDirPath);
+    const manualArtifact = artifactFileNames.find((name) => name.includes("TC-US001-03"));
+    expect(manualArtifact).toBeDefined();
+
+    const artifactRaw = await readFile(join(artifactsDirPath, manualArtifact!), "utf8");
+    const artifact = JSON.parse(artifactRaw) as {
+      testCaseId: string;
+      attemptNumber: number;
+      prompt: string;
+      agentExitCode: number;
+      payload: { status: string; evidence: string; notes: string };
+    };
+    expect(artifact.testCaseId).toBe("TC-US001-03");
+    expect(artifact.attemptNumber).toBe(1);
+    expect(artifact.prompt).toBe("manual-user-input");
+    expect(artifact.agentExitCode).toBe(0);
+    expect(artifact.payload.status).toBe("passed");
+    expect(artifact.payload.evidence).toBe("All good");
+    expect(artifact.payload.notes).toBe("Verified manually");
+  });
+
+  // US-002-AC05: resume behavior preserved - already-passed manual tests are skipped
+  test("skips already-passed manual tests on resume", async () => {
+    const projectRoot = await createProjectRoot();
+    createdRoots.push(projectRoot);
+
+    const tpFileName = "it_000005_TP.json";
+    await seedState(projectRoot, "created", tpFileName);
+    await writeProjectContext(projectRoot);
+
+    // Two manual tests
+    const tpPath = join(projectRoot, ".agents", "flow", tpFileName);
+    await writeFile(
+      tpPath,
+      JSON.stringify({
+        overallStatus: "pending",
+        scope: ["Scope A"],
+        environmentData: ["Env A"],
+        automatedTests: [],
+        exploratoryManualTests: [
+          { id: "TC-MAN-01", description: "First manual", status: "pending", correlatedRequirements: ["US-002"] },
+          { id: "TC-MAN-02", description: "Second manual", status: "pending", correlatedRequirements: ["US-002"] },
+        ],
+      }, null, 2) + "\n",
+      "utf8",
+    );
+
+    await withCwd(projectRoot, async () => {
+      // First run: first passes, second fails
+      let firstRunCount = 0;
+      await runExecuteTestPlan(
+        { provider: "claude" },
+        {
+          loadSkillFn: async () => "skill",
+          invokeAgentFn: async (): Promise<AgentResult> => {
+            return { exitCode: 0, stdout: JSON.stringify([]), stderr: "" };
+          },
+          promptManualTestFn: async (testCase) => {
+            firstRunCount += 1;
+            if (testCase.id === "TC-MAN-01") {
+              return { status: "passed", evidence: "ok", notes: "" };
+            }
+            return { status: "failed", evidence: "broken", notes: "error" };
+          },
+        },
+      );
+      expect(firstRunCount).toBe(2);
+
+      // Second run: only the failed test should be prompted
+      const secondRunPromptedIds: string[] = [];
+      await runExecuteTestPlan(
+        { provider: "claude" },
+        {
+          loadSkillFn: async () => "skill",
+          invokeAgentFn: async (): Promise<AgentResult> => {
+            return { exitCode: 0, stdout: JSON.stringify([]), stderr: "" };
+          },
+          promptManualTestFn: async (testCase) => {
+            secondRunPromptedIds.push(testCase.id);
+            return { status: "passed", evidence: "fixed", notes: "" };
+          },
+        },
+      );
+
+      // AC05: already-passed TC-MAN-01 was skipped
+      expect(secondRunPromptedIds).toEqual(["TC-MAN-02"]);
+    });
+
+    const progressRaw = await readFile(
+      join(projectRoot, ".agents", "flow", "it_000005_test-execution-progress.json"),
+      "utf8",
+    );
+    const progress = JSON.parse(progressRaw) as {
+      entries: Array<{ id: string; status: string; attempt_count: number }>;
+    };
+
+    expect(progress.entries.find((e) => e.id === "TC-MAN-01")).toMatchObject({
+      status: "passed",
+      attempt_count: 1,
+    });
+    expect(progress.entries.find((e) => e.id === "TC-MAN-02")).toMatchObject({
+      status: "passed",
+      attempt_count: 2,
+    });
+  });
+
+  // US-002-AC03: user can enter skipped status
+  test("handles skipped status from manual user input", async () => {
+    const projectRoot = await createProjectRoot();
+    createdRoots.push(projectRoot);
+
+    const tpFileName = "it_000005_TP.json";
+    await seedState(projectRoot, "created", tpFileName);
+    await writeProjectContext(projectRoot);
+    await writeApprovedTpJson(projectRoot, tpFileName);
+
+    await withCwd(projectRoot, async () => {
+      await runExecuteTestPlan(
+        { provider: "claude" },
+        {
+          loadSkillFn: async (_pr, name) => {
+            if (name === "execute-test-batch") return "batch skill";
+            return "single skill";
+          },
+          invokeAgentFn: async (): Promise<AgentResult> => {
+            return {
+              exitCode: 0,
+              stdout: JSON.stringify([
+                { testCaseId: "TC-US001-01", status: "passed", evidence: "ok", notes: "ok" },
+                { testCaseId: "TC-US001-02", status: "passed", evidence: "ok", notes: "ok" },
+              ]),
+              stderr: "",
+            };
+          },
+          promptManualTestFn: async () => {
+            return { status: "skipped", evidence: "", notes: "Not applicable for this environment" };
+          },
+        },
+      );
+    });
+
+    const reportRaw = await readFile(
+      join(projectRoot, ".agents", "flow", "it_000005_test-execution-results.json"),
+      "utf8",
+    );
+    const report = JSON.parse(reportRaw) as {
+      results: Array<{
+        testCaseId: string;
+        payload: { status: string; notes: string };
+        passFail: "pass" | "fail" | null;
+      }>;
+    };
+
+    const manualResult = report.results.find((r) => r.testCaseId === "TC-US001-03");
+    expect(manualResult).toBeDefined();
+    expect(manualResult!.payload.status).toBe("skipped");
+    expect(manualResult!.passFail).toBeNull();
   });
 });
 
