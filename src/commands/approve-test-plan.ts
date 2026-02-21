@@ -2,7 +2,7 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { $ } from "bun";
 
-import type { TestPlan } from "../../scaffold/schemas/tmpl_test-plan";
+import type { TestPlan } from "../../schemas/test-plan";
 import { exists, FLOW_REL_DIR, readState, writeState } from "../state";
 
 interface WriteJsonResult {
@@ -31,13 +31,20 @@ const defaultDeps: ApproveTestPlanDeps = {
 
 export function parseTestPlan(markdown: string): TestPlan {
   const scope: string[] = [];
-  const automatedTests: string[] = [];
-  const exploratoryManualTests: string[] = [];
-  const environmentAndData: string[] = [];
+  const environmentData: string[] = [];
+  const automatedTests: TestPlan["automatedTests"] = [];
+  const exploratoryManualTests: TestPlan["exploratoryManualTests"] = [];
 
-  type Section = "scope" | "automatedTests" | "exploratoryManualTests" | "environmentAndData" | null;
+  type Section = "scope" | "environmentData" | null;
   let currentSection: Section = null;
   let inTable = false;
+
+  const parseRequirements = (cell: string): string[] =>
+    cell
+      .split(",")
+      .map((entry) => entry.trim())
+      .filter((entry) => /^(US-\d{3}|FR-\d+)$/i.test(entry))
+      .map((entry) => entry.toUpperCase());
 
   const lines = markdown.split("\n");
 
@@ -49,23 +56,17 @@ export function parseTestPlan(markdown: string): TestPlan {
       inTable = false;
       continue;
     }
-    if (/^##\s+Automated tests$/i.test(trimmed)) {
-      currentSection = "automatedTests";
-      inTable = false;
-      continue;
-    }
-    if (/^##\s+Exploratory\s*\/\s*manual tests$/i.test(trimmed)) {
-      currentSection = "exploratoryManualTests";
-      inTable = false;
-      continue;
-    }
-    if (/^##\s+Environment and data$/i.test(trimmed)) {
-      currentSection = "environmentAndData";
+    if (/^##\s+Environment\s*(?:and|&)\s*data$/i.test(trimmed)) {
+      currentSection = "environmentData";
       inTable = false;
       continue;
     }
 
-    if (trimmed.startsWith("|") && trimmed.includes("Test Case ID")) {
+    if (
+      trimmed.startsWith("|")
+      && trimmed.includes("Test Case ID")
+      && trimmed.includes("Correlated Requirements")
+    ) {
       inTable = true;
       currentSection = null;
       continue;
@@ -79,15 +80,20 @@ export function parseTestPlan(markdown: string): TestPlan {
         .map((c) => c.trim())
         .filter((c, i, a) => i > 0 && i < a.length - 1);
 
-      if (cells.length >= 5) {
-        const [id, description, type, mode, expected] = cells;
+      if (cells.length >= 6) {
+        const [id, description, , mode, correlatedRequirementsCell] = cells;
         if (id === "Test Case ID") continue;
 
-        const testEntry = `${id}: ${description} (${type}) -> ${expected}`;
+        const item = {
+          id,
+          description,
+          status: "pending" as const,
+          correlatedRequirements: parseRequirements(correlatedRequirementsCell),
+        };
         if (mode.toLowerCase().includes("automated")) {
-          automatedTests.push(testEntry);
+          automatedTests.push(item);
         } else {
-          exploratoryManualTests.push(testEntry);
+          exploratoryManualTests.push(item);
         }
       }
       continue;
@@ -107,16 +113,15 @@ export function parseTestPlan(markdown: string): TestPlan {
     if (!value) continue;
 
     if (currentSection === "scope") scope.push(value);
-    if (currentSection === "automatedTests") automatedTests.push(value);
-    if (currentSection === "exploratoryManualTests") exploratoryManualTests.push(value);
-    if (currentSection === "environmentAndData") environmentAndData.push(value);
+    if (currentSection === "environmentData") environmentData.push(value);
   }
 
   return {
+    overallStatus: "pending",
     scope,
+    environmentData,
     automatedTests,
     exploratoryManualTests,
-    environmentAndData,
   };
 }
 
