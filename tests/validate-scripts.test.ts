@@ -33,6 +33,17 @@ const SCRIPT_CASES: ScriptCase[] = [
 ];
 
 describe("validation scripts", () => {
+  it("use asynchronous file I/O", async () => {
+    for (const scriptCase of SCRIPT_CASES) {
+      const source = await readFile(scriptCase.path, "utf-8");
+
+      expect(source.includes("readFileSync")).toBe(false);
+      expect(source.includes("Bun.file(") || source.includes("from \"node:fs/promises\"")).toBe(
+        true,
+      );
+    }
+  });
+
   it("do not call process.exit() and use process.exitCode on failure", async () => {
     for (const scriptCase of SCRIPT_CASES) {
       const source = await readFile(scriptCase.path, "utf-8");
@@ -41,7 +52,7 @@ describe("validation scripts", () => {
     }
   });
 
-  it("return exit code 1 when validation fails", async () => {
+  it("return exit code 1 and report validation errors when validation fails", async () => {
     const sandboxRoot = await mkdtemp(join(tmpdir(), "nvst-us-002-"));
 
     try {
@@ -76,8 +87,10 @@ describe("validation scripts", () => {
           stdout: "pipe",
         });
 
-        const exitCode = await proc.exited;
+        const stderrPromise = proc.stderr ? new Response(proc.stderr).text() : Promise.resolve("");
+        const [exitCode, stderr] = await Promise.all([proc.exited, stderrPromise]);
         expect(exitCode).toBe(1);
+        expect(stderr).toMatch(/validation failed/i);
       }
     } finally {
       await rm(sandboxRoot, { recursive: true, force: true });
