@@ -37,28 +37,64 @@ export function parseTestPlan(markdown: string): TestPlan {
 
   type Section = "scope" | "automatedTests" | "exploratoryManualTests" | "environmentAndData" | null;
   let currentSection: Section = null;
+  let inTable = false;
 
-  for (const line of markdown.split("\n")) {
+  const lines = markdown.split("\n");
+
+  for (const line of lines) {
     const trimmed = line.trim();
 
     if (/^##\s+Scope$/i.test(trimmed)) {
       currentSection = "scope";
+      inTable = false;
       continue;
     }
     if (/^##\s+Automated tests$/i.test(trimmed)) {
       currentSection = "automatedTests";
+      inTable = false;
       continue;
     }
     if (/^##\s+Exploratory\s*\/\s*manual tests$/i.test(trimmed)) {
       currentSection = "exploratoryManualTests";
+      inTable = false;
       continue;
     }
     if (/^##\s+Environment and data$/i.test(trimmed)) {
       currentSection = "environmentAndData";
+      inTable = false;
       continue;
     }
-    if (/^##\s+/.test(trimmed)) {
+
+    if (trimmed.startsWith("|") && trimmed.includes("Test Case ID")) {
+      inTable = true;
       currentSection = null;
+      continue;
+    }
+
+    if (inTable && trimmed.startsWith("|")) {
+      if (trimmed.includes("---|")) continue;
+
+      const cells = trimmed
+        .split("|")
+        .map((c) => c.trim())
+        .filter((c, i, a) => i > 0 && i < a.length - 1);
+
+      if (cells.length >= 5) {
+        const [id, description, type, mode, expected] = cells;
+        if (id === "Test Case ID") continue;
+
+        const testEntry = `${id}: ${description} (${type}) -> ${expected}`;
+        if (mode.toLowerCase().includes("automated")) {
+          automatedTests.push(testEntry);
+        } else {
+          exploratoryManualTests.push(testEntry);
+        }
+      }
+      continue;
+    }
+
+    if (inTable && trimmed.length === 0) {
+      inTable = false;
       continue;
     }
 
