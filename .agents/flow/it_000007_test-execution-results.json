@@ -1,0 +1,188 @@
+{
+  "iteration": "000007",
+  "testPlanFile": "it_000007_TP.json",
+  "executedTestIds": [
+    "TC-US001-01",
+    "TC-US001-02",
+    "TC-US001-03",
+    "TC-US001-04",
+    "TC-US001-05",
+    "TC-US001-06",
+    "TC-US001-07",
+    "TC-US002-01",
+    "TC-US002-02"
+  ],
+  "results": [
+    {
+      "testCaseId": "TC-US001-01",
+      "description": "CLI accepts `bun nvst [command] --agent cursor` as valid argument",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-1"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "invocation_failed",
+        "evidence": "",
+        "notes": "Agent batch output was not valid JSON."
+      },
+      "passFail": null,
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000007_test-execution-artifacts/TC-US001-01_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US001-02",
+      "description": "`parseProvider(\"cursor\")` returns `\"cursor\"` and `buildCommand(\"cursor\")` returns `{ cmd: \"agent\", args: [] }`",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-2"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "invocation_failed",
+        "evidence": "",
+        "notes": "Agent batch output was not valid JSON."
+      },
+      "passFail": null,
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000007_test-execution-artifacts/TC-US001-02_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US001-03",
+      "description": "Invalid provider error message lists `cursor` among valid providers",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-1"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "invocation_failed",
+        "evidence": "",
+        "notes": "Agent batch output was not valid JSON."
+      },
+      "passFail": null,
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000007_test-execution-artifacts/TC-US001-03_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US001-04",
+      "description": "When `cursor` provider is used, prompt context is passed to agent invocation",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-3"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "invocation_failed",
+        "evidence": "",
+        "notes": "Agent batch output was not valid JSON."
+      },
+      "passFail": null,
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000007_test-execution-artifacts/TC-US001-04_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US001-05",
+      "description": "Agent stdout output is captured and written to the target file (e.g. test-plan)",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-4"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "invocation_failed",
+        "evidence": "",
+        "notes": "Agent batch output was not valid JSON."
+      },
+      "passFail": null,
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000007_test-execution-artifacts/TC-US001-05_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US001-06",
+      "description": "Create test-plan flow works end-to-end with cursor provider",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-5"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "invocation_failed",
+        "evidence": "",
+        "notes": "Agent batch output was not valid JSON."
+      },
+      "passFail": null,
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000007_test-execution-artifacts/TC-US001-06_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US001-07",
+      "description": "Define requirement and create prototype commands accept and forward `--agent cursor`",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-1"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "invocation_failed",
+        "evidence": "",
+        "notes": "Agent batch output was not valid JSON."
+      },
+      "passFail": null,
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000007_test-execution-artifacts/TC-US001-07_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US002-01",
+      "description": "When `--agent cursor` is used but `agent` is not in PATH, a clear error is returned",
+      "correlatedRequirements": [
+        "US-002",
+        "FR-6"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "invocation_failed",
+        "evidence": "",
+        "notes": "Agent batch output was not valid JSON."
+      },
+      "passFail": null,
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000007_test-execution-artifacts/TC-US002-01_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US002-02",
+      "description": "CLI exits with code 1 and displays error when cursor provider is selected and agent is unavailable",
+      "correlatedRequirements": [
+        "US-002",
+        "FR-6"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "invocation_failed",
+        "evidence": "",
+        "notes": "Agent batch output was not valid JSON."
+      },
+      "passFail": null,
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000007_test-execution-artifacts/TC-US002-02_attempt_001.json"
+      ]
+    }
+  ]
+}
