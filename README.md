@@ -1,5 +1,7 @@
 # Nerds Vibecoding Survivor Toolkit
 
+> 🚧 **Work in Progress**: This toolkit is currently under active development.
+
 ## Purpose
 
 This repository contains nerds-vst (Nerd's Vibecoding Survivor Toolkit).
