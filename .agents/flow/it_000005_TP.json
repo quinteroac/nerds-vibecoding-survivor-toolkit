@@ -1,0 +1,474 @@
+{
+  "overallStatus": "pending",
+  "scope": [
+    "Validate the `nvst execute test-plan` command end-to-end: precondition checks, sequential test case execution via agent, progress tracking, state transitions, report generation, and artifact persistence",
+    "Verify CLI routing and `--agent <provider>` flag parsing for all supported providers (claude, codex, gemini)",
+    "Verify state schema extensions (`test_execution` field) and state transitions (pending → in_progress → completed/failed)",
+    "Verify progress file creation, per-test updates, and resume behaviour (skip passed tests on re-run)",
+    "Verify summary report (markdown + JSON) generation with correct pass/fail counts and per-test details",
+    "Verify per-test artifact persistence under `.agents/flow/it_{iteration}_test-execution-artifacts/`",
+    "Verify the `execute-test-case` skill exists, contains correct instructions, and is loaded during execution",
+    "Verify robust failure handling for invalid/missing input files, malformed agent outputs, and mid-execution interruptions",
+    "Verify quality gates (typecheck, lint, and command-specific tests) for the `execute test-plan` implementation"
+  ],
+  "environmentData": [
+    "Runtime: Bun v1+ with `bun:test` runner",
+    "Working directory: project root",
+    "Fixtures: mock `state.json` with `tp_generation.status = \"created\"` and a valid test plan JSON file; mock `PROJECT_CONTEXT.md`",
+    "Dependencies: all tests use dependency injection (mocked file I/O, agent invocation, skill loading) — no real agent calls required",
+    "File system: tests create temporary directories/files for artifact and progress file assertions; cleanup after each test",
+    "Skills: `.agents/skills/execute-test-case/SKILL.md` must be present",
+    "Mocks: agent responses mocked to simulate pass, fail, malformed output, and invocation error scenarios",
+    "Determinism: use fixed timestamps (clock stub) and stable fixture IDs to assert ordering, `updated_at`, and attempt-count transitions across reruns",
+    "## User Story: US-001 - Execute Approved Test Plan"
+  ],
+  "automatedTests": [
+    {
+      "id": "TC-US001-01",
+      "description": "Command rejects execution when `tp_generation.status` is not `\"created\"`",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-2"
+      ]
+    },
+    {
+      "id": "TC-US001-02",
+      "description": "Command reads the approved test plan JSON from the path in `state.phases.prototype.tp_generation.file`",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-3"
+      ]
+    },
+    {
+      "id": "TC-US001-03",
+      "description": "Command reads `PROJECT_CONTEXT.md` and includes it in the agent invocation prompt",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-3",
+        "FR-5"
+      ]
+    },
+    {
+      "id": "TC-US001-04",
+      "description": "Command invokes the agent once per test case sequentially",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-4",
+        "FR-5"
+      ]
+    },
+    {
+      "id": "TC-US001-05",
+      "description": "Execution order matches the order of test cases in the source TP JSON",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-4"
+      ]
+    },
+    {
+      "id": "TC-US001-06",
+      "description": "Each agent invocation produces a structured result payload with `status`, `evidence`, and `notes`",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-6"
+      ]
+    },
+    {
+      "id": "TC-US001-07",
+      "description": "Non-zero agent exit code is treated as invocation failure",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-6"
+      ]
+    },
+    {
+      "id": "TC-US001-08",
+      "description": "Each test case uses exactly one agent invocation with project-context in the prompt",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-5"
+      ]
+    },
+    {
+      "id": "TC-US001-09",
+      "description": "Command accepts `--agent claude`, `--agent codex`, and `--agent gemini` flags",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-1"
+      ]
+    },
+    {
+      "id": "TC-US001-10",
+      "description": "Command rejects invalid or missing `--agent` flag",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-1"
+      ]
+    },
+    {
+      "id": "TC-US001-11",
+      "description": "Command follows the existing command pattern: read state, validate, load skill, invoke agent, update progress, update state",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-10"
+      ]
+    },
+    {
+      "id": "TC-US001-12",
+      "description": "Typecheck passes on `execute-test-plan.ts`",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-10"
+      ]
+    },
+    {
+      "id": "TC-US001-13",
+      "description": "Command fails fast when test plan file path is missing or unreadable",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-3"
+      ]
+    },
+    {
+      "id": "TC-US001-14",
+      "description": "Command rejects invalid test plan JSON/schema at `tp_generation.file`",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-3"
+      ]
+    },
+    {
+      "id": "TC-US001-15",
+      "description": "Behavior when `PROJECT_CONTEXT.md` is missing/unreadable is deterministic and explicit",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-3",
+        "FR-5"
+      ]
+    },
+    {
+      "id": "TC-US001-16",
+      "description": "Malformed agent output (non-JSON, truncated JSON, or missing required keys with exit code 0) is treated as test-case failure",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-6"
+      ]
+    },
+    {
+      "id": "TC-US002-01",
+      "description": "Progress file `it_{iteration}_test-execution-progress.json` is created in `.agents/flow/` on first run",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-002",
+        "FR-7"
+      ]
+    },
+    {
+      "id": "TC-US002-02",
+      "description": "Each progress entry includes required fields: `id`, `type`, `status`, `attempt_count`, `last_agent_exit_code`, `last_error_summary`, `updated_at`",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-002",
+        "FR-7"
+      ]
+    },
+    {
+      "id": "TC-US002-03",
+      "description": "Progress file is updated after each test case execution attempt",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-002",
+        "FR-7"
+      ]
+    },
+    {
+      "id": "TC-US002-04",
+      "description": "Re-running the command resumes from pending/failed test cases and does not re-execute passed tests",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-002",
+        "FR-9"
+      ]
+    },
+    {
+      "id": "TC-US002-05",
+      "description": "Progress file validates against `TestExecutionProgressSchema` via Zod",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-002",
+        "FR-7"
+      ]
+    },
+    {
+      "id": "TC-US002-06",
+      "description": "On rerun, previously `passed` entries remain unchanged and are never reinvoked",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-002",
+        "FR-9"
+      ]
+    },
+    {
+      "id": "TC-US002-07",
+      "description": "On rerun, `failed` and `pending` entries are reinvoked in original TP order",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-002",
+        "FR-9"
+      ]
+    },
+    {
+      "id": "TC-US002-08",
+      "description": "`attempt_count` increments exactly once per re-executed test case",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-002",
+        "FR-7",
+        "FR-9"
+      ]
+    },
+    {
+      "id": "TC-US002-09",
+      "description": "`updated_at` changes only for entries executed in the current run",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-002",
+        "FR-7",
+        "FR-9"
+      ]
+    },
+    {
+      "id": "TC-US003-01",
+      "description": "State schema includes `test_execution` field with `status` and `file` under prototype phase",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-003",
+        "FR-10"
+      ]
+    },
+    {
+      "id": "TC-US003-02",
+      "description": "State is set to `in_progress` when execution begins",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-003",
+        "FR-10"
+      ]
+    },
+    {
+      "id": "TC-US003-03",
+      "description": "State is set to `completed` when all test cases pass",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-003",
+        "FR-8"
+      ]
+    },
+    {
+      "id": "TC-US003-04",
+      "description": "State is set to `failed` if any test cases remain in `failed` status after execution",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-003",
+        "FR-8"
+      ]
+    },
+    {
+      "id": "TC-US003-05",
+      "description": "State `test_execution.file` points to the progress file path",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-003",
+        "FR-7"
+      ]
+    },
+    {
+      "id": "TC-US003-06",
+      "description": "Mid-execution interruption (for example write failure during progress/report update) does not leave state stuck in `in_progress`",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-003",
+        "FR-8",
+        "FR-10"
+      ]
+    },
+    {
+      "id": "TC-US003-07",
+      "description": "Partial execution recovery preserves file pointer and rerun behavior",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-003",
+        "FR-7",
+        "FR-8",
+        "FR-9"
+      ]
+    },
+    {
+      "id": "TC-US004-01",
+      "description": "Summary report file `it_{iteration}_test-execution-report.md` is written to `.agents/flow/`",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-004",
+        "FR-8"
+      ]
+    },
+    {
+      "id": "TC-US004-02",
+      "description": "Report includes total tests, passed count, failed count, and a per-test-case results table",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-004",
+        "FR-8"
+      ]
+    },
+    {
+      "id": "TC-US004-03",
+      "description": "A concise summary line is printed to stdout upon completion",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-004",
+        "FR-8"
+      ]
+    },
+    {
+      "id": "TC-US004-04",
+      "description": "Per-test raw execution artifacts are persisted in `it_{iteration}_test-execution-artifacts/`",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-004",
+        "FR-11"
+      ]
+    },
+    {
+      "id": "TC-US004-05",
+      "description": "Each artifact file contains full agent output, prompt, and result payload",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-004",
+        "FR-11"
+      ]
+    },
+    {
+      "id": "TC-US004-06",
+      "description": "Test case results include references to stored artifact paths",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-004",
+        "FR-11"
+      ]
+    },
+    {
+      "id": "TC-US004-07",
+      "description": "Report totals are mathematically consistent with execution results data",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-004",
+        "FR-8"
+      ]
+    },
+    {
+      "id": "TC-US004-08",
+      "description": "Report row order is deterministic and traceable to TP ordering",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-004",
+        "FR-8"
+      ]
+    },
+    {
+      "id": "TC-US004-09",
+      "description": "Artifact references are referentially correct and ID-aligned",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-004",
+        "FR-11"
+      ]
+    },
+    {
+      "id": "TC-US004-10",
+      "description": "Artifact payloads validate against a strict schema (keys and value types)",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-004",
+        "FR-11"
+      ]
+    },
+    {
+      "id": "TC-US005-01",
+      "description": "Skill file exists at `.agents/skills/execute-test-case/SKILL.md`",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-005",
+        "FR-5"
+      ]
+    },
+    {
+      "id": "TC-US005-02",
+      "description": "Skill prompt instructs the agent to read the test case, execute it, and report pass/fail with evidence",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-005",
+        "FR-5"
+      ]
+    },
+    {
+      "id": "TC-US005-03",
+      "description": "Skill is loaded and used by the `execute test-plan` command for each test case invocation",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-005",
+        "FR-5"
+      ]
+    },
+    {
+      "id": "TC-US005-04",
+      "description": "Skill output contract requires strict JSON with `status`, `evidence`, and `notes` fields",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-005",
+        "FR-6"
+      ]
+    },
+    {
+      "id": "TC-QG-01",
+      "description": "Lint passes for the package/scope containing `execute-test-plan` implementation and tests",
+      "status": "pending",
+      "correlatedRequirements": [
+        "FR-10"
+      ]
+    },
+    {
+      "id": "TC-QG-02",
+      "description": "Targeted test suite for execute-test-plan flow passes",
+      "status": "pending",
+      "correlatedRequirements": [
+        "FR-10"
+      ]
+    },
+    {
+      "id": "TC-QG-03",
+      "description": "CI-equivalent quality command (if defined by project scripts) passes",
+      "status": "pending",
+      "correlatedRequirements": [
+        "FR-10"
+      ]
+    }
+  ],
+  "exploratoryManualTests": []
+}
