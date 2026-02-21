@@ -5,7 +5,7 @@ import { join } from "node:path";
 
 import type { AgentResult } from "../agent";
 import { readState, writeState } from "../state";
-import { runCreateTestPlan } from "./create-test-plan";
+import { parseTestPlanForValidation, runCreateTestPlan } from "./create-test-plan";
 
 async function createProjectRoot(): Promise<string> {
   return mkdtemp(join(tmpdir(), "nvst-create-test-plan-"));
@@ -91,7 +91,21 @@ describe("create test-plan command", () => {
               interactive: options.interactive,
               prompt: options.prompt,
             };
-            await writeFile(outputPath, "# Test Plan\n", "utf8");
+            await writeFile(
+              outputPath,
+              [
+                "# Test Plan - Iteration 000003",
+                "## User Story: US-001 - Example Story",
+                "| Test Case ID | Description | Type (unit/integration/e2e) | Mode (automated/manual) | Correlated Requirements (US-XXX, FR-X) | Expected Result |",
+                "|---|---|---|---|---|---|",
+                "| TC-US001-01 | Validate login success | integration | automated | US-001, FR-1 | Login succeeds with valid credentials |",
+                "## Scope",
+                "- Validate login and session behavior",
+                "## Environment and data",
+                "- Node 22 with seeded test user",
+              ].join("\n"),
+              "utf8",
+            );
             return { exitCode: 0, stdout: "", stderr: "" };
           },
           nowFn: () => new Date("2026-02-21T03:00:00.000Z"),
@@ -193,7 +207,17 @@ describe("create test-plan command", () => {
           loadSkillFn: async () => "skill",
           invokeAgentFn: async () => {
             invokeCalls += 1;
-            await writeFile(outputPath, "new", "utf8");
+            await writeFile(
+              outputPath,
+              [
+                "# Test Plan - Iteration 000003",
+                "## User Story: US-001 - Example Story",
+                "| Test Case ID | Description | Type (unit/integration/e2e) | Mode (automated/manual) | Correlated Requirements (US-XXX, FR-X) | Expected Result |",
+                "|---|---|---|---|---|---|",
+                "| TC-US001-01 | Validate login success | integration | automated | US-001, FR-1 | Login succeeds with valid credentials |",
+              ].join("\n"),
+              "utf8",
+            );
             return { exitCode: 0, stdout: "", stderr: "" };
           },
         },
@@ -202,7 +226,46 @@ describe("create test-plan command", () => {
 
     expect(confirmCalled).toBe(false);
     expect(invokeCalls).toBe(1);
-    expect(await readFile(outputPath, "utf8")).toBe("new");
+    expect(await readFile(outputPath, "utf8")).toContain("Correlated Requirements");
+  });
+
+  test("fails when generated markdown table omits correlated requirement IDs", async () => {
+    const projectRoot = await createProjectRoot();
+    createdRoots.push(projectRoot);
+    await seedState(projectRoot, "created");
+
+    const outputPath = join(projectRoot, ".agents", "flow", "it_000003_test-plan.md");
+
+    await withCwd(projectRoot, async () => {
+      await expect(
+        runCreateTestPlan(
+          { provider: "codex" },
+          {
+            loadSkillFn: async () => "skill",
+            invokeAgentFn: async () => {
+              await writeFile(
+                outputPath,
+                [
+                  "# Test Plan - Iteration 000003",
+                  "## User Story: US-001 - Example Story",
+                  "| Test Case ID | Description | Type (unit/integration/e2e) | Mode (automated/manual) | Expected Result |",
+                  "|---|---|---|---|---|",
+                  "| TC-US001-01 | Validate login success | integration | automated | Login succeeds with valid credentials |",
+                ].join("\n"),
+                "utf8",
+              );
+              return { exitCode: 0, stdout: "", stderr: "" };
+            },
+          },
+        ),
+      ).rejects.toThrow(
+        "Generated test plan does not satisfy traceability requirements for the test-plan schema.",
+      );
+    });
+
+    const state = await readState(projectRoot);
+    expect(state.phases.prototype.test_plan.status).toBe("pending");
+    expect(state.phases.prototype.test_plan.file).toBeNull();
   });
 });
 
@@ -225,11 +288,30 @@ describe("create-test-plan skill definition", () => {
     expect(source).toContain("`it_{iteration}_PRD.json`");
     expect(source).toContain("`.agents/PROJECT_CONTEXT.md`");
     expect(source).toContain("structured by user story");
-    expect(source).toContain("| Test Case ID | Description | Type (unit/integration/e2e) | Mode (automated/manual) | Expected Result |");
+    expect(source).toContain("| Test Case ID | Description | Type (unit/integration/e2e) | Mode (automated/manual) | Correlated Requirements (US-XXX, FR-X) | Expected Result |");
     expect(source).toContain("Every functional requirement (`FR-N`) must have automated coverage.");
+    expect(source).toContain("Every functional requirement (`FR-N`) must appear in at least one test case `Correlated Requirements` field.");
+    expect(source).toContain("`Correlated Requirements` with at least one requirement ID (`US-XXX`, `FR-X`)");
     expect(source).toContain(
       "Manual tests are allowed only for UI/UX nuances that cannot be reliably validated through DOM/state assertions",
     );
     expect(source).toContain("`.agents/flow/it_{iteration}_test-plan.md`");
+  });
+});
+
+describe("parseTestPlanForValidation", () => {
+  test("maps requirement traceability into schema-compatible test items", () => {
+    const parsed = parseTestPlanForValidation(
+      [
+        "# Test Plan - Iteration 000003",
+        "| Test Case ID | Description | Type (unit/integration/e2e) | Mode (automated/manual) | Correlated Requirements (US-XXX, FR-X) | Expected Result |",
+        "|---|---|---|---|---|---|",
+        "| TC-US001-01 | Validate login success | integration | automated | US-001, FR-1 | Login succeeds with valid credentials |",
+      ].join("\n"),
+    );
+
+    expect(parsed.overallStatus).toBe("pending");
+    expect(parsed.automatedTests).toHaveLength(1);
+    expect(parsed.automatedTests[0]?.correlatedRequirements).toEqual(["US-001", "FR-1"]);
   });
 });

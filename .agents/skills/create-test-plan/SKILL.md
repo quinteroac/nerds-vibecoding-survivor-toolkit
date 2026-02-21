@@ -36,9 +36,9 @@ Use this structure:
 
 ## User Story: <id> - <title>
 
-| Test Case ID | Description | Type (unit/integration/e2e) | Mode (automated/manual) | Expected Result |
-|---|---|---|---|---|
-| TC-... | ... | ... | ... | ... |
+| Test Case ID | Description | Type (unit/integration/e2e) | Mode (automated/manual) | Correlated Requirements (US-XXX, FR-X) | Expected Result |
+|---|---|---|---|---|---|
+| TC-... | ... | ... | ... | US-001, FR-1 | ... |
 ```
 
 Every test case must include:
@@ -46,6 +46,7 @@ Every test case must include:
 - `Description`
 - `Type` (`unit`, `integration`, or `e2e`)
 - Whether it is `automated` or `manual`
+- `Correlated Requirements` with at least one requirement ID (`US-XXX`, `FR-X`)
 - `Expected Result`
 
 ---
@@ -54,8 +55,9 @@ Every test case must include:
 
 1. Prioritize automated testing for this plan.
 2. Every functional requirement (`FR-N`) must have automated coverage.
-3. Manual tests are allowed only for UI/UX nuances that cannot be reliably validated through DOM/state assertions (for example: subjective visual "feel").
-4. If a test is marked manual, explicitly justify why automation is not reliable for that case.
+3. Every functional requirement (`FR-N`) must appear in at least one test case `Correlated Requirements` field.
+4. Manual tests are allowed only for UI/UX nuances that cannot be reliably validated through DOM/state assertions (for example: subjective visual "feel").
+5. If a test is marked manual, explicitly justify why automation is not reliable for that case.
 
 ---
 
@@ -65,5 +67,6 @@ Every test case must include:
 - [ ] Read `.agents/PROJECT_CONTEXT.md`
 - [ ] Test cases are grouped by user story
 - [ ] Every `FR-N` is covered by automated test cases
+- [ ] Every test case includes correlated requirement IDs (`US-XXX`, `FR-X`)
 - [ ] Manual tests are only UI/UX nuance checks that cannot be validated via DOM/state assertions
 - [ ] File written to `.agents/flow/it_{iteration}_test-plan.md`
