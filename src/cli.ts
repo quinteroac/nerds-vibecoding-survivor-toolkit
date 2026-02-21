@@ -11,6 +11,7 @@ import { runDestroy } from "./commands/destroy";
 import { runInit } from "./commands/init";
 import { runRefineProjectContext } from "./commands/refine-project-context";
 import { runRefineRequirement } from "./commands/refine-requirement";
+import { runRefineTestPlan } from "./commands/refine-test-plan";
 import { runStartIteration } from "./commands/start-iteration";
 import { runWriteJson } from "./commands/write-json";
 
@@ -89,6 +90,8 @@ Commands:
                      Create requirement document via agent
   refine requirement --agent <provider> [--challenge]
                      Refine requirement document via agent
+  refine test-plan --agent <provider>
+                     Refine test plan document via agent
   approve requirement
                      Mark requirement definition as approved
   write-json --schema <name> --out <path> [--data '<json>']
@@ -276,7 +279,7 @@ async function main() {
   if (command === "refine") {
     if (args.length === 0) {
       console.error(
-        `Usage for refine: nvst refine <requirement|project-context> --agent <provider> [--challenge]`,
+        `Usage for refine: nvst refine <requirement|project-context|test-plan> --agent <provider> [--challenge]`,
       );
       printUsage();
       process.exitCode = 1;
@@ -324,6 +327,26 @@ async function main() {
         }
 
         await runRefineProjectContext({ provider, challenge });
+        return;
+      } catch (error) {
+        console.error(error instanceof Error ? error.message : String(error));
+        printUsage();
+        process.exitCode = 1;
+        return;
+      }
+    }
+
+    if (subcommand === "test-plan") {
+      try {
+        const { provider, remainingArgs: postAgentArgs } = parseAgentArg(args.slice(1));
+        if (postAgentArgs.length > 0) {
+          console.error(`Unknown option(s) for refine test-plan: ${postAgentArgs.join(" ")}`);
+          printUsage();
+          process.exitCode = 1;
+          return;
+        }
+
+        await runRefineTestPlan({ provider });
         return;
       } catch (error) {
         console.error(error instanceof Error ? error.message : String(error));
