@@ -1,3 +1,4 @@
+import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { z } from "zod";
 
@@ -7,7 +8,7 @@ import {
   loadSkill,
   type AgentProvider,
 } from "../agent";
-import { readState, FLOW_REL_DIR } from "../state";
+import { readState, exists, FLOW_REL_DIR } from "../state";
 import { IssuesSchema, type Issue } from "../../scaffold/schemas/tmpl_issues";
 
 // ---------------------------------------------------------------------------
@@ -150,6 +151,174 @@ export async function runCreateIssue(opts: CreateIssueOptions): Promise<void> {
   }
 
   console.log(`Issues file created: ${outputRelPath}`);
+}
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------
+// Test-execution-report → issues (US-002)
+// ---------------------------------------------------------------------------
+
+const TestResultPayloadSchema = z.object({
+  status: z.string(),
+  evidence: z.string().optional(),
+  notes: z.string().optional(),
+});
+
+const TestResultSchema = z.object({
+  testCaseId: z.string(),
+  description: z.string(),
+  correlatedRequirements: z.array(z.string()).optional(),
+  payload: TestResultPayloadSchema,
+});
+
+const TestExecutionResultsSchema = z.object({
+  iteration: z.string(),
+  results: z.array(TestResultSchema),
+});
+
+export type TestExecutionResults = z.infer<typeof TestExecutionResultsSchema>;
+
+const ACTIONABLE_STATUSES = ["failed", "skipped", "invocation_failed"] as const;
+
+export function isActionableStatus(status: string): boolean {
+  return (ACTIONABLE_STATUSES as readonly string[]).includes(status);
+}
+
+export function buildIssuesFromTestResults(
+  results: TestExecutionResults,
+  iteration: string,
+): Issue[] {
+  const actionable = results.results.filter((r) =>
+    isActionableStatus(r.payload.status),
+  );
+
+  return actionable.map((r, index) => ({
+    id: `ISSUE-${iteration}-${String(index + 1).padStart(3, "0")}`,
+    title: `[${r.payload.status}] ${r.testCaseId}: ${r.description}`,
+    description: [
+      `Test case ${r.testCaseId} resulted in status: ${r.payload.status}.`,
+      r.payload.notes ? `Notes: ${r.payload.notes}` : "",
+      r.payload.evidence ? `Evidence: ${r.payload.evidence}` : "",
+      r.correlatedRequirements?.length
+        ? `Correlated requirements: ${r.correlatedRequirements.join(", ")}`
+        : "",
+    ]
+      .filter(Boolean)
+      .join("\n"),
+    status: "open" as const,
+  }));
+}
+
+export async function runCreateIssueFromTestReport(): Promise<void> {
+  const projectRoot = process.cwd();
+  const state = await readState(projectRoot);
+  const iteration = state.current_iteration;
+
+  // AC01: Try reading from .agents/flow/ first, then archived path
+  const fileName = `it_${iteration}_test-execution-results.json`;
+  const flowPath = join(projectRoot, FLOW_REL_DIR, fileName);
+
+  let resultsPath: string | null = null;
+
+  if (await exists(flowPath)) {
+    resultsPath = flowPath;
+  } else {
+    // Check archived path from state.json history for current iteration
+    const historyEntry = state.history?.find(
+      (h) => h.iteration === iteration,
+    );
+    if (historyEntry) {
+      const archivedPath = join(
+        projectRoot,
+        historyEntry.archived_path,
+        fileName,
+      );
+      if (await exists(archivedPath)) {
+        resultsPath = archivedPath;
+      }
+    }
+  }
+
+  // AC05: Fail with clear error if not found in either location
+  if (!resultsPath) {
+    throw new Error(
+      `Test execution results file not found: looked for ${fileName} in ${FLOW_REL_DIR}/ and archived path for iteration ${iteration}.`,
+    );
+  }
+
+  // Read and validate the test execution results
+  const raw = await readFile(resultsPath, "utf8");
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    throw new Error(
+      `Failed to parse test execution results as JSON: ${resultsPath}`,
+    );
+  }
+
+  const validationResult = TestExecutionResultsSchema.safeParse(parsed);
+  if (!validationResult.success) {
+    const formatted = validationResult.error.format();
+    throw new Error(
+      `Test execution results failed schema validation:\n${JSON.stringify(formatted, null, 2)}`,
+    );
+  }
+
+  // AC02: Convert actionable test results into issues
+  const issues = buildIssuesFromTestResults(validationResult.data, iteration);
+
+  // AC04: If all tests are passing, write empty array and exit with code 0
+  // (buildIssuesFromTestResults returns [] when no actionable results)
+
+  // AC06: Validate against ISSUES schema
+  const issuesValidation = IssuesSchema.safeParse(issues);
+  if (!issuesValidation.success) {
+    const formatted = issuesValidation.error.format();
+    throw new Error(
+      `Generated issues failed ISSUES schema validation:\n${JSON.stringify(formatted, null, 2)}`,
+    );
+  }
+
+  // AC03: Write output file via write-json
+  const outputFileName = `it_${iteration}_ISSUES.json`;
+  const outputRelPath = join(FLOW_REL_DIR, outputFileName);
+  const dataStr = JSON.stringify(issuesValidation.data);
+
+  const proc = Bun.spawn(
+    [
+      "bun",
+      "run",
+      join(projectRoot, "src/cli.ts"),
+      "write-json",
+      "--schema",
+      "issues",
+      "--out",
+      outputRelPath,
+      "--data",
+      dataStr,
+    ],
+    { cwd: projectRoot, stdout: "pipe", stderr: "pipe" },
+  );
+
+  const writeExitCode = await proc.exited;
+  if (writeExitCode !== 0) {
+    const stderr = await new Response(proc.stderr).text();
+    throw new Error(`Failed to write issues file: ${stderr}`);
+  }
+
+  if (issues.length === 0) {
+    console.log(
+      `All tests passing. Empty issues file created: ${outputRelPath}`,
+    );
+  } else {
+    console.log(
+      `${issues.length} issue(s) created from test execution results: ${outputRelPath}`,
+    );
+  }
 }
 
 // ---------------------------------------------------------------------------

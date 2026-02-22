@@ -4,7 +4,7 @@ import { parseAgentArg } from "./agent";
 import { runApproveProjectContext } from "./commands/approve-project-context";
 import { runApproveRequirement } from "./commands/approve-requirement";
 import { runApproveTestPlan } from "./commands/approve-test-plan";
-import { runCreateIssue } from "./commands/create-issue";
+import { runCreateIssue, runCreateIssueFromTestReport } from "./commands/create-issue";
 import { runCreateProjectContext } from "./commands/create-project-context";
 import { runCreatePrototype } from "./commands/create-prototype";
 import { runCreateTestPlan } from "./commands/create-test-plan";
@@ -253,7 +253,22 @@ async function main() {
 
     if (subcommand === "issue") {
       try {
-        const { provider, remainingArgs: postAgentArgs } = parseAgentArg(args.slice(1));
+        const subArgs = args.slice(1);
+
+        // Check for --test-execution-report flag
+        if (subArgs.includes("--test-execution-report")) {
+          const remaining = subArgs.filter((a) => a !== "--test-execution-report");
+          if (remaining.length > 0) {
+            console.error(`Unknown option(s) for create issue --test-execution-report: ${remaining.join(" ")}`);
+            printUsage();
+            process.exitCode = 1;
+            return;
+          }
+          await runCreateIssueFromTestReport();
+          return;
+        }
+
+        const { provider, remainingArgs: postAgentArgs } = parseAgentArg(subArgs);
 
         if (postAgentArgs.length > 0) {
           console.error(`Unknown option(s) for create issue: ${postAgentArgs.join(" ")}`);
