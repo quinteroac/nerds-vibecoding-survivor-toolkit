@@ -6,6 +6,7 @@ import { StateSchema } from "../../scaffold/schemas/tmpl_state";
 import { ProgressSchema } from "../../scaffold/schemas/tmpl_progress";
 import { PrdSchema } from "../../scaffold/schemas/tmpl_prd";
 import { TestPlanSchema } from "../../scaffold/schemas/tmpl_test-plan";
+import { IssuesSchema } from "../../scaffold/schemas/tmpl_issues";
 
 // ---------------------------------------------------------------------------
 // Schema registry — maps CLI name → Zod schema
@@ -15,6 +16,7 @@ const SCHEMA_REGISTRY: Record<string, ZodSchema> = {
     progress: ProgressSchema,
     prd: PrdSchema,
     "test-plan": TestPlanSchema,
+    issues: IssuesSchema,
 };
 
 const SUPPORTED_SCHEMAS = Object.keys(SCHEMA_REGISTRY).join(", ");
