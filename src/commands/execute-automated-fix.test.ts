@@ -73,6 +73,28 @@ describe("execute automated-fix", () => {
     expect(source).toContain("execute automated-fix --agent <provider> [--retry-on-fail <N>]");
   });
 
+  test("CLI exits with code 1 when --agent is missing", async () => {
+    const proc = Bun.spawn(
+      ["bun", "run", "src/cli.ts", "execute", "automated-fix"],
+      { cwd: process.cwd(), stdout: "pipe", stderr: "pipe" },
+    );
+    const exitCode = await proc.exited;
+    const stderr = await new Response(proc.stderr).text();
+    expect(exitCode).toBe(1);
+    expect(stderr).toContain("Missing required --agent <provider> argument.");
+  });
+
+  test("CLI accepts --agent and rejects unknown providers", async () => {
+    const proc = Bun.spawn(
+      ["bun", "run", "src/cli.ts", "execute", "automated-fix", "--agent", "invalid-provider"],
+      { cwd: process.cwd(), stdout: "pipe", stderr: "pipe" },
+    );
+    const exitCode = await proc.exited;
+    const stderr = await new Response(proc.stderr).text();
+    expect(exitCode).toBe(1);
+    expect(stderr).toContain("Unknown agent provider");
+  });
+
   test("reads current-iteration issues file, processes only open issues sequentially, and commits fixed status", async () => {
     const projectRoot = await createProjectRoot();
     createdRoots.push(projectRoot);
@@ -127,6 +149,34 @@ describe("execute automated-fix", () => {
     expect(logs).toContain("ISSUE-000009-002: Fixed");
     expect(logs).toContain("ISSUE-000009-003: Fixed");
     expect(logs).toContain("Summary: Fixed=2 Failed=0");
+  });
+
+  test("invokes agent with the provider selected by --agent", async () => {
+    const projectRoot = await createProjectRoot();
+    createdRoots.push(projectRoot);
+
+    await seedState(projectRoot, "000009");
+    await writeIssues(projectRoot, "000009", [
+      { id: "ISSUE-000009-001", title: "Open A", description: "first open", status: "open" },
+    ]);
+
+    const providersUsed: string[] = [];
+
+    await withCwd(projectRoot, async () => {
+      await runExecuteAutomatedFix(
+        { provider: "cursor" },
+        {
+          loadSkillFn: async () => "debug workflow",
+          invokeAgentFn: async (options) => {
+            providersUsed.push(options.provider);
+            return { exitCode: 0, stdout: "ok", stderr: "" };
+          },
+          runCommitFn: async () => 0,
+        },
+      );
+    });
+
+    expect(providersUsed).toEqual(["cursor"]);
   });
 
   test("marks issue as retry when hypothesis is not confirmed and retries remain", async () => {
