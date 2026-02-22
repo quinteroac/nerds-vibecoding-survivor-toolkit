@@ -1,0 +1,745 @@
+{
+  "iteration": "000008",
+  "testPlanFile": "it_000008_TP.json",
+  "executedTestIds": [
+    "TC-US002-10"
+  ],
+  "results": [
+    {
+      "testCaseId": "TC-US001-01",
+      "description": "Command `bun nvst create issue` without `--agent` exits with code 1 and stderr mentions `--agent`",
+      "correlatedRequirements": [
+        "FR-1"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US001-01_attempt_001.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US001-01_attempt_002.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US001-01_attempt_003.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US001-01_attempt_004.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US001-01_attempt_005.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US001-02",
+      "description": "Command `bun nvst create issue --agent invalid-provider` exits with code 1 and stderr mentions unknown provider",
+      "correlatedRequirements": [
+        "FR-1"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US001-02_attempt_001.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US001-02_attempt_002.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US001-02_attempt_003.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US001-02_attempt_004.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US001-02_attempt_005.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US001-03",
+      "description": "Command `bun nvst create issue --agent claude --unknown-flag` exits with code 1 and stderr mentions unknown option",
+      "correlatedRequirements": [
+        "FR-1"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US001-03_attempt_001.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US001-03_attempt_002.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US001-03_attempt_003.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US001-03_attempt_004.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US001-03_attempt_005.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US001-04",
+      "description": "Agent output shape (title, description) is validated; invalid shape causes error before write",
+      "correlatedRequirements": [
+        "FR-4",
+        "FR-6"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US001-04_attempt_001.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US001-04_attempt_002.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US001-04_attempt_003.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US001-04_attempt_004.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US001-04_attempt_005.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US001-05",
+      "description": "Valid agent output produces issues with auto-generated `id` (ISSUE-{iteration}-{seq}) and `status: \"open\"`",
+      "correlatedRequirements": [
+        "FR-6"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US001-05_attempt_001.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US001-05_attempt_002.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US001-05_attempt_003.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US001-05_attempt_004.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US001-05_attempt_005.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US001-06",
+      "description": "Output file path follows `.agents/flow/it_{iteration}_ISSUES.json` convention",
+      "correlatedRequirements": [
+        "FR-2",
+        "FR-3"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US001-06_attempt_001.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US001-06_attempt_002.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US001-06_attempt_003.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US001-06_attempt_004.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US001-06_attempt_005.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US001-07",
+      "description": "Generated issues pass ISSUES schema validation (id, title, description, status; unique IDs)",
+      "correlatedRequirements": [
+        "FR-6"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US001-07_attempt_001.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US001-07_attempt_002.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US001-07_attempt_003.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US001-07_attempt_004.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US001-07_attempt_005.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US001-08",
+      "description": "`extractJson` correctly parses JSON from markdown fences and raw array text",
+      "correlatedRequirements": [],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US001-08_attempt_001.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US001-08_attempt_002.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US001-08_attempt_003.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US001-08_attempt_004.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US001-08_attempt_005.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US001-09",
+      "description": "Command exits with code 0 on successful agent flow; exits with code 1 on failure",
+      "correlatedRequirements": [],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US001-09_attempt_001.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US001-09_attempt_002.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US001-09_attempt_003.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US001-09_attempt_004.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US001-09_attempt_005.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US001-10",
+      "description": "`write-json --schema issues` accepts valid issues data and rejects invalid data",
+      "correlatedRequirements": [
+        "FR-6"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US001-10_attempt_001.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US001-10_attempt_002.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US001-10_attempt_003.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US001-10_attempt_004.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US001-10_attempt_005.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US001-11",
+      "description": "Typecheck passes (tsc)",
+      "correlatedRequirements": [],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US001-11_attempt_001.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US001-11_attempt_002.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US001-11_attempt_003.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US001-11_attempt_004.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US001-11_attempt_005.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US002-01",
+      "description": "`isActionableStatus` returns true for `failed`, `skipped`, `invocation_failed`",
+      "correlatedRequirements": [
+        "FR-5"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US002-01_attempt_001.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US002-01_attempt_002.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US002-01_attempt_003.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US002-01_attempt_004.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US002-01_attempt_005.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US002-02",
+      "description": "`isActionableStatus` returns false for `passed` and unknown values",
+      "correlatedRequirements": [
+        "FR-5"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US002-02_attempt_001.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US002-02_attempt_002.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US002-02_attempt_003.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US002-02_attempt_004.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US002-02_attempt_005.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US002-03",
+      "description": "`buildIssuesFromTestResults` converts failed/skipped/invocation_failed tests to issues with status \"open\"",
+      "correlatedRequirements": [
+        "FR-5"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US002-03_attempt_001.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US002-03_attempt_002.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US002-03_attempt_003.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US002-03_attempt_004.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US002-03_attempt_005.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US002-04",
+      "description": "`buildIssuesFromTestResults` includes `notes` and `evidence` in issue description",
+      "correlatedRequirements": [
+        "FR-5"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US002-04_attempt_001.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US002-04_attempt_002.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US002-04_attempt_003.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US002-04_attempt_004.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US002-04_attempt_005.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US002-05",
+      "description": "`buildIssuesFromTestResults` filters out passing tests",
+      "correlatedRequirements": [
+        "FR-5"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US002-05_attempt_001.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US002-05_attempt_002.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US002-05_attempt_003.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US002-05_attempt_004.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US002-05_attempt_005.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US002-06",
+      "description": "`buildIssuesFromTestResults` returns empty array when all tests pass",
+      "correlatedRequirements": [
+        "FR-5"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US002-06_attempt_001.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US002-06_attempt_002.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US002-06_attempt_003.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US002-06_attempt_004.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US002-06_attempt_005.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US002-07",
+      "description": "Generated issues from test results pass ISSUES schema validation",
+      "correlatedRequirements": [
+        "FR-6"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US002-07_attempt_001.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US002-07_attempt_002.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US002-07_attempt_003.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US002-07_attempt_004.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US002-07_attempt_005.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US002-08",
+      "description": "Issue IDs are unique and sequential (ISSUE-{iteration}-{seq})",
+      "correlatedRequirements": [
+        "FR-6"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US002-08_attempt_001.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US002-08_attempt_002.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US002-08_attempt_003.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US002-08_attempt_004.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US002-08_attempt_005.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US002-09",
+      "description": "Command reads test-execution-results from `.agents/flow/` first",
+      "correlatedRequirements": [
+        "FR-2"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US002-09_attempt_001.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US002-09_attempt_002.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US002-09_attempt_003.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US002-09_attempt_004.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US002-09_attempt_005.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US002-10",
+      "description": "Command falls back to archived path from `state.json` history when flow file absent",
+      "correlatedRequirements": [
+        "FR-2"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "skipped",
+        "evidence": "Fallback logic at create-issue.ts:228-242 uses state.history; unit test exists in create-issue.test.ts:429",
+        "notes": "Blocker: Test runner invocation not available in execution environment"
+      },
+      "passFail": null,
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US002-10_attempt_006.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US002-11",
+      "description": "Command fails with clear error when file missing in both flow and archived paths",
+      "correlatedRequirements": [],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US002-11_attempt_001.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US002-11_attempt_002.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US002-11_attempt_003.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US002-11_attempt_004.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US002-11_attempt_005.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US002-12",
+      "description": "Command writes `it_{iteration}_ISSUES.json` to `.agents/flow/` on success",
+      "correlatedRequirements": [
+        "FR-3"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US002-12_attempt_001.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US002-12_attempt_002.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US002-12_attempt_003.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US002-12_attempt_004.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US002-12_attempt_005.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US002-13",
+      "description": "`create issue --test-execution-report --extra-flag` exits with code 1 and unknown option error",
+      "correlatedRequirements": [
+        "FR-1"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US002-13_attempt_001.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US002-13_attempt_002.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US002-13_attempt_003.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US002-13_attempt_004.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US002-13_attempt_005.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US002-14",
+      "description": "`create issue --test-execution-report` does not require `--agent` (no \"Missing --agent\" error)",
+      "correlatedRequirements": [
+        "FR-1"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US002-14_attempt_001.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US002-14_attempt_002.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US002-14_attempt_003.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US002-14_attempt_004.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US002-14_attempt_005.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US002-15",
+      "description": "Typecheck passes",
+      "correlatedRequirements": [],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US002-15_attempt_001.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US002-15_attempt_002.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US002-15_attempt_003.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US002-15_attempt_004.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-US002-15_attempt_005.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-FR1-01",
+      "description": "`create issue` without `--agent` and without `--test-execution-report` fails with usage error",
+      "correlatedRequirements": [
+        "FR-1"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000008_test-execution-artifacts/TC-FR1-01_attempt_001.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-FR1-01_attempt_002.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-FR1-01_attempt_003.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-FR1-01_attempt_004.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-FR1-01_attempt_005.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-FR1-02",
+      "description": "`create issue --agent claude --test-execution-report` fails (both modes)",
+      "correlatedRequirements": [
+        "FR-1"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000008_test-execution-artifacts/TC-FR1-02_attempt_001.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-FR1-02_attempt_002.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-FR1-02_attempt_003.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-FR1-02_attempt_004.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-FR1-02_attempt_005.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-FR1-03",
+      "description": "`create issue --test-execution-report --agent claude` fails (both modes)",
+      "correlatedRequirements": [
+        "FR-1"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000008_test-execution-artifacts/TC-FR1-03_attempt_001.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-FR1-03_attempt_002.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-FR1-03_attempt_003.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-FR1-03_attempt_004.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-FR1-03_attempt_005.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-FR6-01",
+      "description": "ISSUES schema accepts valid array with id, title, description, status",
+      "correlatedRequirements": [
+        "FR-6"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000008_test-execution-artifacts/TC-FR6-01_attempt_001.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-FR6-01_attempt_002.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-FR6-01_attempt_003.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-FR6-01_attempt_004.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-FR6-01_attempt_005.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-FR6-02",
+      "description": "ISSUES schema rejects duplicate IDs",
+      "correlatedRequirements": [
+        "FR-6"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000008_test-execution-artifacts/TC-FR6-02_attempt_001.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-FR6-02_attempt_002.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-FR6-02_attempt_003.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-FR6-02_attempt_004.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-FR6-02_attempt_005.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-FR6-03",
+      "description": "ISSUES schema rejects invalid status (e.g. \"closed\")",
+      "correlatedRequirements": [
+        "FR-6"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000008_test-execution-artifacts/TC-FR6-03_attempt_001.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-FR6-03_attempt_002.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-FR6-03_attempt_003.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-FR6-03_attempt_004.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-FR6-03_attempt_005.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-FR6-04",
+      "description": "ISSUES schema rejects missing required fields",
+      "correlatedRequirements": [
+        "FR-6"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000008_test-execution-artifacts/TC-FR6-04_attempt_001.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-FR6-04_attempt_002.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-FR6-04_attempt_003.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-FR6-04_attempt_004.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-FR6-04_attempt_005.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-FR6-05",
+      "description": "ISSUES schema rejects non-array input",
+      "correlatedRequirements": [
+        "FR-6"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000008_test-execution-artifacts/TC-FR6-05_attempt_001.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-FR6-05_attempt_002.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-FR6-05_attempt_003.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-FR6-05_attempt_004.json",
+        ".agents/flow/it_000008_test-execution-artifacts/TC-FR6-05_attempt_005.json"
+      ]
+    }
+  ]
+}

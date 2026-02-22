@@ -4,6 +4,7 @@ import { parseAgentArg } from "./agent";
 import { runApproveProjectContext } from "./commands/approve-project-context";
 import { runApproveRequirement } from "./commands/approve-requirement";
 import { runApproveTestPlan } from "./commands/approve-test-plan";
+import { runCreateIssue, runCreateIssueFromTestReport } from "./commands/create-issue";
 import { runCreateProjectContext } from "./commands/create-project-context";
 import { runCreatePrototype } from "./commands/create-prototype";
 import { runCreateTestPlan } from "./commands/create-test-plan";
@@ -84,6 +85,8 @@ Commands:
                      Generate test plan document for current iteration
   create prototype --agent <provider> [--iterations <N>] [--retry-on-fail <N>] [--stop-on-critical]
                      Initialize prototype build for current iteration
+  create issue --agent <provider>
+                     Create issues interactively via agent
   approve project-context
                      Mark project context as approved
   approve test-plan
@@ -162,7 +165,7 @@ async function main() {
   if (command === "create") {
     if (args.length === 0) {
       console.error(
-        `Usage for create: nvst create <project-context|test-plan|prototype> --agent <provider> [options]`,
+        `Usage for create: nvst create <project-context|test-plan|prototype|issue> --agent <provider> [options]`,
       );
       printUsage();
       process.exitCode = 1;
@@ -243,6 +246,41 @@ async function main() {
       } catch (error) {
         console.error(error instanceof Error ? error.message : String(error));
         printUsage();
+        process.exitCode = 1;
+        return;
+      }
+    }
+
+    if (subcommand === "issue") {
+      try {
+        const subArgs = args.slice(1);
+
+        // Check for --test-execution-report flag
+        if (subArgs.includes("--test-execution-report")) {
+          const remaining = subArgs.filter((a) => a !== "--test-execution-report");
+          if (remaining.length > 0) {
+            console.error(`Unknown option(s) for create issue --test-execution-report: ${remaining.join(" ")}`);
+            printUsage();
+            process.exitCode = 1;
+            return;
+          }
+          await runCreateIssueFromTestReport();
+          return;
+        }
+
+        const { provider, remainingArgs: postAgentArgs } = parseAgentArg(subArgs);
+
+        if (postAgentArgs.length > 0) {
+          console.error(`Unknown option(s) for create issue: ${postAgentArgs.join(" ")}`);
+          printUsage();
+          process.exitCode = 1;
+          return;
+        }
+
+        await runCreateIssue({ provider });
+        return;
+      } catch (error) {
+        console.error(error instanceof Error ? error.message : String(error));
         process.exitCode = 1;
         return;
       }

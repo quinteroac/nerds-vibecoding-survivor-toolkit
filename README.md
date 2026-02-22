@@ -39,6 +39,13 @@ nerds-vst is a package that provides:
       create-pr-document/SKILL.md
       refine-pr-document/SKILL.md
       create-project-context/SKILL.md
+      refine-project-context/SKILL.md
+      create-test-plan/SKILL.md
+      refine-test-plan/SKILL.md
+      implement-user-story/SKILL.md
+      create-issue/SKILL.md
+      execute-test-case/SKILL.md
+      execute-test-batch/SKILL.md
       evaluate/SKILL.md
       plan-refactor/SKILL.md
       refactor-prd/SKILL.md
