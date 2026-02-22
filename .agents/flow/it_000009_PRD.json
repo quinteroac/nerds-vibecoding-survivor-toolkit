@@ -1,0 +1,175 @@
+{
+  "goals": [
+    "Enable automated issue resolution using AI agents.",
+    "Provide a CLI command to run the fix process.",
+    "Support configuration for iterations and retries.",
+    "Report success/failure of fix attempts."
+  ],
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Run Automated Fix",
+      "description": "As a Developer, I want to run `bun nvst execute automated-fix` so that I can attempt to fix open issues automatically.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-001-AC01",
+          "text": "Command `bun nvst execute automated-fix` exists."
+        },
+        {
+          "id": "US-001-AC02",
+          "text": "It reads `it_{iteration}_ISSUES.json` from the current iteration flow."
+        },
+        {
+          "id": "US-001-AC03",
+          "text": "It identifies open issues."
+        },
+        {
+          "id": "US-001-AC04",
+          "text": "It processes issues sequentially (one at a time, like create prototype)."
+        },
+        {
+          "id": "US-001-AC05",
+          "text": "For each open issue, it invokes the agent with a skill that follows this structured debugging workflow: (1) understand the issue, (2) reproduce the issue, (3) make hypotheses about the issue, (4) identify affected code, (5) add instrumentation if required, (6) collect logs if instrumentation was implemented, (7) confirm/discard hypotheses, (8) fix the issue, (9) try to reproduce the issue to verify the fix, (10) remove instrumentation if it was implemented, (11) mark as fixed."
+        },
+        {
+          "id": "US-001-AC06",
+          "text": "When a fix succeeds, the tool updates the issue status in `it_{iteration}_ISSUES.json` and commits the changes (git commit)."
+        },
+        {
+          "id": "US-001-AC07",
+          "text": "When the agent cannot confirm any hypothesis and `--retry-on-fail` retries remain, the tool marks the issue to retry."
+        },
+        {
+          "id": "US-001-AC08",
+          "text": "When the agent cannot confirm any hypothesis and no retries remain (or `--retry-on-fail` was not specified), the tool updates the issue status to `\"manual-fix\"` in `it_{iteration}_ISSUES.json` and commits the changes (git commit)."
+        },
+        {
+          "id": "US-001-AC09",
+          "text": "When an unrecoverable error occurs (e.g., network failure), the tool updates the issue status to `\"manual-fix\"` in `it_{iteration}_ISSUES.json` and commits the changes (git commit). Network errors do not consume `--retry-on-fail` retries."
+        },
+        {
+          "id": "US-001-AC10",
+          "text": "If `git commit` fails after processing an issue, the tool prints an error message for that issue, marks it as Failed in the summary, and continues to the next issue."
+        },
+        {
+          "id": "US-001-AC11",
+          "text": "Typecheck / lint passes."
+        }
+      ]
+    },
+    {
+      "id": "US-002",
+      "title": "Specify Agent",
+      "description": "As a Developer, I want to specify the agent (`--agent`) so that I can control which AI model/agent performs the fix.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-002-AC01",
+          "text": "Command accepts `--agent [name]` flag."
+        },
+        {
+          "id": "US-002-AC02",
+          "text": "If `--agent` is not specified, the command prints an error message and exits with non-zero code."
+        },
+        {
+          "id": "US-002-AC03",
+          "text": "Selected agent is invoked for the fix attempt (verifiable via agent execution)."
+        }
+      ]
+    },
+    {
+      "id": "US-003",
+      "title": "Configure Loop",
+      "description": "As a Developer, I want to configure the loop (`--iterations`, `--retry-on-fail`) so that I can manage retries and attempts.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-003-AC01",
+          "text": "Command accepts `--iterations [number]` flag (default: 1). This controls the maximum number of open issues to process in a single run."
+        },
+        {
+          "id": "US-003-AC02",
+          "text": "Command accepts `--retry-on-fail [number]` flag (default: 0). This controls how many times to retry a failed fix attempt per issue."
+        },
+        {
+          "id": "US-003-AC03",
+          "text": "When `AgentResult.exitCode !== 0`, the command retries the invocation up to `--retry-on-fail` times."
+        },
+        {
+          "id": "US-003-AC04",
+          "text": "Tool stops retrying after success or max retries."
+        },
+        {
+          "id": "US-003-AC05",
+          "text": "When `--iterations` is less than the total open issues, only the first N open issues are processed; remaining issues are left untouched."
+        }
+      ]
+    },
+    {
+      "id": "US-004",
+      "title": "Read Issues",
+      "description": "As a Developer, I want the tool to read open issues from `it_ISSUES.json` so that I can target specific problems.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-004-AC01",
+          "text": "Tool parses `it_{iteration}_ISSUES.json`."
+        },
+        {
+          "id": "US-004-AC02",
+          "text": "Only issues with status \"open\" are processed."
+        },
+        {
+          "id": "US-004-AC03",
+          "text": "If file does not exist: prints clear error message, exits with non-zero code."
+        },
+        {
+          "id": "US-004-AC04",
+          "text": "If JSON is malformed: prints clear error message, exits with non-zero code."
+        },
+        {
+          "id": "US-004-AC05",
+          "text": "If zero open issues: prints informative message, exits with code 0."
+        },
+        {
+          "id": "US-004-AC06",
+          "text": "If an issue has missing required fields (id, title, description, status): skips with warning, continues with remaining issues."
+        }
+      ]
+    },
+    {
+      "id": "US-005",
+      "title": "Report Results",
+      "description": "As a Developer, I want the tool to report pass/fail results so that I know which issues were resolved.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-005-AC01",
+          "text": "Tool prints to stdout, for each issue, a line `{issueId}: Fixed` or `{issueId}: Failed`."
+        },
+        {
+          "id": "US-005-AC02",
+          "text": "Summary at end with totals (Fixed count, Failed count)."
+        },
+        {
+          "id": "US-005-AC03",
+          "text": "Result is verifiable in terminal output."
+        }
+      ]
+    }
+  ],
+  "functionalRequirements": [
+    {
+      "id": "FR-1",
+      "description": "The command must use the existing `src/agent.ts` framework."
+    },
+    {
+      "id": "FR-2",
+      "description": "The command must parse JSON correctly."
+    },
+    {
+      "id": "FR-3",
+      "description": "The command must handle network errors gracefully (agent API failures)."
+    },
+    {
+      "id": "FR-4",
+      "description": "On network errors (agent API unavailable): print error message per affected issue, mark as Failed in summary, update issue status to `\"manual-fix\"` and commit, continue to next issue. Network errors do not trigger `--retry-on-fail` retries (see US-001)."
+    }
+  ]
+}
