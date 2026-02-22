@@ -87,6 +87,8 @@ Commands:
                      Initialize prototype build for current iteration
   create issue --agent <provider>
                      Create issues interactively via agent
+  create issue --test-execution-report
+                     Derive issues from test execution results
   approve project-context
                      Mark project context as approved
   approve test-plan
@@ -252,9 +254,20 @@ async function main() {
     }
 
     if (subcommand === "issue") {
-      try {
-        const subArgs = args.slice(1);
+      const subArgs = args.slice(1);
 
+      // Check for --help before parsing
+      if (subArgs.includes("--help") || subArgs.includes("-h")) {
+        console.log(`Usage for create issue:
+  nvst create issue --agent <provider>           Create issues interactively via agent
+  nvst create issue --test-execution-report      Derive issues from test execution results
+
+Providers: claude, codex, gemini, cursor`);
+        printUsage();
+        return;
+      }
+
+      try {
         // Check for --test-execution-report flag
         if (subArgs.includes("--test-execution-report")) {
           const remaining = subArgs.filter((a) => a !== "--test-execution-report");
@@ -281,6 +294,7 @@ async function main() {
         return;
       } catch (error) {
         console.error(error instanceof Error ? error.message : String(error));
+        printUsage();
         process.exitCode = 1;
         return;
       }
