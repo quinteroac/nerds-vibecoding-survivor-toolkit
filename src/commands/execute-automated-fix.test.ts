@@ -69,8 +69,9 @@ describe("execute automated-fix", () => {
 
     expect(source).toContain('import { runExecuteAutomatedFix } from "./commands/execute-automated-fix";');
     expect(source).toContain('if (subcommand === "automated-fix") {');
-    expect(source).toContain("await runExecuteAutomatedFix({ provider, retryOnFail });");
-    expect(source).toContain("execute automated-fix --agent <provider> [--retry-on-fail <N>]");
+    expect(source).toContain("parseOptionalIntegerFlag(postAgentArgs, \"--iterations\", 1);");
+    expect(source).toContain("await runExecuteAutomatedFix({ provider, iterations, retryOnFail });");
+    expect(source).toContain("execute automated-fix --agent <provider> [--iterations <N>] [--retry-on-fail <N>]");
   });
 
   test("CLI exits with code 1 when --agent is missing", async () => {
@@ -112,7 +113,7 @@ describe("execute automated-fix", () => {
 
     await withCwd(projectRoot, async () => {
       await runExecuteAutomatedFix(
-        { provider: "codex" },
+        { provider: "codex", iterations: 2 },
         {
           loadSkillFn: async (_root, name) => {
             expect(name).toBe("automated-fix");
@@ -177,6 +178,78 @@ describe("execute automated-fix", () => {
     });
 
     expect(providersUsed).toEqual(["cursor"]);
+  });
+
+  test("defaults --iterations to 1 and leaves remaining open issues untouched", async () => {
+    const projectRoot = await createProjectRoot();
+    createdRoots.push(projectRoot);
+
+    await seedState(projectRoot, "000009");
+    await writeIssues(projectRoot, "000009", [
+      { id: "ISSUE-000009-001", title: "Open A", description: "first open", status: "open" },
+      { id: "ISSUE-000009-002", title: "Open B", description: "second open", status: "open" },
+      { id: "ISSUE-000009-003", title: "Open C", description: "third open", status: "open" },
+    ]);
+
+    let invokeCount = 0;
+
+    await withCwd(projectRoot, async () => {
+      await runExecuteAutomatedFix(
+        { provider: "codex" },
+        {
+          loadSkillFn: async () => "debug workflow",
+          invokeAgentFn: async () => {
+            invokeCount += 1;
+            return { exitCode: 0, stdout: "", stderr: "" };
+          },
+          runCommitFn: async () => 0,
+        },
+      );
+    });
+
+    const issuesRaw = await readFile(join(projectRoot, ".agents", "flow", "it_000009_ISSUES.json"), "utf8");
+    const issues = JSON.parse(issuesRaw) as Array<{ id: string; status: string }>;
+
+    expect(invokeCount).toBe(1);
+    expect(issues.find((issue) => issue.id === "ISSUE-000009-001")?.status).toBe("fixed");
+    expect(issues.find((issue) => issue.id === "ISSUE-000009-002")?.status).toBe("open");
+    expect(issues.find((issue) => issue.id === "ISSUE-000009-003")?.status).toBe("open");
+  });
+
+  test("processes only the first N open issues when --iterations is provided", async () => {
+    const projectRoot = await createProjectRoot();
+    createdRoots.push(projectRoot);
+
+    await seedState(projectRoot, "000009");
+    await writeIssues(projectRoot, "000009", [
+      { id: "ISSUE-000009-001", title: "Open A", description: "first open", status: "open" },
+      { id: "ISSUE-000009-002", title: "Open B", description: "second open", status: "open" },
+      { id: "ISSUE-000009-003", title: "Open C", description: "third open", status: "open" },
+    ]);
+
+    let invokeCount = 0;
+
+    await withCwd(projectRoot, async () => {
+      await runExecuteAutomatedFix(
+        { provider: "codex", iterations: 2 },
+        {
+          loadSkillFn: async () => "debug workflow",
+          invokeAgentFn: async () => {
+            invokeCount += 1;
+            return { exitCode: 0, stdout: "", stderr: "" };
+          },
+          runCommitFn: async () => 0,
+        },
+      );
+    });
+
+    const issuesRaw = await readFile(join(projectRoot, ".agents", "flow", "it_000009_ISSUES.json"), "utf8");
+    const issues = JSON.parse(issuesRaw) as Array<{ id: string; status: string }>;
+
+    expect(invokeCount).toBe(2);
+    expect(issues.find((issue) => issue.id === "ISSUE-000009-001")?.status).toBe("fixed");
+    expect(issues.find((issue) => issue.id === "ISSUE-000009-002")?.status).toBe("fixed");
+    expect(issues.find((issue) => issue.id === "ISSUE-000009-003")?.status).toBe("open");
   });
 
   test("marks issue as retry when hypothesis is not confirmed and retries remain", async () => {
@@ -253,6 +326,38 @@ describe("execute automated-fix", () => {
     expect(commitMessages[0]).toContain("manual-fix");
   });
 
+  test("stops retrying after reaching max retries", async () => {
+    const projectRoot = await createProjectRoot();
+    createdRoots.push(projectRoot);
+
+    await seedState(projectRoot, "000009");
+    await writeIssues(projectRoot, "000009", [
+      { id: "ISSUE-000009-001", title: "Retry limit", description: "test", status: "open" },
+    ]);
+
+    let invokeCount = 0;
+
+    await withCwd(projectRoot, async () => {
+      await runExecuteAutomatedFix(
+        { provider: "gemini", retryOnFail: 2 },
+        {
+          loadSkillFn: async () => "debug workflow",
+          invokeAgentFn: async () => {
+            invokeCount += 1;
+            return { exitCode: 1, stdout: "", stderr: "still failing" };
+          },
+          runCommitFn: async () => 0,
+        },
+      );
+    });
+
+    const issuesRaw = await readFile(join(projectRoot, ".agents", "flow", "it_000009_ISSUES.json"), "utf8");
+    const issues = JSON.parse(issuesRaw) as Array<{ status: string }>;
+
+    expect(invokeCount).toBe(3);
+    expect(issues[0]?.status).toBe("manual-fix");
+  });
+
   test("marks issue as manual-fix and does not consume retries on network errors", async () => {
     const projectRoot = await createProjectRoot();
     createdRoots.push(projectRoot);
@@ -306,7 +411,7 @@ describe("execute automated-fix", () => {
 
     await withCwd(projectRoot, async () => {
       await runExecuteAutomatedFix(
-        { provider: "codex" },
+        { provider: "codex", iterations: 2 },
         {
           loadSkillFn: async () => "debug workflow",
           invokeAgentFn: async () => {

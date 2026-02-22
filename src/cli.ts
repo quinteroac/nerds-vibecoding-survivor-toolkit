@@ -104,7 +104,7 @@ Commands:
                      Refine test plan document via agent
   execute test-plan --agent <provider>
                      Execute approved structured test-plan JSON via agent
-  execute automated-fix --agent <provider> [--retry-on-fail <N>]
+  execute automated-fix --agent <provider> [--iterations <N>] [--retry-on-fail <N>]
                      Attempt automated fixes for open issues in current iteration
   approve requirement
                      Mark requirement definition as approved
@@ -491,9 +491,13 @@ Providers: claude, codex, gemini, cursor`);
       try {
         const { provider, remainingArgs: postAgentArgs } = parseAgentArg(args.slice(1));
         const {
+          value: iterations,
+          remainingArgs: postIterationsArgs,
+        } = parseOptionalIntegerFlag(postAgentArgs, "--iterations", 1);
+        const {
           value: retryOnFail,
           remainingArgs: postRetryArgs,
-        } = parseOptionalIntegerFlag(postAgentArgs, "--retry-on-fail", 0);
+        } = parseOptionalIntegerFlag(postIterationsArgs, "--retry-on-fail", 0);
 
         if (postRetryArgs.length > 0) {
           console.error(`Unknown option(s) for execute automated-fix: ${postRetryArgs.join(" ")}`);
@@ -502,7 +506,7 @@ Providers: claude, codex, gemini, cursor`);
           return;
         }
 
-        await runExecuteAutomatedFix({ provider, retryOnFail });
+        await runExecuteAutomatedFix({ provider, iterations, retryOnFail });
         return;
       } catch (error) {
         console.error(error instanceof Error ? error.message : String(error));

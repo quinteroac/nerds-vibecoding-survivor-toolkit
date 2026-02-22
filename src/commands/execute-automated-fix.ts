@@ -15,6 +15,7 @@ import { IssuesSchema, type Issue } from "../../scaffold/schemas/tmpl_issues";
 
 export interface ExecuteAutomatedFixOptions {
   provider: AgentProvider;
+  iterations?: number;
   retryOnFail?: number;
 }
 
@@ -94,6 +95,10 @@ export async function runExecuteAutomatedFix(
   opts: ExecuteAutomatedFixOptions,
   deps: Partial<ExecuteAutomatedFixDeps> = {},
 ): Promise<void> {
+  if (opts.iterations !== undefined && (!Number.isInteger(opts.iterations) || opts.iterations < 1)) {
+    throw new Error("Invalid --iterations value. Expected an integer >= 1.");
+  }
+
   if (
     opts.retryOnFail !== undefined &&
     (!Number.isInteger(opts.retryOnFail) || opts.retryOnFail < 0)
@@ -140,12 +145,14 @@ export async function runExecuteAutomatedFix(
   }
 
   const skillTemplate = await mergedDeps.loadSkillFn(projectRoot, "automated-fix");
+  const maxIssuesToProcess = opts.iterations ?? 1;
+  const issuesToProcess = openIssues.slice(0, maxIssuesToProcess);
   const maxRetries = opts.retryOnFail ?? 0;
 
   let fixedCount = 0;
   let failedCount = 0;
 
-  for (const issue of openIssues) {
+  for (const issue of issuesToProcess) {
     let retriesRemaining = maxRetries;
 
     while (true) {
@@ -264,5 +271,5 @@ export async function runExecuteAutomatedFix(
   }
 
   mergedDeps.logFn(`Summary: Fixed=${fixedCount} Failed=${failedCount}`);
-  mergedDeps.logFn(`Processed ${openIssues.length} open issue(s) at ${mergedDeps.nowFn().toISOString()}`);
+  mergedDeps.logFn(`Processed ${issuesToProcess.length} open issue(s) at ${mergedDeps.nowFn().toISOString()}`);
 }
