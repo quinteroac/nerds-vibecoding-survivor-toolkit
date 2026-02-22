@@ -11,7 +11,7 @@ import {
   type AgentResult,
 } from "../agent";
 import { exists, FLOW_REL_DIR, readState } from "../state";
-import { IssuesSchema, type Issue } from "../../scaffold/schemas/tmpl_issues";
+import { type Issue } from "../../scaffold/schemas/tmpl_issues";
 
 export interface ExecuteAutomatedFixOptions {
   provider: AgentProvider;
@@ -72,6 +72,100 @@ function sortIssuesById(issues: Issue[]): Issue[] {
   return [...issues].sort((left, right) => left.id.localeCompare(right.id));
 }
 
+const ALLOWED_ISSUE_STATUSES: Set<Issue["status"]> = new Set([
+  "open",
+  "fixed",
+  "retry",
+  "manual-fix",
+]);
+
+function asRecord(value: unknown): Record<string, unknown> | null {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    return null;
+  }
+  return value as Record<string, unknown>;
+}
+
+function parseIssuesForProcessing(
+  raw: unknown,
+  flowRelativePath: string,
+  logFn: (message: string) => void,
+): Issue[] {
+  if (!Array.isArray(raw)) {
+    throw new Error(
+      `Deterministic validation error: issues schema mismatch in ${flowRelativePath}.`,
+    );
+  }
+
+  const parsedIssues: Issue[] = [];
+  const seenIds = new Set<string>();
+
+  for (const [index, item] of raw.entries()) {
+    const issue = asRecord(item);
+    if (!issue) {
+      logFn(
+        `Warning: Skipping invalid issue at index ${index} in ${flowRelativePath}: expected an object.`,
+      );
+      continue;
+    }
+
+    const id = issue.id;
+    const title = issue.title;
+    const description = issue.description;
+    const status = issue.status;
+
+    const missingFields: string[] = [];
+    if (typeof id !== "string") {
+      missingFields.push("id");
+    }
+    if (typeof title !== "string") {
+      missingFields.push("title");
+    }
+    if (typeof description !== "string") {
+      missingFields.push("description");
+    }
+    if (typeof status !== "string") {
+      missingFields.push("status");
+    }
+
+    if (missingFields.length > 0) {
+      logFn(
+        `Warning: Skipping issue at index ${index} in ${flowRelativePath}: missing required field(s): ${missingFields.join(", ")}.`,
+      );
+      continue;
+    }
+
+    const validId = id as string;
+    const validTitle = title as string;
+    const validDescription = description as string;
+    const validStatus = status as Issue["status"];
+
+    if (!ALLOWED_ISSUE_STATUSES.has(validStatus)) {
+      logFn(
+        `Warning: Skipping issue ${validId} in ${flowRelativePath}: invalid status '${status}'.`,
+      );
+      continue;
+    }
+
+    if (seenIds.has(validId)) {
+      logFn(
+        `Warning: Skipping duplicate issue id '${validId}' in ${flowRelativePath}.`,
+      );
+      continue;
+    }
+
+    seenIds.add(validId);
+    parsedIssues.push({
+      id: validId,
+      title: validTitle,
+      description: validDescription,
+      status: validStatus,
+    });
+  }
+
+  return parsedIssues;
+}
+
 async function writeIssuesFile(
   issuesPath: string,
   issues: Issue[],
@@ -121,22 +215,16 @@ export async function runExecuteAutomatedFix(
   }
 
   let parsedIssuesRaw: unknown;
+  const flowRelativePath = join(FLOW_REL_DIR, fileName);
   try {
     parsedIssuesRaw = JSON.parse(await mergedDeps.readFileFn(issuesPath, "utf8"));
   } catch {
     throw new Error(
-      `Deterministic validation error: invalid issues JSON in ${join(FLOW_REL_DIR, fileName)}.`,
+      `Deterministic validation error: invalid issues JSON in ${flowRelativePath}.`,
     );
   }
 
-  const parsedIssues = IssuesSchema.safeParse(parsedIssuesRaw);
-  if (!parsedIssues.success) {
-    throw new Error(
-      `Deterministic validation error: issues schema mismatch in ${join(FLOW_REL_DIR, fileName)}.`,
-    );
-  }
-
-  const issues = sortIssuesById(parsedIssues.data);
+  const issues = sortIssuesById(parseIssuesForProcessing(parsedIssuesRaw, flowRelativePath, mergedDeps.logFn));
   const openIssues = issues.filter((issue) => issue.status === "open");
 
   if (openIssues.length === 0) {

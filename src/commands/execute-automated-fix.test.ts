@@ -96,6 +96,19 @@ describe("execute automated-fix", () => {
     expect(stderr).toContain("Unknown agent provider");
   });
 
+  test("throws clear error when current-iteration issues file is missing", async () => {
+    const projectRoot = await createProjectRoot();
+    createdRoots.push(projectRoot);
+
+    await seedState(projectRoot, "000009");
+
+    await withCwd(projectRoot, async () => {
+      await expect(runExecuteAutomatedFix({ provider: "codex" })).rejects.toThrow(
+        "Issues file not found: expected .agents/flow/it_000009_ISSUES.json. Run `bun nvst create issue --agent <provider>` first.",
+      );
+    });
+  });
+
   test("reads current-iteration issues file, processes only open issues sequentially, and commits fixed status", async () => {
     const projectRoot = await createProjectRoot();
     createdRoots.push(projectRoot);
@@ -180,6 +193,38 @@ describe("execute automated-fix", () => {
     expect(providersUsed).toEqual(["cursor"]);
   });
 
+  test("logs informative message and exits without changes when zero open issues exist", async () => {
+    const projectRoot = await createProjectRoot();
+    createdRoots.push(projectRoot);
+
+    await seedState(projectRoot, "000009");
+    await writeIssues(projectRoot, "000009", [
+      { id: "ISSUE-000009-001", title: "Already fixed", description: "skip", status: "fixed" },
+      { id: "ISSUE-000009-002", title: "Retrying", description: "skip", status: "retry" },
+    ]);
+
+    const logs: string[] = [];
+    let invokeCount = 0;
+
+    await withCwd(projectRoot, async () => {
+      await runExecuteAutomatedFix(
+        { provider: "codex" },
+        {
+          loadSkillFn: async () => "debug workflow",
+          invokeAgentFn: async () => {
+            invokeCount += 1;
+            return { exitCode: 0, stdout: "ok", stderr: "" };
+          },
+          runCommitFn: async () => 0,
+          logFn: (message) => logs.push(message),
+        },
+      );
+    });
+
+    expect(invokeCount).toBe(0);
+    expect(logs).toContain("No open issues to process. Exiting without changes.");
+  });
+
   test("defaults --iterations to 1 and leaves remaining open issues untouched", async () => {
     const projectRoot = await createProjectRoot();
     createdRoots.push(projectRoot);
@@ -250,6 +295,47 @@ describe("execute automated-fix", () => {
     expect(issues.find((issue) => issue.id === "ISSUE-000009-001")?.status).toBe("fixed");
     expect(issues.find((issue) => issue.id === "ISSUE-000009-002")?.status).toBe("fixed");
     expect(issues.find((issue) => issue.id === "ISSUE-000009-003")?.status).toBe("open");
+  });
+
+  test("skips issues with missing required fields and continues processing remaining open issues", async () => {
+    const projectRoot = await createProjectRoot();
+    createdRoots.push(projectRoot);
+
+    await seedState(projectRoot, "000009");
+    await writeIssues(projectRoot, "000009", [
+      { id: "ISSUE-000009-001", title: "Open A", description: "first open", status: "open" },
+      { id: "ISSUE-000009-002", title: "Missing description", status: "open" },
+      { id: "ISSUE-000009-003", title: "Fixed", description: "skip", status: "fixed" },
+    ]);
+
+    const logs: string[] = [];
+    const prompts: string[] = [];
+
+    await withCwd(projectRoot, async () => {
+      await runExecuteAutomatedFix(
+        { provider: "codex", iterations: 3 },
+        {
+          loadSkillFn: async () => "debug workflow",
+          invokeAgentFn: async (options) => {
+            prompts.push(options.prompt);
+            return { exitCode: 0, stdout: "", stderr: "" };
+          },
+          runCommitFn: async () => 0,
+          logFn: (message) => logs.push(message),
+        },
+      );
+    });
+
+    expect(prompts).toHaveLength(1);
+    expect(prompts[0]).toContain('"id": "ISSUE-000009-001"');
+    expect(logs.some((line) => line.includes("Warning: Skipping issue at index 1"))).toBe(true);
+
+    const issuesRaw = await readFile(join(projectRoot, ".agents", "flow", "it_000009_ISSUES.json"), "utf8");
+    const issues = JSON.parse(issuesRaw) as Array<{ id: string; status: string }>;
+
+    expect(issues.find((issue) => issue.id === "ISSUE-000009-001")?.status).toBe("fixed");
+    expect(issues.find((issue) => issue.id === "ISSUE-000009-003")?.status).toBe("fixed");
+    expect(issues.some((issue) => issue.id === "ISSUE-000009-002")).toBe(false);
   });
 
   test("marks issue as retry when hypothesis is not confirmed and retries remain", async () => {
