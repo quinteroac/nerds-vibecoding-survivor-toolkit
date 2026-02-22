@@ -520,6 +520,50 @@ describe("execute automated-fix", () => {
     expect(logs).toContain("Summary: Fixed=1 Failed=1");
   });
 
+  // US-005-AC01/AC02/AC03: report per-issue pass/fail and summary in terminal-verifiable output
+  test("US-005: logs `{issueId}: Fixed|Failed` lines per issue and a summary with fixed/failed totals", async () => {
+    const projectRoot = await createProjectRoot();
+    createdRoots.push(projectRoot);
+
+    await seedState(projectRoot, "000009");
+    await writeIssues(projectRoot, "000009", [
+      { id: "ISSUE-000009-001", title: "First", description: "one", status: "open" },
+      { id: "ISSUE-000009-002", title: "Second", description: "two", status: "open" },
+      { id: "ISSUE-000009-003", title: "Third", description: "three", status: "open" },
+    ]);
+
+    const logs: string[] = [];
+    let commitAttempt = 0;
+
+    await withCwd(projectRoot, async () => {
+      await runExecuteAutomatedFix(
+        { provider: "codex", iterations: 2 },
+        {
+          loadSkillFn: async () => "debug workflow",
+          invokeAgentFn: async () => ({ exitCode: 0, stdout: "ok", stderr: "" }),
+          runCommitFn: async () => {
+            commitAttempt += 1;
+            return commitAttempt === 1 ? 0 : 1;
+          },
+          logFn: (message) => logs.push(message),
+          nowFn: () => new Date("2026-02-22T15:00:00.000Z"),
+        },
+      );
+    });
+
+    // AC01: one status line per processed issue using the required format
+    const statusLines = logs.filter((line) => /^ISSUE-\d{6}-\d{3}: (Fixed|Failed)$/.test(line));
+    expect(statusLines).toHaveLength(2);
+    expect(statusLines).toContain("ISSUE-000009-001: Fixed");
+    expect(statusLines).toContain("ISSUE-000009-002: Failed");
+
+    // AC02: summary includes fixed and failed totals
+    expect(logs).toContain("Summary: Fixed=1 Failed=1");
+
+    // AC03: result is directly verifiable from terminal-style output lines
+    expect(logs).toContain("Processed 2 open issue(s) at 2026-02-22T15:00:00.000Z");
+  });
+
   test("throws deterministic validation error for malformed issues JSON", async () => {
     const projectRoot = await createProjectRoot();
     createdRoots.push(projectRoot);
