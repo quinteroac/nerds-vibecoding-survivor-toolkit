@@ -327,13 +327,34 @@ export async function runCreateIssueFromTestReport(): Promise<void> {
 
 /** Extract JSON array from text that may contain markdown fences or surrounding text. */
 export function extractJson(text: string): string {
-  // Try to find JSON array in markdown code fences
-  const fenceMatch = text.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/);
+  // 1. Prefer ```json block when multiple fences exist (REQ-FIX-01, REQ-FIX-02).
+  //    Use lazy *? to stop at the FIRST closing ```, avoiding capture of later blocks (e.g. ```bash).
+  const jsonFenceMatch = text.match(/```json\s*\n([\s\S]*?)\n```\s*/);
+  if (jsonFenceMatch) {
+    return jsonFenceMatch[1].trim();
+  }
+
+  // 2. Try single-block case: ``` or ```json at line start, content until closing ``` at line end
+  const fenceMatch = text.match(/^```(?:json)?\s*\n([\s\S]*)\n```\s*$/m);
   if (fenceMatch) {
     return fenceMatch[1].trim();
   }
 
-  // Try to find a JSON array directly
+  // 3. Fallback: plain ``` fence (no json label) - find first ``` and match to its closing fence
+  //    Only use when there is a single block (first and last ``` span the same block)
+  const openIdx = text.indexOf("```");
+  if (openIdx !== -1) {
+    const afterOpen = text.indexOf("\n", openIdx);
+    if (afterOpen !== -1) {
+      const rest = text.slice(afterOpen + 1);
+      const closeMatch = rest.match(/\n```\s*/);
+      if (closeMatch) {
+        return rest.slice(0, closeMatch.index).trim();
+      }
+    }
+  }
+
+  // 4. Try to find a JSON array directly (REQ-FIX-03)
   const arrayMatch = text.match(/\[[\s\S]*\]/);
   if (arrayMatch) {
     return arrayMatch[0];

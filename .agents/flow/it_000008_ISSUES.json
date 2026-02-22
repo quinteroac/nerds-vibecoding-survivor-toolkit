@@ -1,0 +1,8 @@
+[
+  {
+    "id": "ISSUE-000008-001",
+    "title": "[skipped] TC-US002-10: Command falls back to archived path from `state.json` history when flow file absent",
+    "description": "Test case TC-US002-10 resulted in status: skipped.\nNotes: Blocker: Test runner invocation not available in execution environment\nEvidence: Fallback logic at create-issue.ts:228-242 uses state.history; unit test exists in create-issue.test.ts:429\nCorrelated requirements: FR-2",
+    "status": "open"
+  }
+]

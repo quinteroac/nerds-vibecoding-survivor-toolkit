@@ -29,6 +29,8 @@ Use the provided context sections:
 
 ## Output Contract (Mandatory)
 
+Output MUST be raw JSON only. No markdown fences, no introductory text, no trailing instructions. Do not output markdown or additional text outside the JSON array.
+
 Return only a JSON array with one result object per test case, in the same order as the input. Each object must have this exact shape:
 
 ```json
@@ -44,4 +46,4 @@ Return only a JSON array with one result object per test case, in the same order
 
 Every test case in the input must have a corresponding result in the output array.
 
-Do not output markdown or additional text outside the JSON array.
+Correct: output the array directly (or inside a single ```json block if necessary). Incorrect: adding text like "Here are the results:" or "Run this command:" before or after the JSON.

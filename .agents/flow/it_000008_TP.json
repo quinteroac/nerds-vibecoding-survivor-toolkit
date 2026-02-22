@@ -1,0 +1,287 @@
+{
+  "overallStatus": "pending",
+  "scope": [
+    "`nvst create issue --agent <provider>` command: agent-driven interactive issue creation flow (US-001)",
+    "`nvst create issue --test-execution-report` command: derivation of issues from test execution results (US-002)",
+    "CLI argument validation: exactly one of `--agent` or `--test-execution-report` must be provided (FR-1)",
+    "Output schema validation: ISSUES file must conform to `{ id, title, description, status }` with unique IDs (FR-6)",
+    "State integration: `current_iteration` from `state.json` drives output path and input file lookup (FR-2, FR-3)",
+    "Test result mapping: `failed`, `skipped`, `invocation_failed` statuses map to open issues (FR-5)"
+  ],
+  "environmentData": [
+    "Runtime: Bun v1+ (run `bun test` for automated tests)",
+    "Project root must contain `.agents/state.json` with valid `current_iteration` (e.g. `\"000008\"`)",
+    "For `--agent` flow: skill `.agents/skills/create-issue/SKILL.md` must exist; agent provider must be configured",
+    "For `--test-execution-report` flow: `.agents/flow/it_{iteration}_test-execution-results.json` or archived path must exist (or tests expect file-not-found error)",
+    "Fixtures: use in-memory or temp-dir test execution results for isolated unit/integration tests",
+    "`write-json` command must support `--schema issues` (issues schema registered in scaffold/schemas)",
+    "## User Story: US-001 - Create issue via agent interaction"
+  ],
+  "automatedTests": [
+    {
+      "id": "TC-US001-01",
+      "description": "Command `bun nvst create issue` without `--agent` exits with code 1 and stderr mentions `--agent`",
+      "status": "pending",
+      "correlatedRequirements": [
+        "FR-1"
+      ]
+    },
+    {
+      "id": "TC-US001-02",
+      "description": "Command `bun nvst create issue --agent invalid-provider` exits with code 1 and stderr mentions unknown provider",
+      "status": "pending",
+      "correlatedRequirements": [
+        "FR-1"
+      ]
+    },
+    {
+      "id": "TC-US001-03",
+      "description": "Command `bun nvst create issue --agent claude --unknown-flag` exits with code 1 and stderr mentions unknown option",
+      "status": "pending",
+      "correlatedRequirements": [
+        "FR-1"
+      ]
+    },
+    {
+      "id": "TC-US001-04",
+      "description": "Agent output shape (title, description) is validated; invalid shape causes error before write",
+      "status": "pending",
+      "correlatedRequirements": [
+        "FR-4",
+        "FR-6"
+      ]
+    },
+    {
+      "id": "TC-US001-05",
+      "description": "Valid agent output produces issues with auto-generated `id` (ISSUE-{iteration}-{seq}) and `status: \"open\"`",
+      "status": "pending",
+      "correlatedRequirements": [
+        "FR-6"
+      ]
+    },
+    {
+      "id": "TC-US001-06",
+      "description": "Output file path follows `.agents/flow/it_{iteration}_ISSUES.json` convention",
+      "status": "pending",
+      "correlatedRequirements": [
+        "FR-2",
+        "FR-3"
+      ]
+    },
+    {
+      "id": "TC-US001-07",
+      "description": "Generated issues pass ISSUES schema validation (id, title, description, status; unique IDs)",
+      "status": "pending",
+      "correlatedRequirements": [
+        "FR-6"
+      ]
+    },
+    {
+      "id": "TC-US001-08",
+      "description": "`extractJson` correctly parses JSON from markdown fences and raw array text",
+      "status": "pending",
+      "correlatedRequirements": []
+    },
+    {
+      "id": "TC-US001-09",
+      "description": "Command exits with code 0 on successful agent flow; exits with code 1 on failure",
+      "status": "pending",
+      "correlatedRequirements": []
+    },
+    {
+      "id": "TC-US001-10",
+      "description": "`write-json --schema issues` accepts valid issues data and rejects invalid data",
+      "status": "pending",
+      "correlatedRequirements": [
+        "FR-6"
+      ]
+    },
+    {
+      "id": "TC-US001-11",
+      "description": "Typecheck passes (tsc)",
+      "status": "pending",
+      "correlatedRequirements": []
+    },
+    {
+      "id": "TC-US002-01",
+      "description": "`isActionableStatus` returns true for `failed`, `skipped`, `invocation_failed`",
+      "status": "pending",
+      "correlatedRequirements": [
+        "FR-5"
+      ]
+    },
+    {
+      "id": "TC-US002-02",
+      "description": "`isActionableStatus` returns false for `passed` and unknown values",
+      "status": "pending",
+      "correlatedRequirements": [
+        "FR-5"
+      ]
+    },
+    {
+      "id": "TC-US002-03",
+      "description": "`buildIssuesFromTestResults` converts failed/skipped/invocation_failed tests to issues with status \"open\"",
+      "status": "pending",
+      "correlatedRequirements": [
+        "FR-5"
+      ]
+    },
+    {
+      "id": "TC-US002-04",
+      "description": "`buildIssuesFromTestResults` includes `notes` and `evidence` in issue description",
+      "status": "pending",
+      "correlatedRequirements": [
+        "FR-5"
+      ]
+    },
+    {
+      "id": "TC-US002-05",
+      "description": "`buildIssuesFromTestResults` filters out passing tests",
+      "status": "pending",
+      "correlatedRequirements": [
+        "FR-5"
+      ]
+    },
+    {
+      "id": "TC-US002-06",
+      "description": "`buildIssuesFromTestResults` returns empty array when all tests pass",
+      "status": "pending",
+      "correlatedRequirements": [
+        "FR-5"
+      ]
+    },
+    {
+      "id": "TC-US002-07",
+      "description": "Generated issues from test results pass ISSUES schema validation",
+      "status": "pending",
+      "correlatedRequirements": [
+        "FR-6"
+      ]
+    },
+    {
+      "id": "TC-US002-08",
+      "description": "Issue IDs are unique and sequential (ISSUE-{iteration}-{seq})",
+      "status": "pending",
+      "correlatedRequirements": [
+        "FR-6"
+      ]
+    },
+    {
+      "id": "TC-US002-09",
+      "description": "Command reads test-execution-results from `.agents/flow/` first",
+      "status": "pending",
+      "correlatedRequirements": [
+        "FR-2"
+      ]
+    },
+    {
+      "id": "TC-US002-10",
+      "description": "Command falls back to archived path from `state.json` history when flow file absent",
+      "status": "pending",
+      "correlatedRequirements": [
+        "FR-2"
+      ]
+    },
+    {
+      "id": "TC-US002-11",
+      "description": "Command fails with clear error when file missing in both flow and archived paths",
+      "status": "pending",
+      "correlatedRequirements": []
+    },
+    {
+      "id": "TC-US002-12",
+      "description": "Command writes `it_{iteration}_ISSUES.json` to `.agents/flow/` on success",
+      "status": "pending",
+      "correlatedRequirements": [
+        "FR-3"
+      ]
+    },
+    {
+      "id": "TC-US002-13",
+      "description": "`create issue --test-execution-report --extra-flag` exits with code 1 and unknown option error",
+      "status": "pending",
+      "correlatedRequirements": [
+        "FR-1"
+      ]
+    },
+    {
+      "id": "TC-US002-14",
+      "description": "`create issue --test-execution-report` does not require `--agent` (no \"Missing --agent\" error)",
+      "status": "pending",
+      "correlatedRequirements": [
+        "FR-1"
+      ]
+    },
+    {
+      "id": "TC-US002-15",
+      "description": "Typecheck passes",
+      "status": "pending",
+      "correlatedRequirements": []
+    },
+    {
+      "id": "TC-FR1-01",
+      "description": "`create issue` without `--agent` and without `--test-execution-report` fails with usage error",
+      "status": "pending",
+      "correlatedRequirements": [
+        "FR-1"
+      ]
+    },
+    {
+      "id": "TC-FR1-02",
+      "description": "`create issue --agent claude --test-execution-report` fails (both modes)",
+      "status": "pending",
+      "correlatedRequirements": [
+        "FR-1"
+      ]
+    },
+    {
+      "id": "TC-FR1-03",
+      "description": "`create issue --test-execution-report --agent claude` fails (both modes)",
+      "status": "pending",
+      "correlatedRequirements": [
+        "FR-1"
+      ]
+    },
+    {
+      "id": "TC-FR6-01",
+      "description": "ISSUES schema accepts valid array with id, title, description, status",
+      "status": "pending",
+      "correlatedRequirements": [
+        "FR-6"
+      ]
+    },
+    {
+      "id": "TC-FR6-02",
+      "description": "ISSUES schema rejects duplicate IDs",
+      "status": "pending",
+      "correlatedRequirements": [
+        "FR-6"
+      ]
+    },
+    {
+      "id": "TC-FR6-03",
+      "description": "ISSUES schema rejects invalid status (e.g. \"closed\")",
+      "status": "pending",
+      "correlatedRequirements": [
+        "FR-6"
+      ]
+    },
+    {
+      "id": "TC-FR6-04",
+      "description": "ISSUES schema rejects missing required fields",
+      "status": "pending",
+      "correlatedRequirements": [
+        "FR-6"
+      ]
+    },
+    {
+      "id": "TC-FR6-05",
+      "description": "ISSUES schema rejects non-array input",
+      "status": "pending",
+      "correlatedRequirements": [
+        "FR-6"
+      ]
+    }
+  ],
+  "exploratoryManualTests": []
+}

@@ -13,6 +13,7 @@ import {
 } from "../agent";
 import { exists, FLOW_REL_DIR, readState, writeState } from "../state";
 import { TestPlanSchema, type TestPlan } from "../../schemas/test-plan";
+import { extractJson } from "./create-issue";
 
 export interface ExecuteTestPlanOptions {
   provider: AgentProvider;
@@ -173,7 +174,7 @@ function buildBatchExecutionPrompt(
 function parseBatchExecutionPayload(raw: string): BatchResultItem[] {
   let parsed: unknown;
   try {
-    parsed = JSON.parse(raw);
+    parsed = JSON.parse(extractJson(raw));
   } catch (error) {
     throw new Error("Agent batch output was not valid JSON.", { cause: error });
   }
@@ -502,28 +503,43 @@ export async function runExecuteTestPlan(
       try {
         batchResults = parseBatchExecutionPayload(agentResult.stdout.trim());
       } catch (error) {
-        // Parse failure: mark all as failed
-        const summary = error instanceof Error ? error.message : "Unknown batch parsing error.";
-        for (const tc of pendingAutomatedTests) {
-          const entry = progress.entries.find((e) => e.id === tc.id);
-          if (!entry) continue;
-          await recordTestResult(
-            tc,
-            { status: "invocation_failed", evidence: "", notes: summary },
-            agentResult.exitCode,
-            batchPrompt,
-            agentResult.stdout,
-            agentResult.stderr,
-            entry,
-            artifactsDirName,
-            projectRoot,
-            executionByTestId,
-            executedTestIds,
-            writeProgress,
-            mergedDeps,
-          );
+        // Fallback: agent may have written results to it_{iteration}_test-batch-results.json
+        const fallbackPath = join(
+          projectRoot,
+          FLOW_REL_DIR,
+          `it_${state.current_iteration}_test-batch-results.json`,
+        );
+        try {
+          if (await mergedDeps.existsFn(fallbackPath)) {
+            const fallbackRaw = await mergedDeps.readFileFn(fallbackPath, "utf8");
+            batchResults = parseBatchExecutionPayload(fallbackRaw.trim());
+          } else {
+            throw error;
+          }
+        } catch {
+          // Parse failure: mark all as failed
+          const summary = error instanceof Error ? error.message : "Unknown batch parsing error.";
+          for (const tc of pendingAutomatedTests) {
+            const entry = progress.entries.find((e) => e.id === tc.id);
+            if (!entry) continue;
+            await recordTestResult(
+              tc,
+              { status: "invocation_failed", evidence: "", notes: summary },
+              agentResult.exitCode,
+              batchPrompt,
+              agentResult.stdout,
+              agentResult.stderr,
+              entry,
+              artifactsDirName,
+              projectRoot,
+              executionByTestId,
+              executedTestIds,
+              writeProgress,
+              mergedDeps,
+            );
+          }
+          batchResults = [];
         }
-        batchResults = [];
       }
 
       if (batchResults.length > 0) {

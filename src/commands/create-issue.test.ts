@@ -1,12 +1,14 @@
-import { mkdir, writeFile, rm } from "node:fs/promises";
+import { mkdir, writeFile, rm, readFile } from "node:fs/promises";
 import { join } from "node:path";
-import { describe, expect, test, beforeEach, afterEach } from "bun:test";
+import { describe, expect, test } from "bun:test";
 
 import { IssuesSchema } from "../../scaffold/schemas/tmpl_issues";
+import { readState, writeState } from "../state";
 import {
   extractJson,
   buildIssuesFromTestResults,
   isActionableStatus,
+  runCreateIssueFromTestReport,
   type TestExecutionResults,
 } from "./create-issue";
 
@@ -86,6 +88,24 @@ describe("extractJson", () => {
   test("handles clean JSON array input", () => {
     const input = '[{"title":"Bug","description":"Details"}]';
     expect(extractJson(input)).toBe(input);
+  });
+
+  test("extracts JSON from ```json block when multiple markdown blocks follow (e.g. ```bash)", () => {
+    const input = `Intro text.
+
+\`\`\`json
+[{"testCaseId":"TC-01","status":"passed","evidence":"ok","notes":""}]
+\`\`\`
+
+Para obtener resultados, ejecuta:
+
+\`\`\`bash
+bun run test.ts
+\`\`\``;
+    const extracted = extractJson(input);
+    expect(JSON.parse(extracted)).toEqual([
+      { testCaseId: "TC-01", status: "passed", evidence: "ok", notes: "" },
+    ]);
   });
 });
 
@@ -391,17 +411,74 @@ describe("create issue --test-execution-report CLI integration", () => {
   });
 
   test("--test-execution-report is accepted as a valid flag (does not show --agent error)", async () => {
-    // This will fail because there's no test-execution-results file for the current iteration,
-    // but it should NOT fail with "Missing --agent" — it should fail with a file-not-found error
+    // TC-US002-14: --test-execution-report does not require --agent.
+    // May succeed (if results file exists) or fail with file-not-found; must NOT show "Missing --agent"
     const proc = Bun.spawn(
       ["bun", "run", "src/cli.ts", "create", "issue", "--test-execution-report"],
       { cwd, stdout: "pipe", stderr: "pipe" },
     );
     const exitCode = await proc.exited;
     const stderr = await new Response(proc.stderr).text();
-    // Should NOT contain --agent requirement
     expect(stderr).not.toContain("Missing --agent");
-    // Should contain a test-execution-results related error (AC05)
-    expect(stderr).toContain("test-execution-results");
+    if (exitCode !== 0) {
+      expect(stderr).toContain("test-execution-results");
+    }
+  });
+
+  // TC-US002-10: Command falls back to archived path from state.json history when flow file absent
+  test("falls back to archived path when flow file absent (TC-US002-10)", async () => {
+    const projectRoot = cwd;
+    const testIteration = "999999";
+    const archivedRelPath = join(".agents", "flow", "archived", testIteration);
+    const archivedDir = join(projectRoot, archivedRelPath);
+    const resultsFileName = `it_${testIteration}_test-execution-results.json`;
+    const flowResultsPath = join(projectRoot, ".agents", "flow", resultsFileName);
+    const archivedResultsPath = join(archivedDir, resultsFileName);
+    const issuesPath = join(projectRoot, ".agents", "flow", `it_${testIteration}_ISSUES.json`);
+
+    const validTestResults = {
+      iteration: testIteration,
+      results: [
+        {
+          testCaseId: "TC-001",
+          description: "A failing test",
+          correlatedRequirements: ["FR-2"],
+          payload: { status: "failed", notes: "fallback test", evidence: "archived path used" },
+        },
+      ],
+    };
+
+    const originalState = await readState(projectRoot);
+    try {
+      await mkdir(archivedDir, { recursive: true });
+      await writeFile(archivedResultsPath, JSON.stringify(validTestResults, null, 2), "utf8");
+
+      await writeState(projectRoot, {
+        ...originalState,
+        current_iteration: testIteration,
+        history: [
+          ...(originalState.history ?? []),
+          {
+            iteration: testIteration,
+            archived_at: "2026-02-22T00:00:00.000Z",
+            archived_path: archivedRelPath,
+          },
+        ],
+      });
+
+      await runCreateIssueFromTestReport();
+
+      const issuesContent = await readFile(issuesPath, "utf8");
+      const issues = JSON.parse(issuesContent);
+      expect(Array.isArray(issues)).toBe(true);
+      expect(issues.length).toBe(1);
+      expect(issues[0].id).toBe(`ISSUE-${testIteration}-001`);
+      expect(issues[0].title).toContain("[failed]");
+      expect(issues[0].title).toContain("TC-001");
+    } finally {
+      await rm(archivedDir, { recursive: true, force: true }).catch(() => {});
+      await rm(issuesPath, { force: true }).catch(() => {});
+      await writeState(projectRoot, originalState);
+    }
   });
 });
