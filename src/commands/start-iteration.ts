@@ -83,6 +83,15 @@ export async function runStartIteration(): Promise<void> {
   nextState.current_iteration = nextIteration(currentIteration);
   nextState.history = updatedHistory;
 
+  // Preserve project_context when already created (immutable across iterations)
+  const prevProjectContext = parsedState.phases?.prototype?.project_context;
+  if (prevProjectContext?.status === "created" && prevProjectContext?.file) {
+    nextState.phases.prototype.project_context = {
+      status: "created",
+      file: prevProjectContext.file,
+    };
+  }
+
   await writeState(projectRoot, nextState);
 
   console.log(

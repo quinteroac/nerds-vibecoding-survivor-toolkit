@@ -61,46 +61,56 @@ export async function runCreateIssue(opts: CreateIssueOptions): Promise<void> {
     );
   }
 
-  // For interactive mode, agent output is not captured (stdout: "inherit").
-  // The agent writes the ISSUES file directly, or the user pastes output.
-  // We need to find the output. Interactive agents write to the filesystem.
-  // Check if the agent already created the file:
+  // Agent writes the file via write-json (see create-issue skill). Check if file exists first.
   const outputFileName = `it_${iteration}_ISSUES.json`;
   const outputRelPath = join(FLOW_REL_DIR, outputFileName);
   const outputAbsPath = join(projectRoot, outputRelPath);
 
-  // Try to read agent output from the file the agent may have created,
-  // or parse stdout if available (non-interactive fallback).
-  let agentOutput = result.stdout.trim();
-
-  if (!agentOutput) {
-    // Interactive mode: agent should have written the file itself via the skill.
-    // Check if file exists and validate it.
-    const { exists } = await import("../state");
-    if (await exists(outputAbsPath)) {
-      const { readFile } = await import("node:fs/promises");
-      agentOutput = await readFile(outputAbsPath, "utf8");
-    } else {
+  if (await exists(outputAbsPath)) {
+    // Agent ran write-json; validate the file
+    const content = await readFile(outputAbsPath, "utf8");
+    const parsed = JSON.parse(content) as unknown;
+    const validationResult = IssuesSchema.safeParse(parsed);
+    if (!validationResult.success) {
+      const formatted = validationResult.error.format();
       throw new Error(
-        "Agent did not produce output. Expected JSON array of issues on stdout or written to file.",
+        `Agent wrote invalid issues file:\n${JSON.stringify(formatted, null, 2)}`,
       );
     }
+    console.log(`Issues file created: ${outputRelPath}`);
+    return;
   }
 
-  // Extract JSON from agent output (may contain markdown fences)
-  const jsonStr = extractJson(agentOutput);
+  // Fallback: parse stdout and call write-json (for agents that output JSON instead of running write-json)
+  const agentOutput = result.stdout.trim();
+  if (!agentOutput) {
+    throw new Error(
+      "Agent did not produce output. Expected the agent to run write-json to create the issues file, or output a JSON array to stdout.",
+    );
+  }
 
-  // Parse the raw JSON
+  const jsonStr = extractJson(agentOutput);
   let parsed: unknown;
   try {
     parsed = JSON.parse(jsonStr);
   } catch {
+    const looksLikeConversation =
+      /describe|issue|please|what|how|tell me|help you/i.test(agentOutput) &&
+      !agentOutput.trimStart().startsWith("[");
+    if (looksLikeConversation) {
+      throw new Error(
+        "The agent started the interactive session but exited before completing. " +
+          "The output was a question, not the final issues. This can happen if the agent " +
+          "encountered an error (e.g. IDE companion connection failed) or exited unexpectedly. " +
+          "Try running again or use a different provider (claude, codex, cursor). " +
+          "The agent must run write-json when done; see .agents/skills/create-issue/SKILL.md.",
+      );
+    }
     throw new Error(
       `Failed to parse agent output as JSON. Raw output:\n${agentOutput}`,
     );
   }
 
-  // Validate agent output shape (title + description only)
   const agentResult = AgentOutputSchema.safeParse(parsed);
   if (!agentResult.success) {
     const formatted = agentResult.error.format();
@@ -109,7 +119,6 @@ export async function runCreateIssue(opts: CreateIssueOptions): Promise<void> {
     );
   }
 
-  // Auto-generate id and set status to "open" (AC02)
   const issues: Issue[] = agentResult.data.map((item, index) => ({
     id: `ISSUE-${iteration}-${String(index + 1).padStart(3, "0")}`,
     title: item.title,
@@ -117,7 +126,6 @@ export async function runCreateIssue(opts: CreateIssueOptions): Promise<void> {
     status: "open" as const,
   }));
 
-  // Validate against full ISSUES schema (AC03)
   const validationResult = IssuesSchema.safeParse(issues);
   if (!validationResult.success) {
     const formatted = validationResult.error.format();
@@ -126,7 +134,6 @@ export async function runCreateIssue(opts: CreateIssueOptions): Promise<void> {
     );
   }
 
-  // Write validated issues via write-json CLI (AC04)
   const dataStr = JSON.stringify(validationResult.data);
   const proc = Bun.spawn(
     [

@@ -113,6 +113,9 @@ export async function invokeAgent(options: AgentInvokeOptions): Promise<AgentRes
     stdinOption = "inherit";
   }
 
+  // Interactive mode: use real TTY (inherit) so the agent stays in interactive mode and
+  // waits for user input. The agent writes output via write-json or to a file.
+  // Non-interactive: use pipe to capture stdout/stderr.
   const useTty = interactive;
   const proc = Bun.spawn([cmd, ...finalArgs], {
     cwd,
