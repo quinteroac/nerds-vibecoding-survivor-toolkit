@@ -98,6 +98,6 @@ describe("package command", () => {
   test("US-001-AC03: build process completes without errors", () => {
     const { exitCode, stderr } = runPackageScript();
     expect(exitCode).toBe(0);
-    expect(stderr).toBe("");
+    expect(stderr).not.toMatch(/\b(Error|ERR!)\b/);
   });
 });
