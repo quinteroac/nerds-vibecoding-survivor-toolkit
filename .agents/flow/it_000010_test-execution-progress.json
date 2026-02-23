@@ -1,0 +1,94 @@
+{
+  "entries": [
+    {
+      "id": "TC-001",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-23T03:07:07.192Z"
+    },
+    {
+      "id": "TC-002",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-23T03:07:07.193Z"
+    },
+    {
+      "id": "TC-003",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-23T03:07:07.193Z"
+    },
+    {
+      "id": "TC-004",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-23T03:07:07.193Z"
+    },
+    {
+      "id": "TC-005",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-23T03:07:07.193Z"
+    },
+    {
+      "id": "TC-006",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-23T03:07:07.193Z"
+    },
+    {
+      "id": "TC-008",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-23T03:07:07.193Z"
+    },
+    {
+      "id": "TC-009",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-23T03:07:07.193Z"
+    },
+    {
+      "id": "TC-010",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-23T03:07:07.193Z"
+    },
+    {
+      "id": "TC-007",
+      "type": "exploratory_manual",
+      "status": "failed",
+      "attempt_count": 1,
+      "last_agent_exit_code": null,
+      "last_error_summary": "",
+      "updated_at": "2026-02-23T03:09:27.351Z"
+    }
+  ]
+}

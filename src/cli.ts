@@ -12,6 +12,7 @@ import { runCreateTestPlan } from "./commands/create-test-plan";
 import { runDefineRequirement } from "./commands/define-requirement";
 import { runDestroy } from "./commands/destroy";
 import { runExecuteAutomatedFix } from "./commands/execute-automated-fix";
+import { runExecuteManualFix } from "./commands/execute-manual-fix";
 import { runExecuteTestPlan } from "./commands/execute-test-plan";
 import { runInit } from "./commands/init";
 import { runRefineProjectContext } from "./commands/refine-project-context";
@@ -107,6 +108,8 @@ Commands:
                      Execute approved structured test-plan JSON via agent
   execute automated-fix --agent <provider> [--iterations <N>] [--retry-on-fail <N>]
                      Attempt automated fixes for open issues in current iteration
+  execute manual-fix --agent <provider>
+                     Find manual-fix issues for current iteration and confirm execution
   approve requirement
                      Mark requirement definition as approved
   write-json --schema <name> --out <path> [--data '<json>']
@@ -476,7 +479,7 @@ Providers: claude, codex, gemini, cursor`);
 
   if (command === "execute") {
     if (args.length === 0) {
-      console.error(`Usage for execute: nvst execute <test-plan|automated-fix> --agent <provider>`);
+      console.error(`Usage for execute: nvst execute <test-plan|automated-fix|manual-fix> --agent <provider>`);
       printUsage();
       process.exitCode = 1;
       return;
@@ -524,6 +527,26 @@ Providers: claude, codex, gemini, cursor`);
         }
 
         await runExecuteAutomatedFix({ provider, iterations, retryOnFail });
+        return;
+      } catch (error) {
+        console.error(error instanceof Error ? error.message : String(error));
+        printUsage();
+        process.exitCode = 1;
+        return;
+      }
+    }
+
+    if (subcommand === "manual-fix") {
+      try {
+        const { provider, remainingArgs: postAgentArgs } = parseAgentArg(args.slice(1));
+        if (postAgentArgs.length > 0) {
+          console.error(`Unknown option(s) for execute manual-fix: ${postAgentArgs.join(" ")}`);
+          printUsage();
+          process.exitCode = 1;
+          return;
+        }
+
+        await runExecuteManualFix({ provider });
         return;
       } catch (error) {
         console.error(error instanceof Error ? error.message : String(error));
