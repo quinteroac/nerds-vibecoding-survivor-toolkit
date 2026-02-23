@@ -1,0 +1,499 @@
+{
+  "iteration": "000009",
+  "testPlanFile": "it_000009_TP.json",
+  "executedTestIds": [
+    "TC-US001-01",
+    "TC-US001-02",
+    "TC-US001-03",
+    "TC-US001-04",
+    "TC-US001-05",
+    "TC-US001-06",
+    "TC-US001-07",
+    "TC-US001-08",
+    "TC-US001-09",
+    "TC-US001-10",
+    "TC-US001-11",
+    "TC-US002-01",
+    "TC-US002-02",
+    "TC-US002-03",
+    "TC-US003-01",
+    "TC-US003-02",
+    "TC-US003-03",
+    "TC-US003-04",
+    "TC-US003-05",
+    "TC-US004-01",
+    "TC-US004-02",
+    "TC-US004-03",
+    "TC-US004-04",
+    "TC-US004-05",
+    "TC-US004-06",
+    "TC-US005-01",
+    "TC-US005-02",
+    "TC-US005-03"
+  ],
+  "results": [
+    {
+      "testCaseId": "TC-US001-01",
+      "description": "Command `bun nvst execute automated-fix` exists and is registered in CLI",
+      "correlatedRequirements": [
+        "FR-1"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "cli.ts imports runExecuteAutomatedFix, dispatches on subcommand 'automated-fix'; unit test 'registers execute automated-fix command in CLI' in execute-automated-fix.test.ts",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000009_test-execution-artifacts/TC-US001-01_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US001-02",
+      "description": "Command reads `it_{iteration}_ISSUES.json` from current iteration flow",
+      "correlatedRequirements": [
+        "FR-2"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "execute-automated-fix.ts:206-208 builds it_{iteration}_ISSUES.json path; readFileFn loads from FLOW_REL_DIR",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000009_test-execution-artifacts/TC-US001-02_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US001-03",
+      "description": "Command identifies and processes only open issues",
+      "correlatedRequirements": [],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "Line 227: openIssues = issues.filter(issue => issue.status === 'open'); test 'logs informative message when zero open issues'",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000009_test-execution-artifacts/TC-US001-03_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US001-04",
+      "description": "Issues are processed sequentially (one at a time)",
+      "correlatedRequirements": [],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "Line 243: for (const issue of issuesToProcess) processes one at a time sequentially",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000009_test-execution-artifacts/TC-US001-04_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US001-05",
+      "description": "Agent invoked with automated-fix skill following structured debugging workflow",
+      "correlatedRequirements": [
+        "FR-1"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "loadSkillFn(projectRoot, 'automated-fix'); buildPrompt with issue JSON; invokeAgentFn with prompt. Test 'reads current-iteration issues file' verifies skill and agent call",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000009_test-execution-artifacts/TC-US001-05_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US001-06",
+      "description": "On fix success: updates issue status to fixed in ISSUES.json and commits",
+      "correlatedRequirements": [],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "Lines 309-322: exitCode===0 -> issue.status='fixed', writeIssuesFile, commitIssueUpdate. Test verifies commit message and status update",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000009_test-execution-artifacts/TC-US001-06_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US001-07",
+      "description": "On hypothesis not confirmed with retries remaining: marks issue as retry",
+      "correlatedRequirements": [],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "Lines 339-343: retriesRemaining>0 -> issue.status='retry', continue. Test 'marks issue as retry when hypothesis is not confirmed and retries remain'",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000009_test-execution-artifacts/TC-US001-07_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US001-08",
+      "description": "On hypothesis not confirmed with no retries: updates to manual-fix and commits",
+      "correlatedRequirements": [],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "Lines 347-357: retries exhausted -> issue.status='manual-fix', write, commit. Test 'marks issue as manual-fix and commits when retries are exhausted'",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000009_test-execution-artifacts/TC-US001-08_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US001-09",
+      "description": "On unrecoverable/network error: updates to manual-fix, commits, does not consume retries",
+      "correlatedRequirements": [
+        "FR-3",
+        "FR-4"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "Lines 266-279: isNetworkError -> manual-fix, commit, break (no retry consumption). Test 'marks issue as manual-fix and does not consume retries on network errors'",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000009_test-execution-artifacts/TC-US001-09_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US001-10",
+      "description": "On git commit failure: prints error, marks as Failed in summary, continues to next issue",
+      "correlatedRequirements": [],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "Lines 313-318: !committed -> logFn Error, logFn Failed, failedCount++. Test 'continues to next issue and marks failed summary when git commit fails'",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000009_test-execution-artifacts/TC-US001-10_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US001-11",
+      "description": "Typecheck and lint pass",
+      "correlatedRequirements": [],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "read_lints: no errors on execute-automated-fix.ts, cli.ts; tsconfig strict mode; project uses bun for type checking",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000009_test-execution-artifacts/TC-US001-11_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US002-01",
+      "description": "Command accepts `--agent [name]` flag",
+      "correlatedRequirements": [],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "cli.ts:371 parseAgentArg(args.slice(1)) extracts --agent; usage shows --agent <provider>",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000009_test-execution-artifacts/TC-US002-01_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US002-02",
+      "description": "Without `--agent`: prints error and exits non-zero",
+      "correlatedRequirements": [],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "parseAgentArg throws 'Missing required --agent <provider> argument.'; test 'CLI exits with code 1 when --agent is missing' expects exitCode 1 and stderr",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000009_test-execution-artifacts/TC-US002-02_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US002-03",
+      "description": "Selected agent is invoked for fix attempt",
+      "correlatedRequirements": [
+        "FR-1"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "invokeAgentFn receives options.provider from opts; test 'invokes agent with the provider selected by --agent' verifies providersUsed",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000009_test-execution-artifacts/TC-US002-03_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US003-01",
+      "description": "Command accepts `--iterations [number]` (default: 1)",
+      "correlatedRequirements": [],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "parseOptionalIntegerFlag(postAgentArgs, '--iterations', 1); default undefined -> opts.iterations ?? 1. Test 'defaults --iterations to 1'",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000009_test-execution-artifacts/TC-US003-01_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US003-02",
+      "description": "Command accepts `--retry-on-fail [number]` (default: 0)",
+      "correlatedRequirements": [],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "parseOptionalIntegerFlag(postIterationsArgs, '--retry-on-fail', 0); default undefined -> opts.retryOnFail ?? 0",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000009_test-execution-artifacts/TC-US003-02_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US003-03",
+      "description": "When AgentResult.exitCode !== 0: retries up to --retry-on-fail times",
+      "correlatedRequirements": [],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "exitCode!==0 and retriesRemaining>0 -> retry. Test 'marks issue as retry when hypothesis is not confirmed and retries remain'",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000009_test-execution-artifacts/TC-US003-03_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US003-04",
+      "description": "Tool stops retrying after success or max retries",
+      "correlatedRequirements": [],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "Test 'stops retrying after reaching max retries': invokeCount=3, status manual-fix after 3 failed attempts",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000009_test-execution-artifacts/TC-US003-04_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US003-05",
+      "description": "When --iterations < total open issues: only first N processed",
+      "correlatedRequirements": [],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "maxIssuesToProcess = opts.iterations ?? 1; issuesToProcess = openIssues.slice(0, maxIssuesToProcess). Test 'processes only the first N open issues'",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000009_test-execution-artifacts/TC-US003-05_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US004-01",
+      "description": "Tool parses `it_{iteration}_ISSUES.json`",
+      "correlatedRequirements": [
+        "FR-2"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "JSON.parse readFileFn; parseIssuesForProcessing. Same as TC-US001-02",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000009_test-execution-artifacts/TC-US004-01_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US004-02",
+      "description": "Only issues with status `open` are processed",
+      "correlatedRequirements": [],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "openIssues = issues.filter(issue => issue.status === 'open'). Same as TC-US001-03",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000009_test-execution-artifacts/TC-US004-02_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US004-03",
+      "description": "If file does not exist: clear error, exit non-zero",
+      "correlatedRequirements": [],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "!existsFn(issuesPath) -> throw 'Issues file not found...'. Test 'throws clear error when current-iteration issues file is missing'",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000009_test-execution-artifacts/TC-US004-03_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US004-04",
+      "description": "If JSON is malformed: clear error, exit non-zero",
+      "correlatedRequirements": [
+        "FR-2"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "JSON.parse catch -> throw 'invalid issues JSON'. Test 'throws deterministic validation error for malformed issues JSON'",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000009_test-execution-artifacts/TC-US004-04_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US004-05",
+      "description": "If zero open issues: informative message, exit 0",
+      "correlatedRequirements": [],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "openIssues.length===0 -> logFn('No open issues to process. Exiting without changes.'), return. Test 'logs informative message when zero open issues'",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000009_test-execution-artifacts/TC-US004-05_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US004-06",
+      "description": "If issue missing required fields (id, title, description, status): skip with warning, continue",
+      "correlatedRequirements": [],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "parseIssuesForProcessing: missingFields -> logFn Warning, continue. Test 'skips issues with missing required fields and continues processing'",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000009_test-execution-artifacts/TC-US004-06_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US005-01",
+      "description": "Prints `{issueId}: Fixed` or `{issueId}: Failed` per issue",
+      "correlatedRequirements": [],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "logFn(`${issue.id}: Fixed`) or logFn(`${issue.id}: Failed`). Test US-005 verifies statusLines format",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000009_test-execution-artifacts/TC-US005-01_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US005-02",
+      "description": "Summary at end with Fixed count and Failed count",
+      "correlatedRequirements": [],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "logFn(`Summary: Fixed=${fixedCount} Failed=${failedCount}`). Test expects 'Summary: Fixed=1 Failed=1'",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000009_test-execution-artifacts/TC-US005-02_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US005-03",
+      "description": "Result verifiable from terminal output",
+      "correlatedRequirements": [],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "All output via logFn (console.log); terminal-verifiable. Test asserts logs array contains expected lines",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000009_test-execution-artifacts/TC-US005-03_attempt_001.json"
+      ]
+    }
+  ]
+}
