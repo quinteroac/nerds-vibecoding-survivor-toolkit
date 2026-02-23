@@ -129,7 +129,8 @@ function parsePrd(markdown: string): Prd {
 
     // --- Functional Requirements section ---
     if (currentSection === "functional-requirements") {
-      const frMatch = trimmed.match(/^[-*]\s+(FR-\d+):\s+(.+)$/);
+      // Accept both "- FR-1: desc" and "- **FR-1:** desc" (bold id)
+      const frMatch = trimmed.match(/^[-*]\s+(?:\*\*)?(FR-\d+)(?:\*\*)?:\s*(.+)$/);
       if (frMatch) {
         functionalRequirements.push({
           id: frMatch[1],

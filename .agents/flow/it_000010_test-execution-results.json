@@ -1,0 +1,207 @@
+{
+  "iteration": "000010",
+  "testPlanFile": "it_000010_TP.json",
+  "executedTestIds": [
+    "TC-001",
+    "TC-002",
+    "TC-003",
+    "TC-004",
+    "TC-005",
+    "TC-006",
+    "TC-008",
+    "TC-009",
+    "TC-010",
+    "TC-007"
+  ],
+  "results": [
+    {
+      "testCaseId": "TC-001",
+      "description": "Verify `execute manual-fix` command registration and argument parsing",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-1"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "Verified via unit test: command registration, argument parsing, and validation of --agent flag.",
+        "notes": "Tests passed: 'registers execute manual-fix command', 'CLI exits with code 1...', 'CLI accepts --agent...'"
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000010_test-execution-artifacts/TC-001_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-002",
+      "description": "Verify filtering of `manual-fix` issues from issue file",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-2"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "Verified via unit test: issues file scanning and filtering for 'manual-fix' status.",
+        "notes": "Test passed: 'scans issues for current iteration, filters manual-fix status...'"
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000010_test-execution-artifacts/TC-002_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-003",
+      "description": "Verify behavior when no matching issues are found",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-2"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "Verified via new unit test: correct handling (graceful exit) when 0 manual-fix issues are found.",
+        "notes": "Test passed: 'TC-003: handles 0 manual-fix issues gracefully'"
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000010_test-execution-artifacts/TC-003_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-004",
+      "description": "Verify sequential processing loop for multiple issues",
+      "correlatedRequirements": [
+        "US-002",
+        "FR-4"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "Verified via unit test: sequential processing loop iterates through multiple issues.",
+        "notes": "Test passed: 'presents manual-fix issues one by one...'"
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000010_test-execution-artifacts/TC-004_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-005",
+      "description": "Verify agent is initialized with correct issue context",
+      "correlatedRequirements": [
+        "US-002",
+        "FR-3"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "Verified via unit test: prompt construction includes issue details (ID, title, description).",
+        "notes": "Test passed: 'buildManualFixGuidancePrompt requires summary...'"
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000010_test-execution-artifacts/TC-005_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-006",
+      "description": "Verify interactive chat mechanism (mocked input/output)",
+      "correlatedRequirements": [
+        "US-002",
+        "FR-3"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "Verified via unit test: mocked interactive agent invocation and loop behavior.",
+        "notes": "Test passed: 'presents manual-fix issues one by one...' (mocks interactive flag)"
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000010_test-execution-artifacts/TC-006_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-008",
+      "description": "Verify \"Mark as fixed\" updates issue status",
+      "correlatedRequirements": [
+        "US-003",
+        "FR-2"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "Verified via unit test: 'fixed' action updates status in JSON file.",
+        "notes": "Test passed: 'US-003-AC02/AC04: marks issue fixed...'"
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000010_test-execution-artifacts/TC-008_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-009",
+      "description": "Verify \"Skip\" preserves issue status",
+      "correlatedRequirements": [
+        "US-003",
+        "FR-2"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "Verified via unit test: 'skip' action preserves existing status.",
+        "notes": "Test passed: 'US-003-AC03: skip leaves issue status as manual-fix...'"
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000010_test-execution-artifacts/TC-009_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-010",
+      "description": "Verify file persistence of status changes",
+      "correlatedRequirements": [
+        "US-003",
+        "FR-2"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "Verified via unit test: file persistence of status changes after user action.",
+        "notes": "Test passed: 'US-003-AC02/AC04: marks issue fixed...'"
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000010_test-execution-artifacts/TC-010_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-007",
+      "description": "Assess UX of the interactive guidance flow",
+      "correlatedRequirements": [
+        "US-002"
+      ],
+      "mode": "exploratory_manual",
+      "payload": {
+        "status": "skipped",
+        "evidence": "i can't test this for now as is embedded in the same functionality of what we are testing",
+        "notes": ""
+      },
+      "passFail": null,
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000010_test-execution-artifacts/TC-007_attempt_001.json"
+      ]
+    }
+  ]
+}

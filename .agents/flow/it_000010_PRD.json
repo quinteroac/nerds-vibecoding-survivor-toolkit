@@ -1,0 +1,104 @@
+{
+  "goals": [
+    "Provide a CLI command to fetch and process issues with status `manual-fix`.",
+    "Offer an interactive, step-by-step guidance workflow (Analysis, Reproduction, Fix).",
+    "Update issue status (e.g., to `closed` or `in_progress`) based on user feedback after the session."
+  ],
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "CLI Command & Issue Filtering",
+      "description": "As a Developer, I want to run `bun nvst execute manual-fix --agent <agent_name>` so that I can start processing issues marked for manual intervention.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-001-AC01",
+          "text": "Command `bun nvst execute manual-fix` exists."
+        },
+        {
+          "id": "US-001-AC02",
+          "text": "Accepts `--agent` argument (defaults to a sensible default if omitted, or errors if required)."
+        },
+        {
+          "id": "US-001-AC03",
+          "text": "Scans project issues (e.g., from `it_{iteration}_ISSUES.json` or equivalent source)."
+        },
+        {
+          "id": "US-001-AC04",
+          "text": "Filters for issues where `status` is `manual-fix`."
+        },
+        {
+          "id": "US-001-AC05",
+          "text": "Displays a count of found issues and asks to proceed."
+        }
+      ]
+    },
+    {
+      "id": "US-002",
+      "title": "Interactive Guidance Session",
+      "description": "As a Developer, I want the agent to guide me through a specific issue so that I can efficiently debug and fix it.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-002-AC01",
+          "text": "System presents issues one by one."
+        },
+        {
+          "id": "US-002-AC02",
+          "text": "For each issue, the agent outputs a summary/analysis of the problem."
+        },
+        {
+          "id": "US-002-AC03",
+          "text": "Agent suggests a reproduction strategy or test case."
+        },
+        {
+          "id": "US-002-AC04",
+          "text": "Agent suggests potential fixes or code changes."
+        },
+        {
+          "id": "US-002-AC05",
+          "text": "Interaction allows the user to ask clarifying questions or request code generation (interactive chat loop per issue)."
+        }
+      ]
+    },
+    {
+      "id": "US-003",
+      "title": "Issue Status Update",
+      "description": "As a Developer, I want to mark an issue as resolved or skipped after working on it so that the project state is updated.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-003-AC01",
+          "text": "At the end of an issue session, user is prompted: \"Mark as fixed?\", \"Skip?\", or \"Exit?\"."
+        },
+        {
+          "id": "US-003-AC02",
+          "text": "If \"Fixed\", update the issue's status in the source JSON file to `closed` (or `fixed`)."
+        },
+        {
+          "id": "US-003-AC03",
+          "text": "If \"Skip\", leave status as `manual-fix` and move to next."
+        },
+        {
+          "id": "US-003-AC04",
+          "text": "Changes are persisted to the issue file immediately."
+        }
+      ]
+    }
+  ],
+  "functionalRequirements": [
+    {
+      "id": "FR-1",
+      "description": "New command implementation in `src/commands/execute-manual-fix.ts`."
+    },
+    {
+      "id": "FR-2",
+      "description": "Logic to read/write the current iteration's issue file."
+    },
+    {
+      "id": "FR-3",
+      "description": "Integration with the Agent API to provide context-aware chat about the specific issue content."
+    },
+    {
+      "id": "FR-4",
+      "description": "Loop mechanism to handle multiple issues sequentially."
+    }
+  ]
+}
