@@ -2,6 +2,7 @@ node_modules/
 .claude/
 .cursor/
 dist/
+*.tgz
 *.log
 .env
 .env.local
