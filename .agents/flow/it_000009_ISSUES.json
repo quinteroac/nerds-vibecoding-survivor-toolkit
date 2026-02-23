@@ -3,6 +3,6 @@
     "id": "ISSUE-000009-001",
     "title": "nvst create prototype throws error in DEFINE status even when PRD phase is approved",
     "description": "When running `nvst create prototype` while the status is DEFINE, the command throws an error. This behavior should only occur if the product requirement document (PRD) phase has not been approved. If the PRD phase is already approved, the command should proceed without error.",
-    "status": "manual-fix"
+    "status": "open"
   }
 ]
