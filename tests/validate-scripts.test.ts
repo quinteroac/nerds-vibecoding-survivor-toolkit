@@ -3,6 +3,8 @@ import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 
+const PROJECT_ROOT = join(import.meta.dir, "..");
+
 type ScriptCase = {
   path: string;
   schemaFile: "tmpl_state.ts" | "tmpl_progress.ts";
@@ -82,7 +84,7 @@ describe("validation scripts", () => {
         await writeFile(invalidJsonDest, "{}\n");
 
         const proc = Bun.spawn(["bun", "run", scriptDest], {
-          cwd: caseRoot,
+          cwd: PROJECT_ROOT,
           stderr: "pipe",
           stdout: "pipe",
         });
