@@ -4,9 +4,9 @@ import { join } from "node:path";
 import { spawnSync } from "node:child_process";
 
 const PROJECT_ROOT = join(import.meta.dir, "..");
-const PACKAGE_NAME = "agents-coding-toolkit";
 const PACKAGE_VERSION = "0.1.0";
-const TARBALL_BASENAME = `${PACKAGE_NAME}-${PACKAGE_VERSION}.tgz`;
+// Scoped packages: npm pack produces scope-package-version.tgz
+const TARBALL_BASENAME = `quinteroac-agents-coding-toolkit-${PACKAGE_VERSION}.tgz`;
 
 function runPackageScript(): { exitCode: number | null; stdout: string; stderr: string } {
   const result = spawnSync("bun", ["run", "package"], {

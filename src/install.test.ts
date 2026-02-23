@@ -5,9 +5,9 @@ import { join } from "node:path";
 import { spawnSync } from "node:child_process";
 
 const PROJECT_ROOT = join(import.meta.dir, "..");
-const PACKAGE_NAME = "agents-coding-toolkit";
 const PACKAGE_VERSION = "0.1.0";
-const TARBALL_BASENAME = `${PACKAGE_NAME}-${PACKAGE_VERSION}.tgz`;
+// Scoped packages: npm pack produces scope-package-version.tgz
+const TARBALL_BASENAME = `quinteroac-agents-coding-toolkit-${PACKAGE_VERSION}.tgz`;
 const TARBALL_PATH = join(PROJECT_ROOT, TARBALL_BASENAME);
 
 const tempProjectRoots: string[] = [];
@@ -80,9 +80,9 @@ describe("install package", () => {
     expect(exitCode).toBe(0);
     expect(stderr).not.toContain("error");
 
-    const nodeModules = join(tempRoot, "node_modules", PACKAGE_NAME);
+    const nodeModules = join(tempRoot, "node_modules", "@quinteroac", "agents-coding-toolkit");
     const entries = await readdir(join(tempRoot, "node_modules"));
-    expect(entries).toContain(PACKAGE_NAME);
+    expect(entries).toContain("@quinteroac");
 
     const pkgJsonPath = join(nodeModules, "package.json");
     const pkg = (await Bun.file(pkgJsonPath).json()) as { version?: string; bin?: Record<string, string> };
@@ -99,7 +99,7 @@ describe("install package", () => {
     expect(stderr).not.toContain("error");
 
     const entries = await readdir(join(tempRoot, "node_modules"));
-    expect(entries).toContain(PACKAGE_NAME);
+    expect(entries).toContain("@quinteroac");
   });
 
   test("US-002-AC02: after installation, the nvst command is available in the shell", async () => {
