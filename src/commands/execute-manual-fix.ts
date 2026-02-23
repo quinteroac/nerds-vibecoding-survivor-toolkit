@@ -1,4 +1,4 @@
-import { readFile } from "node:fs/promises";
+import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { createInterface } from "node:readline/promises";
 
@@ -19,17 +19,23 @@ interface ExecuteManualFixDeps {
   existsFn: (path: string) => Promise<boolean>;
   invokeAgentFn: (options: AgentInvokeOptions) => Promise<AgentResult>;
   logFn: (message: string) => void;
+  promptIssueOutcomeFn: (question: string) => Promise<IssueOutcomeAction>;
   promptProceedFn: (question: string) => Promise<boolean>;
   readFileFn: typeof readFile;
+  writeFileFn: typeof writeFile;
 }
 
 const defaultDeps: ExecuteManualFixDeps = {
   existsFn: exists,
   invokeAgentFn: invokeAgent,
   logFn: console.log,
+  promptIssueOutcomeFn: promptForIssueOutcome,
   promptProceedFn: promptForConfirmation,
   readFileFn: readFile,
+  writeFileFn: writeFile,
 };
+
+export type IssueOutcomeAction = "fixed" | "skip" | "exit";
 
 export function buildManualFixGuidancePrompt(issue: Issue, iteration: string): string {
   return `You are helping a developer resolve one manual-fix issue.
@@ -61,6 +67,31 @@ export async function promptForConfirmation(question: string): Promise<boolean> 
   try {
     const answer = (await readline.question(question)).trim();
     return /^y(?:es)?$/i.test(answer);
+  } finally {
+    readline.close();
+  }
+}
+
+export async function promptForIssueOutcome(question: string): Promise<IssueOutcomeAction> {
+  const readline = createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+
+  try {
+    while (true) {
+      const answer = (await readline.question(question)).trim().toLowerCase();
+      if (answer === "fixed" || answer === "f") {
+        return "fixed";
+      }
+      if (answer === "skip" || answer === "s") {
+        return "skip";
+      }
+      if (answer === "exit" || answer === "e") {
+        return "exit";
+      }
+      console.log("Invalid choice. Enter fixed, skip, or exit.");
+    }
   } finally {
     readline.close();
   }
@@ -139,5 +170,24 @@ export async function runExecuteManualFix(
         `Agent invocation failed while guiding issue ${issue.id} with exit code ${result.exitCode}.`,
       );
     }
+
+    const action = await mergedDeps.promptIssueOutcomeFn(
+      "Mark as fixed? Skip? Exit? [fixed/skip/exit] ",
+    );
+
+    if (action === "fixed") {
+      issue.status = "fixed";
+      await mergedDeps.writeFileFn(issuesPath, `${JSON.stringify(validation.data, null, 2)}\n`, "utf8");
+      mergedDeps.logFn(`${issue.id}: marked as fixed.`);
+      continue;
+    }
+
+    if (action === "skip") {
+      mergedDeps.logFn(`${issue.id}: skipped. Status remains manual-fix.`);
+      continue;
+    }
+
+    mergedDeps.logFn("Exiting manual-fix session by user request.");
+    break;
   }
 }

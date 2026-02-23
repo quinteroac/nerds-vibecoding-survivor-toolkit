@@ -145,8 +145,10 @@ describe("execute manual-fix command", () => {
 
     const logs: string[] = [];
     const prompts: string[] = [];
+    const outcomePrompts: string[] = [];
     const interactiveFlags: Array<boolean | undefined> = [];
     const providersUsed: string[] = [];
+    const outcomes: Array<"fixed" | "skip" | "exit"> = ["skip", "skip"];
 
     await withCwd(projectRoot, async () => {
       await runExecuteManualFix(
@@ -154,6 +156,10 @@ describe("execute manual-fix command", () => {
         {
           logFn: (message) => logs.push(message),
           promptProceedFn: async () => true,
+          promptIssueOutcomeFn: async (question) => {
+            outcomePrompts.push(question);
+            return outcomes.shift() ?? "skip";
+          },
           invokeAgentFn: async (options) => {
             prompts.push(options.prompt);
             interactiveFlags.push(options.interactive);
@@ -177,6 +183,10 @@ describe("execute manual-fix command", () => {
 
     expect(interactiveFlags).toEqual([true, true]);
     expect(providersUsed).toEqual(["codex", "codex"]);
+    expect(outcomePrompts).toEqual([
+      "Mark as fixed? Skip? Exit? [fixed/skip/exit] ",
+      "Mark as fixed? Skip? Exit? [fixed/skip/exit] ",
+    ]);
   });
 
   test("buildManualFixGuidancePrompt requires summary, reproduction strategy, fixes, and interactive Q&A loop", () => {
@@ -198,5 +208,106 @@ describe("execute manual-fix command", () => {
     expect(prompt).toContain("continue in an interactive chat loop");
     expect(prompt).toContain("Answer clarifying questions.");
     expect(prompt).toContain("Provide code snippets when requested.");
+  });
+
+  test("US-003-AC02/AC04: marks issue fixed and persists updated status immediately", async () => {
+    const projectRoot = await createProjectRoot();
+    createdRoots.push(projectRoot);
+
+    await seedState(projectRoot, "000010");
+    await writeIssues(projectRoot, "000010", [
+      { id: "ISSUE-000010-001", title: "Manual A", description: "fix me", status: "manual-fix" },
+      { id: "ISSUE-000010-002", title: "Manual B", description: "keep", status: "manual-fix" },
+    ]);
+
+    const writes: string[] = [];
+    await withCwd(projectRoot, async () => {
+      await runExecuteManualFix(
+        { provider: "codex" },
+        {
+          promptProceedFn: async () => true,
+          promptIssueOutcomeFn: async () => "fixed",
+          invokeAgentFn: async () => ({ exitCode: 0, stdout: "", stderr: "" }),
+          writeFileFn: async (path, data, options) => {
+            writes.push(String(data));
+            await writeFile(path, data, options);
+          },
+        },
+      );
+    });
+
+    expect(writes.length).toBeGreaterThan(0);
+    expect(writes[0]).toContain('"id": "ISSUE-000010-001"');
+    expect(writes[0]).toContain('"status": "fixed"');
+
+    const issuesRaw = await readFile(join(projectRoot, ".agents", "flow", "it_000010_ISSUES.json"), "utf8");
+    const issues = JSON.parse(issuesRaw) as Array<{ id: string; status: string }>;
+    expect(issues.find((issue) => issue.id === "ISSUE-000010-001")?.status).toBe("fixed");
+  });
+
+  test("US-003-AC03: skip leaves issue status as manual-fix and continues", async () => {
+    const projectRoot = await createProjectRoot();
+    createdRoots.push(projectRoot);
+
+    await seedState(projectRoot, "000010");
+    await writeIssues(projectRoot, "000010", [
+      { id: "ISSUE-000010-001", title: "Manual A", description: "first", status: "manual-fix" },
+      { id: "ISSUE-000010-002", title: "Manual B", description: "second", status: "manual-fix" },
+    ]);
+
+    let invokeCount = 0;
+    const responses: Array<"fixed" | "skip" | "exit"> = ["skip", "skip"];
+    await withCwd(projectRoot, async () => {
+      await runExecuteManualFix(
+        { provider: "codex" },
+        {
+          promptProceedFn: async () => true,
+          promptIssueOutcomeFn: async () => responses.shift() ?? "skip",
+          invokeAgentFn: async () => {
+            invokeCount += 1;
+            return { exitCode: 0, stdout: "", stderr: "" };
+          },
+        },
+      );
+    });
+
+    expect(invokeCount).toBe(2);
+    const issuesRaw = await readFile(join(projectRoot, ".agents", "flow", "it_000010_ISSUES.json"), "utf8");
+    const issues = JSON.parse(issuesRaw) as Array<{ status: string }>;
+    expect(issues[0]?.status).toBe("manual-fix");
+    expect(issues[1]?.status).toBe("manual-fix");
+  });
+
+  test("US-003-AC01: prompts Mark as fixed/Skip/Exit and supports Exit to stop processing", async () => {
+    const projectRoot = await createProjectRoot();
+    createdRoots.push(projectRoot);
+
+    await seedState(projectRoot, "000010");
+    await writeIssues(projectRoot, "000010", [
+      { id: "ISSUE-000010-001", title: "Manual A", description: "first", status: "manual-fix" },
+      { id: "ISSUE-000010-002", title: "Manual B", description: "second", status: "manual-fix" },
+    ]);
+
+    const outcomePrompts: string[] = [];
+    let invokeCount = 0;
+    await withCwd(projectRoot, async () => {
+      await runExecuteManualFix(
+        { provider: "codex" },
+        {
+          promptProceedFn: async () => true,
+          promptIssueOutcomeFn: async (question) => {
+            outcomePrompts.push(question);
+            return "exit";
+          },
+          invokeAgentFn: async () => {
+            invokeCount += 1;
+            return { exitCode: 0, stdout: "", stderr: "" };
+          },
+        },
+      );
+    });
+
+    expect(outcomePrompts).toEqual(["Mark as fixed? Skip? Exit? [fixed/skip/exit] "]);
+    expect(invokeCount).toBe(1);
   });
 });
