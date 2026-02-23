@@ -2,6 +2,7 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { $ } from "bun";
 
+import { CLI_PATH } from "../cli-path";
 import type { TestPlan } from "../../schemas/test-plan";
 import { exists, FLOW_REL_DIR, readState, writeState } from "../state";
 
@@ -132,7 +133,7 @@ async function runWriteJsonCommand(
   data: string,
 ): Promise<WriteJsonResult> {
   const result =
-    await $`bun run src/cli.ts write-json --schema ${schemaName} --out ${outPath} --data ${data}`
+    await $`bun ${CLI_PATH} write-json --schema ${schemaName} --out ${outPath} --data ${data}`
       .cwd(projectRoot)
       .nothrow()
       .quiet();

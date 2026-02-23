@@ -8,6 +8,7 @@ import {
   loadSkill,
   type AgentProvider,
 } from "../agent";
+import { CLI_PATH } from "../cli-path";
 import { readState, exists, FLOW_REL_DIR } from "../state";
 import { IssuesSchema, type Issue } from "../../scaffold/schemas/tmpl_issues";
 
@@ -138,8 +139,7 @@ export async function runCreateIssue(opts: CreateIssueOptions): Promise<void> {
   const proc = Bun.spawn(
     [
       "bun",
-      "run",
-      join(projectRoot, "src/cli.ts"),
+      CLI_PATH,
       "write-json",
       "--schema",
       "issues",
@@ -298,8 +298,7 @@ export async function runCreateIssueFromTestReport(): Promise<void> {
   const proc = Bun.spawn(
     [
       "bun",
-      "run",
-      join(projectRoot, "src/cli.ts"),
+      CLI_PATH,
       "write-json",
       "--schema",
       "issues",

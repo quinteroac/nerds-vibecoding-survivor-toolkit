@@ -97,12 +97,14 @@ bun add ./quinteroac-agents-coding-toolkit-0.1.0.tgz
 
 ### From GitHub Packages
 
-When the package is published to GitHub Packages, configure the registry and install:
+When the package is published to GitHub Packages, configure the registry and authenticate. GitHub Packages requires a token even for public packages.
+
+Create a [Personal Access Token](https://github.com/settings/tokens) with `read:packages` scope, then:
 
 ```bash
-# One-time: add .npmrc for GitHub Packages (replace TOKEN with a GitHub PAT with read:packages)
+# One-time setup
 echo "@quinteroac:registry=https://npm.pkg.github.com" >> ~/.npmrc
-echo "//npm.pkg.github.com/:_authToken=TOKEN" >> ~/.npmrc
+echo "//npm.pkg.github.com/:_authToken=YOUR_GITHUB_TOKEN" >> ~/.npmrc
 
 bun add @quinteroac/agents-coding-toolkit
 # or

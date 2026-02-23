@@ -2,6 +2,7 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { $ } from "bun";
 
+import { CLI_PATH } from "../cli-path";
 import type { Prd } from "../../scaffold/schemas/tmpl_prd";
 import { exists, readState, writeState, FLOW_REL_DIR } from "../state";
 
@@ -184,7 +185,7 @@ export async function runApproveRequirement(): Promise<void> {
   // Invoke write-json CLI to validate and write the PRD JSON
   const prdJsonString = JSON.stringify(prdData);
   const result =
-    await $`bun run src/cli.ts write-json --schema prd --out ${prdJsonRelPath} --data ${prdJsonString}`
+    await $`bun ${CLI_PATH} write-json --schema prd --out ${prdJsonRelPath} --data ${prdJsonString}`
       .cwd(projectRoot)
       .nothrow()
       .quiet();
