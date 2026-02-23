@@ -79,7 +79,43 @@ nerds-vst is a package that provides:
 
 ## Installation
 
-Installation and usage instructions will be added once the package is built and published.
+**Prerequisites:** [Bun](https://bun.sh/) v1 or later must be installed.
+
+You can install the toolkit from the local file system or from a registry (when published).
+
+### From local file system
+
+Install from a local directory or a packed tarball:
+
+```bash
+# From project root
+bun add /path/to/nerds-vibecoding-survivor-toolkit
+
+# Or from a packed .tgz (run `bun run package` first)
+bun add ./agents-coding-toolkit-0.1.0.tgz
+```
+
+### From registry
+
+When the package is published to npm or another registry:
+
+```bash
+bun add agents-coding-toolkit
+# or
+npm install agents-coding-toolkit
+```
+
+### Verify installation
+
+After installation, the `nvst` command should be available:
+
+```bash
+# Check that the command works
+nvst --help
+
+# Verify installed version matches the package
+nvst --version
+```
 
 ## Acknowledgement
 

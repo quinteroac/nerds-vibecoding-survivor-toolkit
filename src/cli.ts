@@ -1,5 +1,6 @@
 #!/usr/bin/env bun
 
+import { join } from "node:path";
 import { parseAgentArg } from "./agent";
 import { runApproveProjectContext } from "./commands/approve-project-context";
 import { runApproveRequirement } from "./commands/approve-requirement";
@@ -121,11 +122,27 @@ Options:
   --force            Overwrite output file without confirmation
   --challenge        Run refine in challenger mode
   --clean            When used with destroy, also removes .agents/flow/archived
-  -h, --help         Show this help message`);
+  -h, --help         Show this help message
+  -v, --version      Print version and exit`);
+}
+
+async function printVersion(): Promise<void> {
+  const pkgPath = join(import.meta.dir, "..", "package.json");
+  try {
+    const pkg = (await Bun.file(pkgPath).json()) as { version?: string };
+    console.log(pkg?.version ?? "unknown");
+  } catch {
+    console.log("unknown");
+  }
 }
 
 async function main() {
   const [, , command, ...args] = process.argv;
+
+  if (command === "-v" || command === "--version") {
+    await printVersion();
+    return;
+  }
 
   if (!command || command === "-h" || command === "--help" || command === "help") {
     printUsage();
