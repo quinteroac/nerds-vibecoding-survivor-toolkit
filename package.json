@@ -1,7 +1,13 @@
 {
-  "name": "agents-coding-toolkit",
+  "name": "@quinteroac/agents-coding-toolkit",
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
   "version": "0.1.0",
-  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/quinteroac/nerds-vibecoding-survivor-toolkit.git"
+  },
   "bin": { "nvst": "src/cli.ts" },
   "files": [
     "src",

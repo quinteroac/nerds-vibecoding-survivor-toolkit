@@ -92,17 +92,21 @@ Install from a local directory or a packed tarball:
 bun add /path/to/nerds-vibecoding-survivor-toolkit
 
 # Or from a packed .tgz (run `bun run package` first)
-bun add ./agents-coding-toolkit-0.1.0.tgz
+bun add ./quinteroac-agents-coding-toolkit-0.1.0.tgz
 ```
 
-### From registry
+### From GitHub Packages
 
-When the package is published to npm or another registry:
+When the package is published to GitHub Packages, configure the registry and install:
 
 ```bash
-bun add agents-coding-toolkit
+# One-time: add .npmrc for GitHub Packages (replace TOKEN with a GitHub PAT with read:packages)
+echo "@quinteroac:registry=https://npm.pkg.github.com" >> ~/.npmrc
+echo "//npm.pkg.github.com/:_authToken=TOKEN" >> ~/.npmrc
+
+bun add @quinteroac/agents-coding-toolkit
 # or
-npm install agents-coding-toolkit
+npm install @quinteroac/agents-coding-toolkit
 ```
 
 ### Verify installation
