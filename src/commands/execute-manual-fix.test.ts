@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { writeState } from "../state";
-import { runExecuteManualFix } from "./execute-manual-fix";
+import { buildManualFixGuidancePrompt, runExecuteManualFix } from "./execute-manual-fix";
 
 async function createProjectRoot(): Promise<string> {
   return mkdtemp(join(tmpdir(), "nvst-execute-manual-fix-"));
@@ -129,5 +129,74 @@ describe("execute manual-fix command", () => {
     expect(prompts).toHaveLength(1);
     expect(prompts[0]).toContain("Proceed with manual-fix processing for 2 issue(s)");
     expect(logs).toContain("Manual-fix execution cancelled.");
+  });
+
+  test("presents manual-fix issues one by one and runs interactive guidance for each issue", async () => {
+    const projectRoot = await createProjectRoot();
+    createdRoots.push(projectRoot);
+
+    await seedState(projectRoot, "000010");
+    await writeIssues(projectRoot, "000010", [
+      { id: "ISSUE-000010-001", title: "Open", description: "skip", status: "open" },
+      { id: "ISSUE-000010-002", title: "Manual A", description: "first manual", status: "manual-fix" },
+      { id: "ISSUE-000010-003", title: "Retry", description: "skip", status: "retry" },
+      { id: "ISSUE-000010-004", title: "Manual B", description: "second manual", status: "manual-fix" },
+    ]);
+
+    const logs: string[] = [];
+    const prompts: string[] = [];
+    const interactiveFlags: Array<boolean | undefined> = [];
+    const providersUsed: string[] = [];
+
+    await withCwd(projectRoot, async () => {
+      await runExecuteManualFix(
+        { provider: "codex" },
+        {
+          logFn: (message) => logs.push(message),
+          promptProceedFn: async () => true,
+          invokeAgentFn: async (options) => {
+            prompts.push(options.prompt);
+            interactiveFlags.push(options.interactive);
+            providersUsed.push(options.provider);
+            return { exitCode: 0, stdout: "", stderr: "" };
+          },
+        },
+      );
+    });
+
+    expect(logs).toContain(
+      "Found 2 issue(s) with status 'manual-fix' in .agents/flow/it_000010_ISSUES.json.",
+    );
+    expect(logs).toContain("Ready to process 2 manual-fix issue(s).");
+    expect(logs).toContain("Issue 1/2: ISSUE-000010-002 - Manual A");
+    expect(logs).toContain("Issue 2/2: ISSUE-000010-004 - Manual B");
+
+    expect(prompts).toHaveLength(2);
+    expect(prompts[0]).toContain("Issue ID: ISSUE-000010-002");
+    expect(prompts[1]).toContain("Issue ID: ISSUE-000010-004");
+
+    expect(interactiveFlags).toEqual([true, true]);
+    expect(providersUsed).toEqual(["codex", "codex"]);
+  });
+
+  test("buildManualFixGuidancePrompt requires summary, reproduction strategy, fixes, and interactive Q&A loop", () => {
+    const prompt = buildManualFixGuidancePrompt(
+      {
+        id: "ISSUE-000010-002",
+        title: "Manual A",
+        description: "Service returns 500 on malformed payload.",
+        status: "manual-fix",
+      },
+      "000010",
+    );
+
+    expect(prompt).toContain("Iteration: 000010");
+    expect(prompt).toContain("Issue ID: ISSUE-000010-002");
+    expect(prompt).toContain("Start with a concise summary/analysis of the problem.");
+    expect(prompt).toContain("Suggest a concrete reproduction strategy or test case.");
+    expect(prompt).toContain("Suggest potential fixes or code changes with rationale.");
+    expect(prompt).toContain("continue in an interactive chat loop");
+    expect(prompt).toContain("Answer clarifying questions.");
+    expect(prompt).toContain("Provide code snippets when requested.");
   });
 });

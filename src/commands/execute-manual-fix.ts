@@ -2,7 +2,12 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { createInterface } from "node:readline/promises";
 
-import { type AgentProvider } from "../agent";
+import {
+  invokeAgent,
+  type AgentInvokeOptions,
+  type AgentProvider,
+  type AgentResult,
+} from "../agent";
 import { exists, FLOW_REL_DIR, readState } from "../state";
 import { IssuesSchema, type Issue } from "../../scaffold/schemas/tmpl_issues";
 
@@ -12,6 +17,7 @@ export interface ExecuteManualFixOptions {
 
 interface ExecuteManualFixDeps {
   existsFn: (path: string) => Promise<boolean>;
+  invokeAgentFn: (options: AgentInvokeOptions) => Promise<AgentResult>;
   logFn: (message: string) => void;
   promptProceedFn: (question: string) => Promise<boolean>;
   readFileFn: typeof readFile;
@@ -19,10 +25,32 @@ interface ExecuteManualFixDeps {
 
 const defaultDeps: ExecuteManualFixDeps = {
   existsFn: exists,
+  invokeAgentFn: invokeAgent,
   logFn: console.log,
   promptProceedFn: promptForConfirmation,
   readFileFn: readFile,
 };
+
+export function buildManualFixGuidancePrompt(issue: Issue, iteration: string): string {
+  return `You are helping a developer resolve one manual-fix issue.
+
+Issue context:
+- Iteration: ${iteration}
+- Issue ID: ${issue.id}
+- Title: ${issue.title}
+- Description:
+${issue.description}
+
+Response requirements:
+1. Start with a concise summary/analysis of the problem.
+2. Suggest a concrete reproduction strategy or test case.
+3. Suggest potential fixes or code changes with rationale.
+4. After the initial guidance, continue in an interactive chat loop:
+   - Answer clarifying questions.
+   - Provide code snippets when requested.
+   - Keep working on this issue until the user says they are done.
+5. Do not switch to other issues in this session.`;
+}
 
 export async function promptForConfirmation(question: string): Promise<boolean> {
   const readline = createInterface({
@@ -92,4 +120,24 @@ export async function runExecuteManualFix(
   }
 
   mergedDeps.logFn(`Ready to process ${manualFixIssues.length} manual-fix issue(s).`);
+
+  for (const [index, issue] of manualFixIssues.entries()) {
+    mergedDeps.logFn(
+      `Issue ${index + 1}/${manualFixIssues.length}: ${issue.id} - ${issue.title}`,
+    );
+
+    const prompt = buildManualFixGuidancePrompt(issue, iteration);
+    const result = await mergedDeps.invokeAgentFn({
+      provider: opts.provider,
+      prompt,
+      cwd: projectRoot,
+      interactive: true,
+    });
+
+    if (result.exitCode !== 0) {
+      throw new Error(
+        `Agent invocation failed while guiding issue ${issue.id} with exit code ${result.exitCode}.`,
+      );
+    }
+  }
 }
