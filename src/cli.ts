@@ -10,6 +10,7 @@ import { runCreatePrototype } from "./commands/create-prototype";
 import { runCreateTestPlan } from "./commands/create-test-plan";
 import { runDefineRequirement } from "./commands/define-requirement";
 import { runDestroy } from "./commands/destroy";
+import { runExecuteAutomatedFix } from "./commands/execute-automated-fix";
 import { runExecuteTestPlan } from "./commands/execute-test-plan";
 import { runInit } from "./commands/init";
 import { runRefineProjectContext } from "./commands/refine-project-context";
@@ -103,6 +104,8 @@ Commands:
                      Refine test plan document via agent
   execute test-plan --agent <provider>
                      Execute approved structured test-plan JSON via agent
+  execute automated-fix --agent <provider> [--iterations <N>] [--retry-on-fail <N>]
+                     Attempt automated fixes for open issues in current iteration
   approve requirement
                      Mark requirement definition as approved
   write-json --schema <name> --out <path> [--data '<json>']
@@ -456,7 +459,7 @@ Providers: claude, codex, gemini, cursor`);
 
   if (command === "execute") {
     if (args.length === 0) {
-      console.error(`Usage for execute: nvst execute test-plan --agent <provider>`);
+      console.error(`Usage for execute: nvst execute <test-plan|automated-fix> --agent <provider>`);
       printUsage();
       process.exitCode = 1;
       return;
@@ -475,6 +478,35 @@ Providers: claude, codex, gemini, cursor`);
         }
 
         await runExecuteTestPlan({ provider });
+        return;
+      } catch (error) {
+        console.error(error instanceof Error ? error.message : String(error));
+        printUsage();
+        process.exitCode = 1;
+        return;
+      }
+    }
+
+    if (subcommand === "automated-fix") {
+      try {
+        const { provider, remainingArgs: postAgentArgs } = parseAgentArg(args.slice(1));
+        const {
+          value: iterations,
+          remainingArgs: postIterationsArgs,
+        } = parseOptionalIntegerFlag(postAgentArgs, "--iterations", 1);
+        const {
+          value: retryOnFail,
+          remainingArgs: postRetryArgs,
+        } = parseOptionalIntegerFlag(postIterationsArgs, "--retry-on-fail", 0);
+
+        if (postRetryArgs.length > 0) {
+          console.error(`Unknown option(s) for execute automated-fix: ${postRetryArgs.join(" ")}`);
+          printUsage();
+          process.exitCode = 1;
+          return;
+        }
+
+        await runExecuteAutomatedFix({ provider, iterations, retryOnFail });
         return;
       } catch (error) {
         console.error(error instanceof Error ? error.message : String(error));

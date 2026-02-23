@@ -1,8 +1,8 @@
 [
   {
     "id": "ISSUE-000009-001",
-    "title": "nvst start iteration overwrites project context",
-    "description": "al ejecutar nvst start iteration sobreescribe los campos de project context incluso cuando el project context ya esta creado, esto es incorrecto. Los campos de project context deben permanecer inmutables.",
-    "status": "closed"
+    "title": "nvst create prototype throws error in DEFINE status even when PRD phase is approved",
+    "description": "When running `nvst create prototype` while the status is DEFINE, the command throws an error. This behavior should only occur if the product requirement document (PRD) phase has not been approved. If the PRD phase is already approved, the command should proceed without error.",
+    "status": "fixed"
   }
 ]

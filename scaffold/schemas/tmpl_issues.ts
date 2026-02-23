@@ -4,7 +4,7 @@ const IssueSchema = z.object({
   id: z.string(),
   title: z.string(),
   description: z.string(),
-  status: z.enum(["open", "fixed"]),
+  status: z.enum(["open", "fixed", "retry", "manual-fix"]),
 });
 
 export const IssuesSchema = z.array(IssueSchema).refine(

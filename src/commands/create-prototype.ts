@@ -122,9 +122,21 @@ export async function runCreatePrototype(opts: CreatePrototypeOptions): Promise<
     );
   }
 
-  if (state.current_phase !== "prototype") {
+  if (state.current_phase === "define") {
+    if (
+      state.phases.define.prd_generation.status === "completed" &&
+      state.phases.prototype.project_context.status === "created"
+    ) {
+      state.current_phase = "prototype";
+      await writeState(projectRoot, state);
+    } else {
+      throw new Error(
+        "Cannot create prototype: current_phase is define and prerequisites are not met. Complete define phase and run `bun nvst create project-context --agent <provider>` then `bun nvst approve project-context` first.",
+      );
+    }
+  } else if (state.current_phase !== "prototype") {
     throw new Error(
-      "Cannot create prototype: current_phase must be prototype. Complete define phase and run `bun nvst create project-context --agent <provider>` then `bun nvst approve project-context` first.",
+      "Cannot create prototype: current_phase must be define (with approved PRD) or prototype. Complete define phase and run `bun nvst create project-context --agent <provider>` then `bun nvst approve project-context` first.",
     );
   }
 
