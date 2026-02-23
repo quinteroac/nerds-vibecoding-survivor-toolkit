@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, mkdir, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 
@@ -83,8 +83,11 @@ describe("validation scripts", () => {
         await mkdir(join(invalidJsonDest, ".."), { recursive: true });
         await writeFile(invalidJsonDest, "{}\n");
 
+        const projectNodeModules = join(PROJECT_ROOT, "node_modules");
+        await symlink(projectNodeModules, join(caseRoot, "node_modules"));
+
         const proc = Bun.spawn(["bun", "run", scriptDest], {
-          cwd: PROJECT_ROOT,
+          cwd: caseRoot,
           stderr: "pipe",
           stdout: "pipe",
         });
