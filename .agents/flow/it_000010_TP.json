@@ -1,0 +1,108 @@
+{
+  "overallStatus": "pending",
+  "scope": [
+    "Validation of the `execute-manual-fix` command implementation and argument parsing.",
+    "Verification of issue filtering logic to correctly identify `manual-fix` items.",
+    "Testing of the interactive session flow, including agent context injection and sequential issue processing.",
+    "Verification of issue status updates (persistence of `closed` or `skipped` states) to the local JSON file."
+  ],
+  "environmentData": [
+    "**Runtime:** Bun v1+ environment.",
+    "**Data:** A mock `it_{iteration}_ISSUES.json` file specifically seeded with issues in `manual-fix`, `open`, and `closed` states to verify filtering.",
+    "**Mocks:** A mocked `Agent` class/interface to simulate AI responses and avoid network dependency during automated testing.",
+    "## User Story: US-001 - CLI Command & Issue Filtering"
+  ],
+  "automatedTests": [
+    {
+      "id": "TC-001",
+      "description": "Verify `execute manual-fix` command registration and argument parsing",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-1"
+      ]
+    },
+    {
+      "id": "TC-002",
+      "description": "Verify filtering of `manual-fix` issues from issue file",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-2"
+      ]
+    },
+    {
+      "id": "TC-003",
+      "description": "Verify behavior when no matching issues are found",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-2"
+      ]
+    },
+    {
+      "id": "TC-004",
+      "description": "Verify sequential processing loop for multiple issues",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-002",
+        "FR-4"
+      ]
+    },
+    {
+      "id": "TC-005",
+      "description": "Verify agent is initialized with correct issue context",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-002",
+        "FR-3"
+      ]
+    },
+    {
+      "id": "TC-006",
+      "description": "Verify interactive chat mechanism (mocked input/output)",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-002",
+        "FR-3"
+      ]
+    },
+    {
+      "id": "TC-008",
+      "description": "Verify \"Mark as fixed\" updates issue status",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-003",
+        "FR-2"
+      ]
+    },
+    {
+      "id": "TC-009",
+      "description": "Verify \"Skip\" preserves issue status",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-003",
+        "FR-2"
+      ]
+    },
+    {
+      "id": "TC-010",
+      "description": "Verify file persistence of status changes",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-003",
+        "FR-2"
+      ]
+    }
+  ],
+  "exploratoryManualTests": [
+    {
+      "id": "TC-007",
+      "description": "Assess UX of the interactive guidance flow",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-002"
+      ]
+    }
+  ]
+}

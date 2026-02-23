@@ -10,6 +10,7 @@ import {
 } from "../agent";
 import { exists, FLOW_REL_DIR, readState } from "../state";
 import { IssuesSchema, type Issue } from "../../scaffold/schemas/tmpl_issues";
+import type { State } from "../../scaffold/schemas/tmpl_state";
 
 export interface ExecuteManualFixOptions {
   provider: AgentProvider;
@@ -22,6 +23,7 @@ interface ExecuteManualFixDeps {
   promptIssueOutcomeFn: (question: string) => Promise<IssueOutcomeAction>;
   promptProceedFn: (question: string) => Promise<boolean>;
   readFileFn: typeof readFile;
+  readStateFn: (projectRoot: string) => Promise<State>;
   writeFileFn: typeof writeFile;
 }
 
@@ -32,6 +34,7 @@ const defaultDeps: ExecuteManualFixDeps = {
   promptIssueOutcomeFn: promptForIssueOutcome,
   promptProceedFn: promptForConfirmation,
   readFileFn: readFile,
+  readStateFn: readState,
   writeFileFn: writeFile,
 };
 
@@ -81,16 +84,16 @@ export async function promptForIssueOutcome(question: string): Promise<IssueOutc
   try {
     while (true) {
       const answer = (await readline.question(question)).trim().toLowerCase();
-      if (answer === "fixed" || answer === "f") {
+      if (["fixed", "f", "done", "d"].includes(answer)) {
         return "fixed";
       }
-      if (answer === "skip" || answer === "s") {
+      if (["skip", "s", "next", "n"].includes(answer)) {
         return "skip";
       }
-      if (answer === "exit" || answer === "e") {
+      if (["exit", "e", "quit", "q"].includes(answer)) {
         return "exit";
       }
-      console.log("Invalid choice. Enter fixed, skip, or exit.");
+      console.log("Invalid choice. Try (f)ixed, (s)kip, or (e)xit.");
     }
   } finally {
     readline.close();
@@ -103,7 +106,7 @@ export async function runExecuteManualFix(
 ): Promise<void> {
   const mergedDeps: ExecuteManualFixDeps = { ...defaultDeps, ...deps };
   const projectRoot = process.cwd();
-  const state = await readState(projectRoot);
+  const state = await mergedDeps.readStateFn(projectRoot);
 
   const iteration = state.current_iteration;
   const fileName = `it_${iteration}_ISSUES.json`;
@@ -153,9 +156,16 @@ export async function runExecuteManualFix(
   mergedDeps.logFn(`Ready to process ${manualFixIssues.length} manual-fix issue(s).`);
 
   for (const [index, issue] of manualFixIssues.entries()) {
+    mergedDeps.logFn("\n" + "=".repeat(60));
     mergedDeps.logFn(
       `Issue ${index + 1}/${manualFixIssues.length}: ${issue.id} - ${issue.title}`,
     );
+    mergedDeps.logFn("-".repeat(60));
+    mergedDeps.logFn(issue.description);
+    mergedDeps.logFn("-".repeat(60));
+    mergedDeps.logFn(`Starting interactive session with '${opts.provider}'.`);
+    mergedDeps.logFn("When finished, exit the agent session (e.g., via '/exit' or Ctrl+D) to return here.");
+    mergedDeps.logFn("=".repeat(60) + "\n");
 
     const prompt = buildManualFixGuidancePrompt(issue, iteration);
     const result = await mergedDeps.invokeAgentFn({
@@ -172,7 +182,7 @@ export async function runExecuteManualFix(
     }
 
     const action = await mergedDeps.promptIssueOutcomeFn(
-      "Mark as fixed? Skip? Exit? [fixed/skip/exit] ",
+      "Action? (f)ixed, (s)kip, (e)xit: ",
     );
 
     if (action === "fixed") {

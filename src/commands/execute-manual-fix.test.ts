@@ -184,8 +184,8 @@ describe("execute manual-fix command", () => {
     expect(interactiveFlags).toEqual([true, true]);
     expect(providersUsed).toEqual(["codex", "codex"]);
     expect(outcomePrompts).toEqual([
-      "Mark as fixed? Skip? Exit? [fixed/skip/exit] ",
-      "Mark as fixed? Skip? Exit? [fixed/skip/exit] ",
+      "Action? (f)ixed, (s)kip, (e)xit: ",
+      "Action? (f)ixed, (s)kip, (e)xit: ",
     ]);
   });
 
@@ -307,7 +307,37 @@ describe("execute manual-fix command", () => {
       );
     });
 
-    expect(outcomePrompts).toEqual(["Mark as fixed? Skip? Exit? [fixed/skip/exit] "]);
+    expect(outcomePrompts).toEqual(["Action? (f)ixed, (s)kip, (e)xit: "]);
     expect(invokeCount).toBe(1);
+  });
+
+  test("TC-003: handles 0 manual-fix issues gracefully", async () => {
+    const projectRoot = await createProjectRoot();
+    createdRoots.push(projectRoot);
+
+    await seedState(projectRoot, "000010");
+    await writeIssues(projectRoot, "000010", [
+      { id: "ISSUE-000010-001", title: "Open", description: "skip", status: "open" },
+    ]);
+
+    const logs: string[] = [];
+    const prompts: string[] = [];
+
+    await withCwd(projectRoot, async () => {
+      await runExecuteManualFix(
+        { provider: "codex" },
+        {
+          logFn: (message) => logs.push(message),
+          promptProceedFn: async (question) => {
+            prompts.push(question);
+            return true; // Say yes to proceed
+          },
+        },
+      );
+    });
+
+    expect(logs).toContain("Found 0 issue(s) with status 'manual-fix' in .agents/flow/it_000010_ISSUES.json.");
+    expect(prompts[0]).toContain("Proceed with manual-fix processing for 0 issue(s)");
+    expect(logs).toContain("No manual-fix issues to process. Exiting without changes.");
   });
 });
