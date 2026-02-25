@@ -73,7 +73,7 @@ nerds-vst is a package that provides:
   |-------|----------|
   | **Iteration** | `bun nvst start iteration` — Start or advance to the next iteration (archives current, resets state). |
   | **Define** | `bun nvst define requirement` → `bun nvst refine requirement` (optional) → `bun nvst approve requirement` → `bun nvst create prd` |
-  | **Prototype** | `bun nvst create project-context` → `bun nvst approve project-context` → `bun nvst create prototype` → `bun nvst define test-plan` → `bun nvst approve test-plan` → `bun nvst execute test-plan` → `bun nvst execute automated-fix` / `bun nvst execute manual-fix` → `bun nvst approve prototype` |
+  | **Prototype** | `bun nvst create project-context` → `bun nvst approve project-context` → `bun nvst create prototype` → `bun nvst define test-plan` → `bun nvst approve test-plan` → `bun nvst execute test-plan` → `bun nvst execute automated-fix` / `bun nvst execute manual-fix` → when all tests pass, prototype is done and Refactor can begin |
   | **Refactor** | `bun nvst define refactor-plan` → `bun nvst approve refactor-plan` → `bun nvst create prd --refactor` → `bun nvst execute refactor` → update PROJECT_CONTEXT, CHANGELOG → then `bun nvst start iteration` for next iteration |
 
 

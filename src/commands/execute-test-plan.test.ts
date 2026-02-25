@@ -324,6 +324,7 @@ describe("execute test-plan command", () => {
 
     const state = await readState(projectRoot);
     expect(state.phases.prototype.test_execution.status).toBe("completed");
+    expect(state.phases.prototype.prototype_approved).toBe(true);
     expect(state.updated_by).toBe("nvst:execute-test-plan");
   });
 
@@ -536,6 +537,10 @@ describe("execute test-plan command", () => {
       expect(rerunBatchPrompt).toContain("TC-US001-02");
       expect(rerunBatchPrompt).not.toContain("TC-US001-01");
     });
+
+    // After retry, all pass -> prototype approved
+    const stateAfterRetry = await readState(projectRoot);
+    expect(stateAfterRetry.phases.prototype.prototype_approved).toBe(true);
 
     const progressRaw = await readFile(
       join(projectRoot, ".agents", "flow", "it_000005_test-execution-progress.json"),
@@ -1736,10 +1741,11 @@ describe("US-004: preserve report and state tracking compatibility", () => {
     expect(stateSnapshots[0]!.status).toBe("in_progress");
     expect(stateSnapshots[0]!.file).toBe("it_000005_test-execution-progress.json");
 
-    // After execution (all passed): completed
+    // After execution (all passed): completed and prototype approved
     const finalState = await readState(projectRoot);
     expect(finalState.phases.prototype.test_execution.status).toBe("completed");
     expect(finalState.phases.prototype.test_execution.file).toBe("it_000005_test-execution-progress.json");
+    expect(finalState.phases.prototype.prototype_approved).toBe(true);
     expect(finalState.updated_by).toBe("nvst:execute-test-plan");
   });
 
@@ -1779,6 +1785,7 @@ describe("US-004: preserve report and state tracking compatibility", () => {
 
     const finalState = await readState(projectRoot);
     expect(finalState.phases.prototype.test_execution.status).toBe("failed");
+    expect(finalState.phases.prototype.prototype_approved).toBe(false);
     expect(finalState.phases.prototype.test_execution.file).toBe("it_000005_test-execution-progress.json");
     expect(finalState.updated_by).toBe("nvst:execute-test-plan");
   });

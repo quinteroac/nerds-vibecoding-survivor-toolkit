@@ -20,7 +20,6 @@ Each command must validate the relevant fields of `state.json` before running. I
 | `bun execute test-plan` | TBD | TBD |
 | `bun execute automated-fix` | TBD | TBD |
 | `bun execute manual-fix` | TBD | TBD |
-| `bun approve prototype` | TBD | TBD |
 | `bun define refactor-plan` | TBD | TBD |
 | `bun refine refactor-plan` | TBD | TBD |
 | `bun approve refactor-plan` | TBD | TBD |

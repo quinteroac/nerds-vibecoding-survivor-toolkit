@@ -710,6 +710,9 @@ export async function runExecuteTestPlan(
   const hasFailedTests = progress.entries.some((entry) => entry.status === "failed");
   state.phases.prototype.test_execution.status = hasFailedTests ? "failed" : "completed";
   state.phases.prototype.test_execution.file = progressFileName;
+  if (!hasFailedTests) {
+    state.phases.prototype.prototype_approved = true;
+  }
   state.last_updated = mergedDeps.nowFn().toISOString();
   state.updated_by = "nvst:execute-test-plan";
   await writeState(projectRoot, state);

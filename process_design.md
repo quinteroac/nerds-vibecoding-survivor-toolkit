@@ -40,7 +40,7 @@ flowchart LR
         PD --> PE{all pass?}
         PE -- No --> PF["fix bugs"]
         PF --> PD
-        PE -- Yes --> PG["approve prototype"]
+        PE -- Yes --> PG["prototype done"]
     end
 
     subgraph Refactor["♻ Refactor"]
@@ -91,7 +91,7 @@ stateDiagram-v2
         tp_created --> tests_running : execute test-plan
         tests_running --> fixing : failures exist
         fixing --> tests_running : automated-fix / manual-fix
-        tests_running --> proto_approved : approve prototype
+        tests_running --> proto_approved : all pass
         proto_approved --> [*]
     }
 
@@ -138,7 +138,7 @@ stateDiagram-v2
       - **test_plan**: `{ "status": "pending" | "pending_approval" | "created", "file": string | null }` — file e.g. it_000042_test-plan.md. *pending_approval* after define test-plan; *created* after approve test-plan.
       - **tp_generation**: `{ "status": "pending" | "created", "file": string | null }`.
       - **prototype_build**: `{ "status": "pending" | "in_progress" | "created", "file": string | null }` — *file* is the path (e.g. it_000042_progress.json).
-      - **prototype_approved**: `true | false` — after successful `bun nvst approve prototype` becomes true; allows entering Refactor.
+      - **prototype_approved**: `true | false` — set to true automatically when all tests pass (after execute test-plan or after fixes); allows entering Refactor.
     - **phases.refactor**:
       - **evaluation_report**: `{ "status": "pending" | "created", "file": string | null }` — file e.g. it_000042_evaluation-report.md.
       - **refactor_plan**: `{ "status": "pending" | "pending_approval" | "approved", "file": string | null }` — file e.g. it_000042_refactor_plan.md. *pending_approval* after define, *approved* after approve.
@@ -192,7 +192,7 @@ Flow: `bun nvst define requirement` → it_000001_product-requirement-document.m
 
 First iteration: YOLO mode allowed (`--mode yolo`). From the second iteration onward, the agent adheres to PROJECT_CONTEXT.md.
 
-**Flow:** `bun nvst create project-context` → `bun nvst approve project-context` → `bun nvst create prototype` (Ralph loop, writes to it_000001_progress.json) → `bun nvst define test-plan` → `bun nvst refine test-plan` (optional) → `bun nvst approve test-plan` (tests in it_000001_progress.json) → `bun nvst execute test-plan` → `bun nvst execute automated-fix` / `bun nvst execute manual-fix` (fix bugs) → `bun nvst approve prototype`. (The number 000001 is the current iteration’s.)
+**Flow:** `bun nvst create project-context` → `bun nvst approve project-context` → `bun nvst create prototype` (Ralph loop, writes to it_000001_progress.json) → `bun nvst define test-plan` → `bun nvst refine test-plan` (optional) → `bun nvst approve test-plan` (tests in it_000001_progress.json) → `bun nvst execute test-plan` → `bun nvst execute automated-fix` / `bun nvst execute manual-fix` (fix bugs) → when all tests pass, prototype is considered done and Refactor can begin. (The number 000001 is the current iteration’s.)
 
 #### Create or update PROJECT_CONTEXT.md (per iteration)
 
@@ -217,20 +217,20 @@ First iteration: YOLO mode allowed (`--mode yolo`). From the second iteration on
 
 #### Execute plans (Ralph Loop)
 
-- **`bun nvst execute test-plan --agent [agent_name] --iterations [number_of_iterations] --retry-on-fail [number_of_retries] --stop-on-critical`** — Validates: `test_plan.status` is "created" and there are tests in it_{current_iteration}_progress.json. Runs: iteration loop over tests; if a test fails it is left as failed and execution continues; if *iterations* is greater than the number of tests, it finishes when all are done. Updates: it_{current_iteration}_progress.json (tests.status = "passed" | "failed", last_run, error if applicable) and optionally a "tests executed" flag or state.
+- **`bun nvst execute test-plan --agent [agent_name] --iterations [number_of_iterations] --retry-on-fail [number_of_retries] --stop-on-critical`** — Validates: `test_plan.status` is "created" and there are tests in it_{current_iteration}_progress.json. Runs: iteration loop over tests; if a test fails it is left as failed and execution continues; if *iterations* is greater than the number of tests, it finishes when all are done. Updates: it_{current_iteration}_progress.json (tests.status = "passed" | "failed", last_run, error if applicable) and optionally a "tests executed" flag or state. If all tests pass when the run completes, sets `phases.prototype.prototype_approved` = true.
 
 #### Fix bugs: Debug - Solve - Test
 
 - Skill **debug**: understand the error, review failing components, form hypotheses, instrument, reproduce the error, review logs, confirm hypothesis, fix, confirm fix, remove instrumentation, mark test as fixed.
 - **`bun nvst execute automated-fix --agent [agent_name] --iterations [number_of_iterations] --retry-on-fail [number_of_retries] --stop-on-critical`** — Validates: there are tests in it_{current_iteration}_progress.json with status "failed". Runs: takes those tests and attempts automated fix using the debug skill; if it cannot be done or reproduced, leaves as unfixed. Updates it_{current_iteration}_progress.json (tests.status = "fixed" | "unfixed"). Same rule for *iterations* vs number of cases.
 - **`bun nvst execute manual-fix --agent [agent_name]`** — Validates: there are tests in unfixed state in it_{current_iteration}_progress.json. Runs: with the user the agent works to resolve the bug (same skill steps with human intervention: manual tests, hypotheses, dialogue). Updates it_{current_iteration}_progress.json: each test’s status may become fixed or remain unfixed.
-- **`bun nvst approve prototype [--agent ...] [--iterations ...] [--retry-on-fail ...] [--stop-on-critical] [--force]`** — Validates: tests exist in it_{current_iteration}_progress.json (and optionally at least some in fixed or passed). Runs: re-runs tests in fixed state (unfixed are not touched). If all pass, the prototype is considered approved; if any fail, informs the user. With `--force` the prototype is marked approved even if there are failures. Updates: `phases.prototype.prototype_approved` = true and, if implemented, `current_phase` may move to "refactor" to allow the next step.
+**Prototype completion:** When `bun nvst execute test-plan` completes with all tests passing (or after fixes, a subsequent run has all passed), `phases.prototype.prototype_approved` is set to true automatically. Refactor can then begin.
 
 ### 2.6 Refactor
 
 Refactor is entered when `phases.prototype.prototype_approved` is true. Optionally the first Refactor command updates `current_phase` to "refactor".
 
-**Flow:** `bun nvst define refactor-plan` (evaluate + define plan) → `bun nvst refine refactor-plan` (optional) → `bun nvst approve refactor-plan` (TECHNICAL_DEBT.md) → `bun nvst create prd --refactor` → `bun nvst execute refactor` (Ralph loop) → **run tests for all use cases** (original + refactor; by contract) → fix bugs if applicable → `bun nvst approve prototype` or close → **update PROJECT_CONTEXT.md with implemented features** (applying summary mechanism) → record CHANGELOG.md. (The number is the iteration’s, e.g. it_000001_.)
+**Flow:** `bun nvst define refactor-plan` (evaluate + define plan) → `bun nvst refine refactor-plan` (optional) → `bun nvst approve refactor-plan` (TECHNICAL_DEBT.md) → `bun nvst create prd --refactor` → `bun nvst execute refactor` (Ralph loop) → **run tests for all use cases** (original + refactor; by contract) → fix bugs if applicable → when all pass, close → **update PROJECT_CONTEXT.md with implemented features** (applying summary mechanism) → record CHANGELOG.md. (The number is the iteration’s, e.g. it_000001_.)
 
 #### Evaluate prototype and define refactor plan (single step)
 
@@ -246,7 +246,7 @@ Refactor is entered when `phases.prototype.prototype_approved` is true. Optional
 
 #### Execute refactorings (Ralph loop)
 
-- **`bun nvst execute refactor --agent [agent_name] --iterations [number_of_iterations] --retry-on-fail [number_of_retries] --stop-on-critical`** — Validates: refactor plan approved and it_{current_iteration}_PRD.json includes refactor cases. Runs: same logic as `bun nvst create prototype`: iteration loop over refactor use cases; the agent implements following PROJECT_CONTEXT.md and updates it_{current_iteration}_progress.json. **By contract:** when refactor execution finishes, tests for **all** use cases of the iteration must be run (original prototype ones plus those added by refactor/regression), not only refactor cases. That is, the full test plan is run on it_{current_iteration}_progress.json (all entries and their tests). Then, if applicable, fix bugs and `bun nvst approve prototype` or closing step. Updates: `refactor_execution.status` = "in_progress" / "completed", `refactor_execution.file` per implementation.
+- **`bun nvst execute refactor --agent [agent_name] --iterations [number_of_iterations] --retry-on-fail [number_of_retries] --stop-on-critical`** — Validates: refactor plan approved and it_{current_iteration}_PRD.json includes refactor cases. Runs: same logic as `bun nvst create prototype`: iteration loop over refactor use cases; the agent implements following PROJECT_CONTEXT.md and updates it_{current_iteration}_progress.json. **By contract:** when refactor execution finishes, tests for **all** use cases of the iteration must be run (original prototype ones plus those added by refactor/regression), not only refactor cases. That is, the full test plan is run on it_{current_iteration}_progress.json (all entries and their tests). Then, if applicable, fix bugs until all pass; when all pass, refactor is complete. Updates: `refactor_execution.status` = "in_progress" / "completed", `refactor_execution.file` per implementation.
 
 #### Update PROJECT_CONTEXT.md with implemented features
 
