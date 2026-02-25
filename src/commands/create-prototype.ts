@@ -122,30 +122,6 @@ export async function runCreatePrototype(opts: CreatePrototypeOptions): Promise<
     );
   }
 
-  if (state.current_phase === "define") {
-    if (
-      state.phases.define.prd_generation.status === "completed" &&
-      state.phases.prototype.project_context.status === "created"
-    ) {
-      state.current_phase = "prototype";
-      await writeState(projectRoot, state);
-    } else {
-      throw new Error(
-        "Cannot create prototype: current_phase is define and prerequisites are not met. Complete define phase and run `bun nvst create project-context --agent <provider>` then `bun nvst approve project-context` first.",
-      );
-    }
-  } else if (state.current_phase !== "prototype") {
-    throw new Error(
-      "Cannot create prototype: current_phase must be define (with approved PRD) or prototype. Complete define phase and run `bun nvst create project-context --agent <provider>` then `bun nvst approve project-context` first.",
-    );
-  }
-
-  if (state.phases.prototype.project_context.status !== "created") {
-    throw new Error(
-      "Cannot create prototype: prototype.project_context.status must be created. Run `bun nvst create project-context --agent <provider>` and `bun nvst approve project-context` first.",
-    );
-  }
-
   const iteration = state.current_iteration;
   const prdFileName = `it_${iteration}_PRD.json`;
   const prdPath = join(projectRoot, FLOW_REL_DIR, prdFileName);
@@ -172,14 +148,48 @@ export async function runCreatePrototype(opts: CreatePrototypeOptions): Promise<
     );
   }
 
-  const workingTree = await dollar`git status --porcelain`.cwd(projectRoot).nothrow().quiet();
-  if (workingTree.exitCode !== 0) {
+  if (state.current_phase === "define") {
+    if (
+      state.phases.define.prd_generation.status === "completed" &&
+      state.phases.prototype.project_context.status === "created"
+    ) {
+      const workingTreeBeforeTransition = await dollar`git status --porcelain`.cwd(projectRoot).nothrow().quiet();
+      if (workingTreeBeforeTransition.exitCode !== 0) {
+        throw new Error(
+          "Unable to verify git working tree status. Ensure this directory is a git repository and git is installed.",
+        );
+      }
+      if (workingTreeBeforeTransition.stdout.toString().trim().length > 0) {
+        throw new Error(
+          "Git working tree is dirty. Commit your changes or discard them before running `bun nvst create prototype` again.",
+        );
+      }
+      state.current_phase = "prototype";
+      await writeState(projectRoot, state);
+    } else {
+      throw new Error(
+        "Cannot create prototype: current_phase is define and prerequisites are not met. Complete define phase and run `bun nvst create project-context --agent <provider>` then `bun nvst approve project-context` first.",
+      );
+    }
+  } else if (state.current_phase !== "prototype") {
+    throw new Error(
+      "Cannot create prototype: current_phase must be define (with approved PRD) or prototype. Complete define phase and run `bun nvst create project-context --agent <provider>` then `bun nvst approve project-context` first.",
+    );
+  }
+
+  if (state.phases.prototype.project_context.status !== "created") {
+    throw new Error(
+      "Cannot create prototype: prototype.project_context.status must be created. Run `bun nvst create project-context --agent <provider>` and `bun nvst approve project-context` first.",
+    );
+  }
+
+  const workingTreeAfterPhase = await dollar`git status --porcelain`.cwd(projectRoot).nothrow().quiet();
+  if (workingTreeAfterPhase.exitCode !== 0) {
     throw new Error(
       "Unable to verify git working tree status. Ensure this directory is a git repository and git is installed.",
     );
   }
-
-  if (workingTree.stdout.toString().trim().length > 0) {
+  if (workingTreeAfterPhase.stdout.toString().trim().length > 0) {
     throw new Error(
       "Git working tree is dirty. Commit your changes or discard them before running `bun nvst create prototype` again.",
     );

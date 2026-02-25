@@ -1,0 +1,8 @@
+[
+  {
+    "id": "ISSUE-000012-001",
+    "title": "Prototype should start building immediately when transitioning from define to prototype",
+    "description": "When the user runs the command to create the prototype, the flow validates that the status is prototype. If the status is still define but the project context already exists, the system moves the status to prototype but then returns an error. This forces the user to run the command again. The expected behavior is that the prototype should start building immediately in the same run, without requiring a second execution.",
+    "status": "fixed"
+  }
+]

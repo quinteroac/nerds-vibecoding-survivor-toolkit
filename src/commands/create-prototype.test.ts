@@ -94,16 +94,31 @@ describe("create prototype phase validation", () => {
     });
   });
 
-  test("auto-transitions from define to prototype when PRD completed and project_context created", async () => {
+  test("auto-transitions from define to prototype and starts build in same run when PRD and git are ready", async () => {
     const root = await createProjectRoot();
     createdRoots.push(root);
-    await seedState(root, makeState({ currentPhase: "define", prdStatus: "completed", projectContextStatus: "created" }));
+    const iteration = "000009";
+    await seedState(root, makeState({ currentPhase: "define", prdStatus: "completed", projectContextStatus: "created", iteration }));
 
-    // The command will pass the phase check but fail later (missing PRD file).
-    // We verify it does NOT throw the phase error and that state was updated.
+    const prdContent = {
+      goals: ["Test"],
+      userStories: [
+        { id: "US-001", title: "One", description: "D", acceptanceCriteria: [{ id: "AC1", text: "T" }] },
+      ],
+      functionalRequirements: [{ id: "FR-001", description: "F" }],
+    };
+    await writeFile(
+      join(root, ".agents", "flow", `it_${iteration}_PRD.json`),
+      JSON.stringify(prdContent),
+      "utf8",
+    );
+
+    const { $ } = await import("bun");
+    await $`git init`.cwd(root).nothrow().quiet();
+
     await withCwd(root, async () => {
       await expect(runCreatePrototype({ provider: "claude" })).rejects.toThrow(
-        "PRD source of truth missing",
+        "Required skill missing",
       );
     });
 
