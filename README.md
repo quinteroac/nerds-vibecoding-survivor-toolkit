@@ -95,17 +95,11 @@ bun add /path/to/nerds-vibecoding-survivor-toolkit
 bun add ./quinteroac-agents-coding-toolkit-0.1.0.tgz
 ```
 
-### From GitHub Packages
+### From npm
 
-When the package is published to GitHub Packages, configure the registry and authenticate. GitHub Packages requires a token even for public packages.
-
-Create a [Personal Access Token](https://github.com/settings/tokens) with `read:packages` scope, then:
+When the package is published to npm:
 
 ```bash
-# One-time setup
-echo "@quinteroac:registry=https://npm.pkg.github.com" >> ~/.npmrc
-echo "//npm.pkg.github.com/:_authToken=YOUR_GITHUB_TOKEN" >> ~/.npmrc
-
 bun add @quinteroac/agents-coding-toolkit
 # or
 npm install @quinteroac/agents-coding-toolkit

@@ -10,7 +10,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      packages: write
       id-token: write
     steps:
       - name: Checkout
@@ -27,14 +26,13 @@ jobs:
       - name: Build package
         run: bun run package
 
-      - name: Setup Node for GitHub Packages
+      - name: Setup Node for npm
         uses: actions/setup-node@v4
         with:
           node-version: "20"
-          registry-url: "https://npm.pkg.github.com"
-          scope: "@quinteroac"
+          registry-url: "https://registry.npmjs.org"
 
-      - name: Publish to GitHub Packages
+      - name: Publish to npm
         run: npm publish --provenance --access public
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

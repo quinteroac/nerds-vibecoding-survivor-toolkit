@@ -1,7 +1,8 @@
 {
   "name": "@quinteroac/agents-coding-toolkit",
   "publishConfig": {
-    "registry": "https://npm.pkg.github.com"
+    "registry": "https://registry.npmjs.org",
+    "access": "public"
   },
   "version": "0.1.0-preview",
   "repository": {
