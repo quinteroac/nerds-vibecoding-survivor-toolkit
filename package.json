@@ -3,7 +3,7 @@
   "publishConfig": {
     "registry": "https://npm.pkg.github.com"
   },
-  "version": "0.1.0",
+  "version": "0.1.0-preview",
   "repository": {
     "type": "git",
     "url": "https://github.com/quinteroac/nerds-vibecoding-survivor-toolkit.git"
