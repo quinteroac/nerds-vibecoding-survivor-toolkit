@@ -1,0 +1,38 @@
+[
+  {
+    "id": "ISSUE-000018-001",
+    "title": "[failed] TC-005: When stdin is not a TTY (or confirmFn simulates non-TTY), confirmFn returns false immediately without waiting for input.",
+    "description": "Test case TC-005 resulted in status: failed.\nNotes: FR-6 requires non-TTY to return false immediately; implementation does not satisfy this.\nEvidence: promptForDirtyTreeCommit and default confirm path do not check process.stdin.isTTY. When stdin is not a TTY the implementation still calls readLine and waits for input; no early return false. Grep for isTTY in src returned no matches.\nCorrelated requirements: US-001, FR-6",
+    "status": "fixed"
+  },
+  {
+    "id": "ISSUE-000018-002",
+    "title": "[skipped] TC-007: Typecheck passes after implementation (`bun tsc --noEmit`).",
+    "description": "Test case TC-007 resulted in status: skipped.\nNotes: Verification requires running typecheck in local or CI environment.\nEvidence: bun tsc --noEmit was not executed in this session (terminal execution unavailable). Linter reported no errors on create-prototype.ts and create-prototype.test.ts.\nCorrelated requirements: US-001, FR-1, FR-2",
+    "status": "open"
+  },
+  {
+    "id": "ISSUE-000018-003",
+    "title": "[skipped] TC-011: Typecheck passes.",
+    "description": "Test case TC-011 resulted in status: skipped.\nEvidence: bun tsc --noEmit was not executed in this session (terminal execution unavailable).\nCorrelated requirements: US-002",
+    "status": "open"
+  },
+  {
+    "id": "ISSUE-000018-004",
+    "title": "[skipped] TC-015: Typecheck passes.",
+    "description": "Test case TC-015 resulted in status: skipped.\nEvidence: bun tsc --noEmit was not executed in this session (terminal execution unavailable).\nCorrelated requirements: US-003",
+    "status": "open"
+  },
+  {
+    "id": "ISSUE-000018-005",
+    "title": "[skipped] TC-019: All tests in the project pass (`bun test`); existing create-prototype tests that hit the dirty-tree path use an injected confirmFn (e.g. returning false) so they still pass.",
+    "description": "Test case TC-019 resulted in status: skipped.\nEvidence: bun test was not executed in this session (terminal execution unavailable). Static analysis: create-prototype tests use injected confirmDirtyTreeCommitFn (e.g. return false) for dirty-tree paths; no test relies on default TTY input.\nCorrelated requirements: US-004, FR-7",
+    "status": "open"
+  },
+  {
+    "id": "ISSUE-000018-006",
+    "title": "[skipped] TC-020: Typecheck passes.",
+    "description": "Test case TC-020 resulted in status: skipped.\nEvidence: bun tsc --noEmit was not executed in this session (terminal execution unavailable).\nCorrelated requirements: US-004",
+    "status": "open"
+  }
+]

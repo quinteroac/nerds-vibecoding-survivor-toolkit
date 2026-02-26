@@ -375,6 +375,7 @@ describe("promptForDirtyTreeCommit", () => {
         "Working tree has uncommitted changes. Stage and commit them now to proceed? [y/N]",
         async () => "y",
         () => {},
+        () => true,
       ),
     ).toBe(true);
 
@@ -383,6 +384,7 @@ describe("promptForDirtyTreeCommit", () => {
         "Working tree has uncommitted changes. Stage and commit them now to proceed? [y/N]",
         async () => "Y",
         () => {},
+        () => true,
       ),
     ).toBe(true);
   });
@@ -393,6 +395,7 @@ describe("promptForDirtyTreeCommit", () => {
         "Working tree has uncommitted changes. Stage and commit them now to proceed? [y/N]",
         async () => "n",
         () => {},
+        () => true,
       ),
     ).toBe(false);
 
@@ -401,6 +404,7 @@ describe("promptForDirtyTreeCommit", () => {
         "Working tree has uncommitted changes. Stage and commit them now to proceed? [y/N]",
         async () => "",
         () => {},
+        () => true,
       ),
     ).toBe(false);
 
@@ -409,8 +413,30 @@ describe("promptForDirtyTreeCommit", () => {
         "Working tree has uncommitted changes. Stage and commit them now to proceed? [y/N]",
         async () => null,
         () => {},
+        () => true,
       ),
     ).toBe(false);
+  });
+
+  test("TC-005: returns false immediately without reading input when stdin is not a TTY", async () => {
+    let readLineCalled = false;
+    let writeCalled = false;
+
+    const result = await promptForDirtyTreeCommit(
+      "Working tree has uncommitted changes. Stage and commit them now to proceed? [y/N]",
+      async () => {
+        readLineCalled = true;
+        return "y";
+      },
+      () => {
+        writeCalled = true;
+      },
+      () => false,
+    );
+
+    expect(result).toBe(false);
+    expect(readLineCalled).toBe(false);
+    expect(writeCalled).toBe(false);
   });
 });
 

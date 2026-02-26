@@ -1,0 +1,184 @@
+{
+  "entries": [
+    {
+      "id": "TC-001",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-26T23:19:56.822Z"
+    },
+    {
+      "id": "TC-002",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-26T23:19:56.823Z"
+    },
+    {
+      "id": "TC-003",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-26T23:19:56.823Z"
+    },
+    {
+      "id": "TC-004",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-26T23:19:56.823Z"
+    },
+    {
+      "id": "TC-005",
+      "type": "automated",
+      "status": "failed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "FR-6 requires non-TTY to return false immediately; implementation does not satisfy this.",
+      "updated_at": "2026-02-26T23:19:56.823Z"
+    },
+    {
+      "id": "TC-006",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-26T23:19:56.823Z"
+    },
+    {
+      "id": "TC-007",
+      "type": "automated",
+      "status": "failed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "Verification requires running typecheck in local or CI environment.",
+      "updated_at": "2026-02-26T23:19:56.823Z"
+    },
+    {
+      "id": "TC-008",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-26T23:19:56.823Z"
+    },
+    {
+      "id": "TC-009",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-26T23:19:56.823Z"
+    },
+    {
+      "id": "TC-010",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-26T23:19:56.823Z"
+    },
+    {
+      "id": "TC-011",
+      "type": "automated",
+      "status": "failed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-26T23:19:56.824Z"
+    },
+    {
+      "id": "TC-012",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-26T23:19:56.824Z"
+    },
+    {
+      "id": "TC-013",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-26T23:19:56.824Z"
+    },
+    {
+      "id": "TC-014",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-26T23:19:56.824Z"
+    },
+    {
+      "id": "TC-015",
+      "type": "automated",
+      "status": "failed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-26T23:19:56.824Z"
+    },
+    {
+      "id": "TC-016",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-26T23:19:56.824Z"
+    },
+    {
+      "id": "TC-017",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-26T23:19:56.824Z"
+    },
+    {
+      "id": "TC-018",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-26T23:19:56.824Z"
+    },
+    {
+      "id": "TC-019",
+      "type": "automated",
+      "status": "failed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-26T23:19:56.824Z"
+    },
+    {
+      "id": "TC-020",
+      "type": "automated",
+      "status": "failed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-26T23:19:56.824Z"
+    }
+  ]
+}

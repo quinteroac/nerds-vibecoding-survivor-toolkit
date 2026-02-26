@@ -1,0 +1,410 @@
+{
+  "iteration": "000018",
+  "testPlanFile": "it_000018_TP.json",
+  "executedTestIds": [
+    "TC-001",
+    "TC-002",
+    "TC-003",
+    "TC-004",
+    "TC-005",
+    "TC-006",
+    "TC-007",
+    "TC-008",
+    "TC-009",
+    "TC-010",
+    "TC-011",
+    "TC-012",
+    "TC-013",
+    "TC-014",
+    "TC-015",
+    "TC-016",
+    "TC-017",
+    "TC-018",
+    "TC-019",
+    "TC-020"
+  ],
+  "results": [
+    {
+      "testCaseId": "TC-001",
+      "description": "When the phase-transition dirty-tree check detects uncommitted changes, the command invokes confirmFn with the message containing \"Working tree has uncommitted changes. Stage and commit them now to proceed? [y/N]\".",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-3"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "create-prototype.ts line 291 passes DIRTY_TREE_COMMIT_PROMPT to confirmDirtyTreeCommitFn in phase-transition block. create-prototype.test.ts line 171 asserts prompts equal ['Working tree has uncommitted changes. Stage and commit them now to proceed? [y/N]'] in define-to-prototype dirty path.",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000018_test-execution-artifacts/TC-001_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-002",
+      "description": "When the post-transition dirty-tree check detects uncommitted changes, the command invokes confirmFn with the same prompt message.",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-4"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "create-prototype.ts line 332 passes same DIRTY_TREE_COMMIT_PROMPT in post-transition dirty check. create-prototype.test.ts line 243 asserts same prompt in 'prompts at the post-transition dirty-tree check when phase is already prototype' test.",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000018_test-execution-artifacts/TC-002_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-003",
+      "description": "Default confirmFn (or a mock simulating it): trimmed stdin line \"y\" or \"Y\" returns true.",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-1"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "promptForDirtyTreeCommit in create-prototype.ts returns line.trim() === 'y' || line.trim() === 'Y'. create-prototype.test.ts describe 'promptForDirtyTreeCommit' test 'returns true for lowercase y and uppercase Y' (lines 371-387) asserts true for async () => 'y' and async () => 'Y'.",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000018_test-execution-artifacts/TC-003_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-004",
+      "description": "Default confirmFn (or mock): input other than \"y\"/\"Y\", or empty line, is treated as No (return false).",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-1"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "promptForDirtyTreeCommit returns false when line is null or trimmed value is not 'y'/'Y'. create-prototype.test.ts test 'treats other input, empty input, and no input as no' (lines 389-413) asserts false for 'n', '', and null.",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000018_test-execution-artifacts/TC-004_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-005",
+      "description": "When stdin is not a TTY (or confirmFn simulates non-TTY), confirmFn returns false immediately without waiting for input.",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-6"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "failed",
+        "evidence": "promptForDirtyTreeCommit and default confirm path do not check process.stdin.isTTY. When stdin is not a TTY the implementation still calls readLine and waits for input; no early return false. Grep for isTTY in src returned no matches.",
+        "notes": "FR-6 requires non-TTY to return false immediately; implementation does not satisfy this."
+      },
+      "passFail": "fail",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000018_test-execution-artifacts/TC-005_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-006",
+      "description": "Codebase does not contain the old hard-error string \"Git working tree is dirty. Commit your changes\" at the two previous check sites.",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-3",
+        "FR-4"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "Grep in src for exact string 'Git working tree is dirty. Commit your changes' returned no matches. Old hard-error removed from phase-transition and post-transition code.",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000018_test-execution-artifacts/TC-006_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-007",
+      "description": "Typecheck passes after implementation (`bun tsc --noEmit`).",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-1",
+        "FR-2"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "skipped",
+        "evidence": "bun tsc --noEmit was not executed in this session (terminal execution unavailable). Linter reported no errors on create-prototype.ts and create-prototype.test.ts.",
+        "notes": "Verification requires running typecheck in local or CI environment."
+      },
+      "passFail": null,
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000018_test-execution-artifacts/TC-007_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-008",
+      "description": "On confirm (confirmFn returns true), gitAddAndCommitFn is invoked with cwd equal to the project root and message \"chore: pre-prototype commit it_&lt;iteration&gt;\" where &lt;iteration&gt; is state.current_iteration.",
+      "correlatedRequirements": [
+        "US-002",
+        "FR-2",
+        "FR-5"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "runPrePrototypeCommit builds message as `chore: pre-prototype commit it_${iteration}` and calls gitAddAndCommitFn(projectRoot, commitMessage). Test 'continues build when dirty-tree prompt is confirmed and calls gitAddAndCommitFn with commit message' asserts commitMessages === ['chore: pre-prototype commit it_000018'] and cwd is project root via invokeAgentFn.",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000018_test-execution-artifacts/TC-008_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-009",
+      "description": "When gitAddAndCommitFn rejects (e.g. pre-commit hook failure), the handler throws an Error whose message starts with \"Pre-prototype commit failed:\" and includes stderr; process.exitCode is set to 1 by CLI layer.",
+      "correlatedRequirements": [
+        "US-002",
+        "FR-3"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "runGitAddAndCommit and runPrePrototypeCommit throw Error with message starting 'Pre-prototype commit failed:\\n' and including stderr (create-prototype.ts 140, 145, 162). Test 'throws pre-prototype commit failure and does not continue build' expects toThrow('Pre-prototype commit failed:\\nhook rejected'). cli.ts uses try/catch and sets process.exitCode = 1.",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000018_test-execution-artifacts/TC-009_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-010",
+      "description": "After a successful gitAddAndCommitFn resolve, the prototype build continues (no second dirty-tree error); state transition and build flow proceed.",
+      "correlatedRequirements": [
+        "US-002",
+        "FR-3",
+        "FR-4"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "Test 'commits dirty tree on confirmation and proceeds with prototype build' confirms after dirty-tree prompt, runCreatePrototype resolves, and updatedState.phases.prototype.prototype_build.status === 'created'; no second dirty-tree error.",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000018_test-execution-artifacts/TC-010_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-011",
+      "description": "Typecheck passes.",
+      "correlatedRequirements": [
+        "US-002"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "skipped",
+        "evidence": "bun tsc --noEmit was not executed in this session (terminal execution unavailable).",
+        "notes": ""
+      },
+      "passFail": null,
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000018_test-execution-artifacts/TC-011_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-012",
+      "description": "On decline (confirmFn returns false), the handler logs the abort message containing \"Aborted. Commit or discard your changes and re-run \\`bun nvst create prototype\\`.\" and returns without throwing.",
+      "correlatedRequirements": [
+        "US-003",
+        "FR-3",
+        "FR-4"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "DECLINE_DIRTY_TREE_ABORT_MESSAGE is 'Aborted. Commit or discard your changes and re-run `bun nvst create prototype`.'; on !shouldProceed handler calls logFn with it and return (create-prototype.ts 294-296, 335-337). Tests assert logs contain that message and runCreatePrototype resolves without throw.",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000018_test-execution-artifacts/TC-012_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-013",
+      "description": "On decline, process.exitCode is not set to 1 (clean exit).",
+      "correlatedRequirements": [
+        "US-003"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "On decline the handler returns without throwing; cli.ts only sets exitCode on caught throw. create-prototype.test.ts line 250 asserts process.exitCode is not 1 after post-transition decline test.",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000018_test-execution-artifacts/TC-013_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-014",
+      "description": "On decline, no state changes are written to .agents/state.json (state write functions not called, or state file unchanged).",
+      "correlatedRequirements": [
+        "US-003"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "Test 'prompts at the post-transition dirty-tree check when phase is already prototype' reads state.json before/after and expects stateAfter === stateBefore when confirmFn returns false; state write not called on decline.",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000018_test-execution-artifacts/TC-014_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-015",
+      "description": "Typecheck passes.",
+      "correlatedRequirements": [
+        "US-003"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "skipped",
+        "evidence": "bun tsc --noEmit was not executed in this session (terminal execution unavailable).",
+        "notes": ""
+      },
+      "passFail": null,
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000018_test-execution-artifacts/TC-015_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-016",
+      "description": "Confirm path: mock confirmFn returns true; mock gitAddAndCommitFn is called with the correct commit message; no error thrown; build continues (e.g. next step or return value indicates progression).",
+      "correlatedRequirements": [
+        "US-004",
+        "FR-3",
+        "FR-5"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "Test 'continues build when dirty-tree prompt is confirmed and calls gitAddAndCommitFn with commit message' has confirmFn return true, gitAddAndCommitFn mock records message 'chore: pre-prototype commit it_000018', no throw, and runCreatePrototype resolves.",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000018_test-execution-artifacts/TC-016_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-017",
+      "description": "Decline path: mock confirmFn returns false; gitAddAndCommitFn is never called; handler returns cleanly (no throw).",
+      "correlatedRequirements": [
+        "US-004",
+        "FR-3",
+        "FR-4"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "Test 'prompts at the post-transition dirty-tree check...' uses confirmFn returning false and gitAddAndCommitFn mock; expect(gitAddAndCommitCalled).toBe(false) and runCreatePrototype resolves.",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000018_test-execution-artifacts/TC-017_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-018",
+      "description": "Git commit failure path: confirmFn returns true; gitAddAndCommitFn rejects with stderr; handler throws an error whose message includes \"Pre-prototype commit failed\" and stderr.",
+      "correlatedRequirements": [
+        "US-004",
+        "FR-3"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "Test 'throws pre-prototype commit failure and does not continue build' has confirmFn return true and gitAddAndCommitFn throw Error('hook rejected'); expects toThrow('Pre-prototype commit failed:\\nhook rejected'); handler throws and includes stderr.",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000018_test-execution-artifacts/TC-018_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-019",
+      "description": "All tests in the project pass (`bun test`); existing create-prototype tests that hit the dirty-tree path use an injected confirmFn (e.g. returning false) so they still pass.",
+      "correlatedRequirements": [
+        "US-004",
+        "FR-7"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "skipped",
+        "evidence": "bun test was not executed in this session (terminal execution unavailable). Static analysis: create-prototype tests use injected confirmDirtyTreeCommitFn (e.g. return false) for dirty-tree paths; no test relies on default TTY input.",
+        "notes": ""
+      },
+      "passFail": null,
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000018_test-execution-artifacts/TC-019_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-020",
+      "description": "Typecheck passes.",
+      "correlatedRequirements": [
+        "US-004"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "skipped",
+        "evidence": "bun tsc --noEmit was not executed in this session (terminal execution unavailable).",
+        "notes": ""
+      },
+      "passFail": null,
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000018_test-execution-artifacts/TC-020_attempt_001.json"
+      ]
+    }
+  ]
+}

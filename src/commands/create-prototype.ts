@@ -90,6 +90,7 @@ const defaultDeps: CreatePrototypeDeps = {
 
 type ReadLineFn = () => Promise<string | null>;
 type WriteFn = (message: string) => void;
+type IsTTYFn = () => boolean;
 
 async function defaultReadLine(): Promise<string | null> {
   return new Promise((resolve) => {
@@ -117,11 +118,20 @@ function defaultWrite(message: string): void {
   process.stdout.write(`${message}\n`);
 }
 
+function defaultIsTTY(): boolean {
+  return process.stdin.isTTY === true;
+}
+
 export async function promptForDirtyTreeCommit(
   question: string,
   readLineFn: ReadLineFn = defaultReadLine,
   writeFn: WriteFn = defaultWrite,
+  isTTYFn: IsTTYFn = defaultIsTTY,
 ): Promise<boolean> {
+  if (!isTTYFn()) {
+    return false;
+  }
+
   writeFn(question);
 
   let line: string | null;
