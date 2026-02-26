@@ -239,11 +239,6 @@ Refactor is entered when `phases.prototype.prototype_approved` is true. Optional
 - **`bun nvst refine refactor-plan --agent [agent_name]`** — Validates: `refactor_plan.status` is "pending_approval" and the file exists (e.g. it_000001_refactor_plan.md). Runs: the user makes changes to the plan; the agent updates the document. Does not change state.
 - **`bun nvst approve refactor-plan`** — Validates: `refactor_plan.status` is "pending_approval". Runs: the user approves the plan. Updates: `refactor_plan.status` = "approved". Generates or updates TECHNICAL_DEBT.md with technical debt discarded or deferred (not included in the plan); that document is taken into account in future iteration evaluations.
 
-#### Add refactor use cases to the PRD
-
-- Skill **refactor-prd**: adds to the iteration’s PRD the use cases corresponding to approved refactorings, with associated regression tests.
-- **`bun nvst create prd --refactor [--regression yes|no]`** — Validates: `refactor_plan.status` is "approved". Runs: invokes the agent with the refactor-prd skill; adds refactoring use cases (and regression tests if `--regression yes`). Updates it_{current_iteration}_PRD.json (and optionally tp_generation/refactor_execution per implementation).
-
 #### Execute refactorings (Ralph loop)
 
 - **`bun nvst execute refactor --agent [agent_name] --iterations [number_of_iterations] --retry-on-fail [number_of_retries] --stop-on-critical`** — Validates: refactor plan approved and it_{current_iteration}_PRD.json includes refactor cases. Runs: same logic as `bun nvst create prototype`: iteration loop over refactor use cases; the agent implements following PROJECT_CONTEXT.md and updates it_{current_iteration}_progress.json. **By contract:** when refactor execution finishes, tests for **all** use cases of the iteration must be run (original prototype ones plus those added by refactor/regression), not only refactor cases. That is, the full test plan is run on it_{current_iteration}_progress.json (all entries and their tests). Then, if applicable, fix bugs until all pass; when all pass, refactor is complete. Updates: `refactor_execution.status` = "in_progress" / "completed", `refactor_execution.file` per implementation.
