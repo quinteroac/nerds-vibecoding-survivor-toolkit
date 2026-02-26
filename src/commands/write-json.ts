@@ -5,6 +5,7 @@ import type { ZodSchema } from "zod";
 import { StateSchema } from "../../scaffold/schemas/tmpl_state";
 import { ProgressSchema } from "../../scaffold/schemas/tmpl_progress";
 import { PrdSchema } from "../../scaffold/schemas/tmpl_prd";
+import { RefactorPrdSchema } from "../../scaffold/schemas/tmpl_refactor-prd";
 import { TestPlanSchema } from "../../scaffold/schemas/tmpl_test-plan";
 import { IssuesSchema } from "../../scaffold/schemas/tmpl_issues";
 
@@ -15,6 +16,7 @@ const SCHEMA_REGISTRY: Record<string, ZodSchema> = {
     state: StateSchema,
     progress: ProgressSchema,
     prd: PrdSchema,
+    "refactor-prd": RefactorPrdSchema,
     "test-plan": TestPlanSchema,
     issues: IssuesSchema,
 };

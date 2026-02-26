@@ -3,6 +3,7 @@
 import { join } from "node:path";
 import { parseAgentArg } from "./agent";
 import { runApproveProjectContext } from "./commands/approve-project-context";
+import { runApproveRefactorPlan } from "./commands/approve-refactor-plan";
 import { runApproveRequirement } from "./commands/approve-requirement";
 import { runApproveTestPlan } from "./commands/approve-test-plan";
 import { runCreateIssue, runCreateIssueFromTestReport } from "./commands/create-issue";
@@ -98,6 +99,8 @@ Commands:
                      Mark project context as approved
   approve test-plan
                      Mark test plan as approved and generate structured TP JSON
+  approve refactor-plan
+                     Mark refactor plan as approved and generate structured refactor PRD JSON
   refine project-context --agent <provider> [--challenge]
                      Refine project context via agent (editor or challenge mode)
   define requirement --agent <provider>
@@ -507,7 +510,7 @@ Providers: claude, codex, gemini, cursor`);
 
   if (command === "approve") {
     if (args.length !== 1) {
-      console.error(`Usage for approve: nvst approve <requirement|project-context|test-plan>`);
+      console.error(`Usage for approve: nvst approve <requirement|project-context|test-plan|refactor-plan>`);
       printUsage();
       process.exitCode = 1;
       return;
@@ -527,6 +530,11 @@ Providers: claude, codex, gemini, cursor`);
 
     if (subcommand === "test-plan") {
       await runApproveTestPlan();
+      return;
+    }
+
+    if (subcommand === "refactor-plan") {
+      await runApproveRefactorPlan();
       return;
     }
 
