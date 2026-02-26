@@ -7,7 +7,7 @@ import { mkdtemp } from "node:fs/promises";
 import type { AgentResult } from "../agent";
 import { readState, writeState } from "../state";
 import type { State } from "../../scaffold/schemas/tmpl_state";
-import { promptForDirtyTreeCommit, runCreatePrototype } from "./create-prototype";
+import { promptForDirtyTreeCommit, runCreatePrototype, runPrePrototypeCommit } from "./create-prototype";
 
 async function createProjectRoot(): Promise<string> {
   return mkdtemp(join(tmpdir(), "nvst-create-prototype-"));
@@ -227,6 +227,81 @@ describe("create prototype phase validation", () => {
       "Working tree has uncommitted changes. Stage and commit them now to proceed? [y/N]",
     ]);
   });
+
+  test("commits dirty tree on confirmation and proceeds with prototype build", async () => {
+    const root = await createProjectRoot();
+    createdRoots.push(root);
+    const iteration = "000018";
+    await seedState(root, makeState({ currentPhase: "prototype", prdStatus: "completed", projectContextStatus: "created", iteration }));
+    await seedPrd(root, iteration);
+    await seedProjectContext(root);
+    await initGitRepo(root);
+    await writeFile(join(root, "dirty.txt"), "dirty\n", "utf8");
+
+    let promptCount = 0;
+
+    await withCwd(root, async () => {
+      await runCreatePrototype(
+        { provider: "claude" },
+        {
+          confirmDirtyTreeCommitFn: async () => {
+            promptCount += 1;
+            return true;
+          },
+          loadSkillFn: async () => "Implement story",
+          invokeAgentFn: async ({ cwd }) => {
+            if (!cwd) {
+              throw new Error("Expected cwd");
+            }
+            await writeFile(join(cwd, "story.txt"), "implemented\n", "utf8");
+            return makeAgentResult(0);
+          },
+          checkGhAvailableFn: async () => false,
+        },
+      );
+    });
+
+    const { $ } = await import("bun");
+    const preCommitCountResult = await $`git log --oneline --grep "chore: pre-prototype commit it_000018"`.cwd(root).nothrow().quiet();
+    expect(preCommitCountResult.exitCode).toBe(0);
+    expect(preCommitCountResult.stdout.toString().trim().length).toBeGreaterThan(0);
+
+    expect(promptCount).toBe(1);
+
+    const updatedState = await readState(root);
+    expect(updatedState.phases.prototype.prototype_build.status).toBe("created");
+  });
+
+  test("throws pre-prototype commit failure and does not continue build", async () => {
+    const root = await createProjectRoot();
+    createdRoots.push(root);
+    const iteration = "000018";
+    await seedState(root, makeState({ currentPhase: "prototype", prdStatus: "completed", projectContextStatus: "created", iteration }));
+    await seedPrd(root, iteration);
+    await seedProjectContext(root);
+    await initGitRepo(root);
+    await writeFile(join(root, "dirty.txt"), "dirty\n", "utf8");
+
+    let agentCalled = false;
+
+    await withCwd(root, async () => {
+      await expect(runCreatePrototype(
+        { provider: "claude" },
+        {
+          confirmDirtyTreeCommitFn: async () => true,
+          runPrePrototypeCommitFn: async () => {
+            throw new Error("Pre-prototype commit failed:\nhook rejected");
+          },
+          invokeAgentFn: async () => {
+            agentCalled = true;
+            return makeAgentResult(0);
+          },
+        },
+      )).rejects.toThrow("Pre-prototype commit failed:\nhook rejected");
+    });
+
+    expect(agentCalled).toBe(false);
+  });
 });
 
 describe("promptForDirtyTreeCommit", () => {
@@ -272,6 +347,26 @@ describe("promptForDirtyTreeCommit", () => {
         () => {},
       ),
     ).toBe(false);
+  });
+});
+
+describe("runPrePrototypeCommit", () => {
+  test("runs git add and creates commit with required message", async () => {
+    const root = await createProjectRoot();
+    createdRoots.push(root);
+    await initGitRepo(root);
+    await writeFile(join(root, "dirty.txt"), "dirty\n", "utf8");
+
+    await runPrePrototypeCommit(root, "000018");
+
+    const { $ } = await import("bun");
+    const commitMsg = await $`git log -1 --pretty=%s`.cwd(root).nothrow().quiet();
+    expect(commitMsg.exitCode).toBe(0);
+    expect(commitMsg.stdout.toString().trim()).toBe("chore: pre-prototype commit it_000018");
+
+    const status = await $`git status --porcelain`.cwd(root).nothrow().quiet();
+    expect(status.exitCode).toBe(0);
+    expect(status.stdout.toString().trim()).toBe("");
   });
 });
 

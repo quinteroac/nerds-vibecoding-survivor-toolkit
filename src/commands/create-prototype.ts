@@ -55,6 +55,7 @@ interface CreatePrototypeDeps {
   logFn: (message: string) => void;
   warnFn: (message: string) => void;
   confirmDirtyTreeCommitFn: (question: string) => Promise<boolean>;
+  runPrePrototypeCommitFn: (projectRoot: string, iteration: string) => Promise<void>;
 }
 
 const defaultDeps: CreatePrototypeDeps = {
@@ -81,6 +82,7 @@ const defaultDeps: CreatePrototypeDeps = {
   logFn: console.log,
   warnFn: console.warn,
   confirmDirtyTreeCommitFn: promptForDirtyTreeCommit,
+  runPrePrototypeCommitFn: runPrePrototypeCommit,
 };
 
 type ReadLineFn = () => Promise<string | null>;
@@ -127,6 +129,22 @@ export async function promptForDirtyTreeCommit(
   }
 
   return line !== null && (line.trim() === "y" || line.trim() === "Y");
+}
+
+export async function runPrePrototypeCommit(
+  projectRoot: string,
+  iteration: string,
+): Promise<void> {
+  const addResult = await dollar`git add -A`.cwd(projectRoot).nothrow().quiet();
+  if (addResult.exitCode !== 0) {
+    throw new Error(`Pre-prototype commit failed:\n${addResult.stderr.toString().trim()}`);
+  }
+
+  const commitMessage = `chore: pre-prototype commit it_${iteration}`;
+  const commitResult = await dollar`git commit -m ${commitMessage}`.cwd(projectRoot).nothrow().quiet();
+  if (commitResult.exitCode !== 0) {
+    throw new Error(`Pre-prototype commit failed:\n${commitResult.stderr.toString().trim()}`);
+  }
 }
 
 function sortedValues(values: string[]): string[] {
@@ -262,6 +280,7 @@ export async function runCreatePrototype(
         if (!shouldProceed) {
           return;
         }
+        await mergedDeps.runPrePrototypeCommitFn(projectRoot, iteration);
       }
       state.current_phase = "prototype";
       await writeState(projectRoot, state);
@@ -302,6 +321,7 @@ export async function runCreatePrototype(
     if (!shouldProceed) {
       return;
     }
+    await mergedDeps.runPrePrototypeCommitFn(projectRoot, iteration);
   }
 
   const branchName = `feature/it_${iteration}`;
