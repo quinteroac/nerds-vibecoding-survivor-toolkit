@@ -26,10 +26,12 @@ async function seedState(
   stateOverrides: {
     currentPhase?: "define" | "prototype" | "refactor";
     refactorPlanStatus?: "pending" | "pending_approval" | "approved";
+    prototypeApproved?: boolean;
   } = {},
 ): Promise<void> {
   const currentPhase = stateOverrides.currentPhase ?? "refactor";
   const refactorPlanStatus = stateOverrides.refactorPlanStatus ?? "pending";
+  const prototypeApproved = stateOverrides.prototypeApproved ?? true;
 
   await mkdir(join(projectRoot, ".agents", "flow"), { recursive: true });
 
@@ -47,7 +49,7 @@ async function seedState(
         tp_generation: { status: "created", file: "it_000013_TEST-PLAN.json" },
         prototype_build: { status: "created", file: "it_000013_progress.json" },
         test_execution: { status: "completed", file: "it_000013_test-execution-report.json" },
-        prototype_approved: true,
+        prototype_approved: prototypeApproved,
       },
       refactor: {
         evaluation_report: { status: "created", file: "it_000013_evaluation-report.md" },
@@ -77,16 +79,49 @@ describe("define refactor-plan command", () => {
     expect(source).toContain("await runDefineRefactorPlan({ provider });");
   });
 
-  test("rejects when current_phase is not refactor", async () => {
+  test("rejects when prototype_approved is false", async () => {
+    const projectRoot = await createProjectRoot();
+    createdRoots.push(projectRoot);
+    await seedState(projectRoot, { prototypeApproved: false });
+
+    await withCwd(projectRoot, async () => {
+      await expect(runDefineRefactorPlan({ provider: "codex" })).rejects.toThrow(
+        "Cannot define refactor plan: phases.prototype.prototype_approved must be true",
+      );
+    });
+  });
+
+  test("rejects when current_phase is define", async () => {
+    const projectRoot = await createProjectRoot();
+    createdRoots.push(projectRoot);
+    await seedState(projectRoot, { currentPhase: "define", prototypeApproved: true });
+
+    await withCwd(projectRoot, async () => {
+      await expect(runDefineRefactorPlan({ provider: "codex" })).rejects.toThrow(
+        "Cannot define refactor plan: current_phase must be 'prototype' or 'refactor'",
+      );
+    });
+  });
+
+  test("accepts when current_phase is prototype and prototype_approved is true, transitions to refactor", async () => {
     const projectRoot = await createProjectRoot();
     createdRoots.push(projectRoot);
     await seedState(projectRoot, { currentPhase: "prototype" });
 
     await withCwd(projectRoot, async () => {
-      await expect(runDefineRefactorPlan({ provider: "codex" })).rejects.toThrow(
-        "Cannot define refactor plan: current_phase must be 'refactor'.",
+      await runDefineRefactorPlan(
+        { provider: "codex" },
+        {
+          loadSkillFn: async () => "Refactor planning instructions",
+          invokeAgentFn: async () => ({ exitCode: 0, stdout: "", stderr: "" }),
+          nowFn: () => new Date("2026-02-26T10:00:00.000Z"),
+        },
       );
     });
+
+    const state = await readState(projectRoot);
+    expect(state.current_phase).toBe("refactor");
+    expect(state.phases.refactor.refactor_plan.status).toBe("pending_approval");
   });
 
   test("rejects when refactor.refactor_plan.status is not pending", async () => {

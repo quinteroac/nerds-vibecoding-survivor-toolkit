@@ -33,8 +33,18 @@ export async function runDefineRefactorPlan(
   const state = await readState(projectRoot);
   const mergedDeps: DefineRefactorPlanDeps = { ...defaultDeps, ...deps };
 
-  if (state.current_phase !== "refactor") {
-    throw new Error("Cannot define refactor plan: current_phase must be 'refactor'.");
+  if (!state.phases.prototype.prototype_approved) {
+    throw new Error(
+      "Cannot define refactor plan: phases.prototype.prototype_approved must be true. Complete prototype (all tests passing) first.",
+    );
+  }
+
+  if (state.current_phase === "prototype") {
+    state.current_phase = "refactor";
+  } else if (state.current_phase !== "refactor") {
+    throw new Error(
+      `Cannot define refactor plan: current_phase must be 'prototype' or 'refactor'. Current: '${state.current_phase}'.`,
+    );
   }
 
   const refactorPlan = state.phases.refactor.refactor_plan;
