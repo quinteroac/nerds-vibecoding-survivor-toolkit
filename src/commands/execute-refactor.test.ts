@@ -382,9 +382,9 @@ describe("execute refactor command", () => {
       JSON.parse(await readFile(progressPath, "utf8")),
     );
     expect(progress.entries[0].status).toBe("failed");
-    expect(progress.entries[0].agent_exit_code).toBe(1);
+    expect(progress.entries[0].last_agent_exit_code).toBe(1);
     expect(progress.entries[1].status).toBe("completed");
-    expect(progress.entries[1].agent_exit_code).toBe(0);
+    expect(progress.entries[1].last_agent_exit_code).toBe(0);
   });
 
   // AC09: Progress file is written after each agent invocation
@@ -548,8 +548,8 @@ describe("execute refactor command", () => {
       JSON.parse(await readFile(progressPath, "utf8")),
     );
     expect(progress.entries).toHaveLength(2);
-    expect(progress.entries[0]).toMatchObject({ id: "RI-001", status: "completed", agent_exit_code: 0 });
-    expect(progress.entries[1]).toMatchObject({ id: "RI-002", status: "completed", agent_exit_code: 0 });
+    expect(progress.entries[0]).toMatchObject({ id: "RI-001", status: "completed", last_agent_exit_code: 0 });
+    expect(progress.entries[1]).toMatchObject({ id: "RI-002", status: "completed", last_agent_exit_code: 0 });
 
     expect(logs).toContain("iteration=it_000013 item=RI-001 outcome=completed");
     expect(logs).toContain("iteration=it_000013 item=RI-002 outcome=completed");
@@ -599,8 +599,8 @@ describe("execute refactor command", () => {
       progressPath,
       JSON.stringify({
         entries: [
-          { id: "RI-001", title: "T1", status: "pending", agent_exit_code: null, updated_at: "2026-02-26T00:00:00.000Z" },
-          { id: "RI-002", title: "T2", status: "pending", agent_exit_code: null, updated_at: "2026-02-26T00:00:00.000Z" },
+          { id: "RI-001", title: "T1", status: "pending", attempt_count: 0, last_agent_exit_code: null, updated_at: "2026-02-26T00:00:00.000Z" },
+          { id: "RI-002", title: "T2", status: "pending", attempt_count: 0, last_agent_exit_code: null, updated_at: "2026-02-26T00:00:00.000Z" },
         ],
       }, null, 2) + "\n",
       "utf8",
@@ -640,8 +640,8 @@ describe("execute refactor command", () => {
       progressPath,
       JSON.stringify({
         entries: [
-          { id: "RI-001", title: "T1", status: "completed", agent_exit_code: 0, updated_at: "2026-02-26T00:00:00.000Z" },
-          { id: "RI-002", title: "T2", status: "failed", agent_exit_code: 1, updated_at: "2026-02-26T00:00:00.000Z" },
+          { id: "RI-001", title: "T1", status: "completed", attempt_count: 1, last_agent_exit_code: 0, updated_at: "2026-02-26T00:00:00.000Z" },
+          { id: "RI-002", title: "T2", status: "failed", attempt_count: 1, last_agent_exit_code: 1, updated_at: "2026-02-26T00:00:00.000Z" },
         ],
       }, null, 2) + "\n",
       "utf8",
@@ -682,8 +682,8 @@ describe("execute refactor command", () => {
       progressPath,
       JSON.stringify({
         entries: [
-          { id: "RI-001", title: "T1", status: "completed", agent_exit_code: 0, updated_at: "2026-02-26T00:00:00.000Z" },
-          { id: "RI-999", title: "STALE", status: "pending", agent_exit_code: null, updated_at: "2026-02-26T00:00:00.000Z" },
+          { id: "RI-001", title: "T1", status: "completed", attempt_count: 1, last_agent_exit_code: 0, updated_at: "2026-02-26T00:00:00.000Z" },
+          { id: "RI-999", title: "STALE", status: "pending", attempt_count: 0, last_agent_exit_code: null, updated_at: "2026-02-26T00:00:00.000Z" },
         ],
       }, null, 2) + "\n",
       "utf8",
@@ -717,7 +717,7 @@ describe("execute refactor command", () => {
       progressPath,
       JSON.stringify({
         entries: [
-          { id: "RI-001", title: "T1", status: "completed", agent_exit_code: 0, updated_at: "2026-02-26T00:00:00.000Z" },
+          { id: "RI-001", title: "T1", status: "completed", attempt_count: 1, last_agent_exit_code: 0, updated_at: "2026-02-26T00:00:00.000Z" },
         ],
       }, null, 2) + "\n",
       "utf8",
@@ -733,6 +733,53 @@ describe("execute refactor command", () => {
         "Refactor execution progress file out of sync: entry ids do not match refactor PRD item ids.",
       );
     });
+  });
+
+  // TC-001-17: Progress file schema has entries with id, title, status, attempt_count, last_agent_exit_code, updated_at
+  test("TC-001-17: RefactorExecutionProgressSchema accepts valid payload with attempt_count and last_agent_exit_code", () => {
+    const validPayload = {
+      entries: [
+        { id: "RI-001", title: "T1", status: "pending", attempt_count: 0, last_agent_exit_code: null, updated_at: "2026-01-01T00:00:00.000Z" },
+        { id: "RI-002", title: "T2", status: "completed", attempt_count: 1, last_agent_exit_code: 0, updated_at: "2026-01-01T00:00:00.000Z" },
+        { id: "RI-003", title: "T3", status: "failed", attempt_count: 2, last_agent_exit_code: 1, updated_at: "2026-01-01T00:00:00.000Z" },
+      ],
+    };
+
+    const result = RefactorExecutionProgressSchema.safeParse(validPayload);
+    expect(result.success).toBe(true);
+    if (result.success) {
+      const entry = result.data.entries[0];
+      expect(entry).toHaveProperty("id");
+      expect(entry).toHaveProperty("title");
+      expect(entry).toHaveProperty("status");
+      expect(entry).toHaveProperty("attempt_count");
+      expect(entry).toHaveProperty("last_agent_exit_code");
+      expect(entry).toHaveProperty("updated_at");
+      expect(entry.attempt_count).toBe(0);
+      expect(result.data.entries[1].attempt_count).toBe(1);
+      expect(result.data.entries[1].last_agent_exit_code).toBe(0);
+      expect(result.data.entries[2].last_agent_exit_code).toBe(1);
+    }
+  });
+
+  test("TC-001-17: RefactorExecutionProgressSchema rejects payload missing attempt_count", () => {
+    const invalidPayload = {
+      entries: [
+        { id: "RI-001", title: "T1", status: "pending", last_agent_exit_code: null, updated_at: "2026-01-01T00:00:00.000Z" },
+      ],
+    };
+    const result = RefactorExecutionProgressSchema.safeParse(invalidPayload);
+    expect(result.success).toBe(false);
+  });
+
+  test("TC-001-17: RefactorExecutionProgressSchema rejects payload with agent_exit_code instead of last_agent_exit_code", () => {
+    const invalidPayload = {
+      entries: [
+        { id: "RI-001", title: "T1", status: "pending", attempt_count: 0, agent_exit_code: null, updated_at: "2026-01-01T00:00:00.000Z" },
+      ],
+    };
+    const result = RefactorExecutionProgressSchema.safeParse(invalidPayload);
+    expect(result.success).toBe(false);
   });
 
   // Skips already-completed entries on re-run
@@ -751,8 +798,8 @@ describe("execute refactor command", () => {
       progressPath,
       JSON.stringify({
         entries: [
-          { id: "RI-001", title: "T1", status: "completed", agent_exit_code: 0, updated_at: "2026-02-26T00:00:00.000Z" },
-          { id: "RI-002", title: "T2", status: "pending", agent_exit_code: null, updated_at: "2026-02-26T00:00:00.000Z" },
+          { id: "RI-001", title: "T1", status: "completed", attempt_count: 1, last_agent_exit_code: 0, updated_at: "2026-02-26T00:00:00.000Z" },
+          { id: "RI-002", title: "T2", status: "pending", attempt_count: 0, last_agent_exit_code: null, updated_at: "2026-02-26T00:00:00.000Z" },
         ],
       }, null, 2) + "\n",
       "utf8",
@@ -877,9 +924,9 @@ describe("US-003: generate refactor execution report", () => {
   test("buildRefactorExecutionReport produces correct markdown for mixed results", () => {
     const progress = {
       entries: [
-        { id: "RI-001", title: "Alpha", status: "completed" as const, agent_exit_code: 0, updated_at: "2026-01-01T00:00:00.000Z" },
-        { id: "RI-002", title: "Beta", status: "failed" as const, agent_exit_code: 2, updated_at: "2026-01-01T00:00:00.000Z" },
-        { id: "RI-003", title: "Gamma", status: "pending" as const, agent_exit_code: null, updated_at: "2026-01-01T00:00:00.000Z" },
+        { id: "RI-001", title: "Alpha", status: "completed" as const, attempt_count: 1, last_agent_exit_code: 0, updated_at: "2026-01-01T00:00:00.000Z" },
+        { id: "RI-002", title: "Beta", status: "failed" as const, attempt_count: 1, last_agent_exit_code: 2, updated_at: "2026-01-01T00:00:00.000Z" },
+        { id: "RI-003", title: "Gamma", status: "pending" as const, attempt_count: 0, last_agent_exit_code: null, updated_at: "2026-01-01T00:00:00.000Z" },
       ],
     };
 

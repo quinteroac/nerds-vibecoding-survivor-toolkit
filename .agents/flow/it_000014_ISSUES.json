@@ -1,0 +1,14 @@
+[
+  {
+    "id": "ISSUE-000014-001",
+    "title": "[failed] TC-001-17: Progress file schema has entries with `id`, `title`, `status`, `attempt_count`, `last_agent_exit_code`, `updated_at`",
+    "description": "Test case TC-001-17 resulted in status: failed.\nNotes: Schema does not match approved test plan.\nEvidence: RefactorExecutionProgressSchema has id, title, status, agent_exit_code, updated_at. Test plan requires attempt_count, last_agent_exit_code. Implementation omits attempt_count and uses agent_exit_code not last_agent_exit_code.\nCorrelated requirements: US-001, FR-4",
+    "status": "fixed"
+  },
+  {
+    "id": "ISSUE-000014-002",
+    "title": "[skipped] TC-003-02: Report includes iteration number, total items, count completed, count failed, and table with columns `RI ID \\",
+    "description": "Test case TC-003-02 resulted in status: skipped.",
+    "status": "open"
+  }
+]

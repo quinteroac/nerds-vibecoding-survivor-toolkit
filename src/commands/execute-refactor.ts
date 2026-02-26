@@ -21,7 +21,8 @@ const RefactorExecutionEntrySchema = z.object({
   id: z.string(),
   title: z.string(),
   status: z.enum(["pending", "completed", "failed"]),
-  agent_exit_code: z.number().int().nullable(),
+  attempt_count: z.number().int(),
+  last_agent_exit_code: z.number().int().nullable(),
   updated_at: z.string(),
 });
 
@@ -171,7 +172,8 @@ export async function runExecuteRefactor(
         id: item.id,
         title: item.title,
         status: "pending" as const,
-        agent_exit_code: null,
+        attempt_count: 0,
+        last_agent_exit_code: null,
         updated_at: now,
       })),
     };
@@ -209,7 +211,8 @@ export async function runExecuteRefactor(
     // AC09 & AC10: Record result after each invocation, continue on failure
     const succeeded = agentResult.exitCode === 0;
     entry.status = succeeded ? "completed" : "failed";
-    entry.agent_exit_code = agentResult.exitCode;
+    entry.attempt_count = entry.attempt_count + 1;
+    entry.last_agent_exit_code = agentResult.exitCode;
     entry.updated_at = mergedDeps.nowFn().toISOString();
 
     await mergedDeps.writeFileFn(
@@ -259,7 +262,7 @@ export function buildRefactorExecutionReport(
 
   const tableRows = progress.entries
     .map((e) => {
-      const exitCode = e.agent_exit_code === null ? "N/A" : String(e.agent_exit_code);
+      const exitCode = e.last_agent_exit_code === null ? "N/A" : String(e.last_agent_exit_code);
       return `| ${e.id} | ${e.title} | ${e.status} | ${exitCode} |`;
     })
     .join("\n");
