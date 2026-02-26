@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { mkdir, rm, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { mkdtemp } from "node:fs/promises";
@@ -150,6 +150,7 @@ describe("create prototype phase validation", () => {
     await writeFile(join(root, "dirty.txt"), "dirty\n", "utf8");
 
     const prompts: string[] = [];
+    const logs: string[] = [];
 
     await withCwd(root, async () => {
       await expect(runCreatePrototype(
@@ -159,6 +160,9 @@ describe("create prototype phase validation", () => {
             prompts.push(question);
             return false;
           },
+          logFn: (message) => {
+            logs.push(message);
+          },
         },
       )).resolves.toBeUndefined();
     });
@@ -166,6 +170,7 @@ describe("create prototype phase validation", () => {
     expect(prompts).toEqual([
       "Working tree has uncommitted changes. Stage and commit them now to proceed? [y/N]",
     ]);
+    expect(logs).toContain("Aborted. Commit or discard your changes and re-run `bun nvst create prototype`.");
 
     // No transition happens when confirmation is denied.
     const updatedState = await readState(root);
@@ -210,6 +215,10 @@ describe("create prototype phase validation", () => {
     await writeFile(join(root, "dirty.txt"), "dirty\n", "utf8");
 
     const prompts: string[] = [];
+    const logs: string[] = [];
+    const statePath = join(root, ".agents", "state.json");
+    const stateBefore = await readFile(statePath, "utf8");
+    process.exitCode = 0;
 
     await withCwd(root, async () => {
       await expect(runCreatePrototype(
@@ -219,6 +228,9 @@ describe("create prototype phase validation", () => {
             prompts.push(question);
             return false;
           },
+          logFn: (message) => {
+            logs.push(message);
+          },
         },
       )).resolves.toBeUndefined();
     });
@@ -226,6 +238,10 @@ describe("create prototype phase validation", () => {
     expect(prompts).toEqual([
       "Working tree has uncommitted changes. Stage and commit them now to proceed? [y/N]",
     ]);
+    expect(logs).toContain("Aborted. Commit or discard your changes and re-run `bun nvst create prototype`.");
+    expect(process.exitCode).not.toBe(1);
+    const stateAfter = await readFile(statePath, "utf8");
+    expect(stateAfter).toBe(stateBefore);
   });
 
   test("commits dirty tree on confirmation and proceeds with prototype build", async () => {

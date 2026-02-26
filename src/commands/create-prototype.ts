@@ -24,6 +24,8 @@ export interface CreatePrototypeOptions {
   force?: boolean;
 }
 
+const DECLINE_DIRTY_TREE_ABORT_MESSAGE = "Aborted. Commit or discard your changes and re-run `bun nvst create prototype`.";
+
 const ProgressEntrySchema = z.object({
   use_case_id: z.string(),
   status: z.enum(["pending", "failed", "completed"]),
@@ -278,6 +280,7 @@ export async function runCreatePrototype(
           "Working tree has uncommitted changes. Stage and commit them now to proceed? [y/N]",
         );
         if (!shouldProceed) {
+          mergedDeps.logFn(DECLINE_DIRTY_TREE_ABORT_MESSAGE);
           return;
         }
         await mergedDeps.runPrePrototypeCommitFn(projectRoot, iteration);
@@ -319,6 +322,7 @@ export async function runCreatePrototype(
       "Working tree has uncommitted changes. Stage and commit them now to proceed? [y/N]",
     );
     if (!shouldProceed) {
+      mergedDeps.logFn(DECLINE_DIRTY_TREE_ABORT_MESSAGE);
       return;
     }
     await mergedDeps.runPrePrototypeCommitFn(projectRoot, iteration);
