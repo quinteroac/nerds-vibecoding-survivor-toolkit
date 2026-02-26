@@ -223,6 +223,12 @@ export async function runExecuteRefactor(
     );
   }
 
+  // US-003: Generate markdown execution report (written regardless of failures)
+  const reportFileName = `it_${iteration}_refactor-execution-report.md`;
+  const reportPath = join(projectRoot, FLOW_REL_DIR, reportFileName);
+  const reportContent = buildRefactorExecutionReport(iteration, progressData);
+  await mergedDeps.writeFileFn(reportPath, reportContent, "utf8");
+
   // AC11 & AC12: Update state based on overall result
   const allCompleted = progressData.entries.every((entry) => entry.status === "completed");
 
@@ -241,4 +247,32 @@ export async function runExecuteRefactor(
   } else {
     mergedDeps.logFn("Refactor execution paused with remaining pending or failed items.");
   }
+}
+
+export function buildRefactorExecutionReport(
+  iteration: string,
+  progress: RefactorExecutionProgress,
+): string {
+  const total = progress.entries.length;
+  const completed = progress.entries.filter((e) => e.status === "completed").length;
+  const failed = progress.entries.filter((e) => e.status === "failed").length;
+
+  const tableRows = progress.entries
+    .map((e) => {
+      const exitCode = e.agent_exit_code === null ? "N/A" : String(e.agent_exit_code);
+      return `| ${e.id} | ${e.title} | ${e.status} | ${exitCode} |`;
+    })
+    .join("\n");
+
+  return `# Refactor Execution Report
+
+**Iteration:** it_${iteration}
+**Total:** ${total}
+**Completed:** ${completed}
+**Failed:** ${failed}
+
+| RI ID | Title | Status | Agent Exit Code |
+|-------|-------|--------|-----------------|
+${tableRows}
+`;
 }

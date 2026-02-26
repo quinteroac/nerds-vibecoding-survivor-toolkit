@@ -5,7 +5,7 @@ import { join } from "node:path";
 
 import { type AgentResult } from "../agent";
 import { readState, writeState } from "../state";
-import { runExecuteRefactor, RefactorExecutionProgressSchema } from "./execute-refactor";
+import { runExecuteRefactor, RefactorExecutionProgressSchema, buildRefactorExecutionReport } from "./execute-refactor";
 
 async function createProjectRoot(): Promise<string> {
   return mkdtemp(join(tmpdir(), "nvst-execute-refactor-"));
@@ -775,5 +775,124 @@ describe("execute refactor command", () => {
 
     // Only RI-002 should be invoked (RI-001 was already completed)
     expect(invokedItems).toEqual(["RI-002"]);
+  });
+});
+
+describe("US-003: generate refactor execution report", () => {
+  // AC01: Report file is written to .agents/flow/ after all items are processed
+  test("writes refactor-execution-report.md to .agents/flow/ after processing", async () => {
+    const projectRoot = await createProjectRoot();
+    createdRoots.push(projectRoot);
+    await seedState(projectRoot);
+    await writeRefactorPrd(projectRoot, "000013", [
+      { id: "RI-001", title: "T1", description: "D1", rationale: "R1" },
+    ]);
+
+    await withCwd(projectRoot, async () => {
+      await runExecuteRefactor(
+        { provider: "claude" },
+        {
+          loadSkillFn: makeSkillFn(),
+          invokeAgentFn: async () => makeAgentResult(0),
+        },
+      );
+    });
+
+    const reportPath = join(projectRoot, ".agents", "flow", "it_000013_refactor-execution-report.md");
+    const content = await readFile(reportPath, "utf8");
+    expect(content).toBeTruthy();
+  });
+
+  // AC02: Report includes iteration, total, completed, failed, and table
+  test("report contains iteration number, totals, and table with required columns", async () => {
+    const projectRoot = await createProjectRoot();
+    createdRoots.push(projectRoot);
+    await seedState(projectRoot);
+    await writeRefactorPrd(projectRoot, "000013", [
+      { id: "RI-001", title: "First Refactor", description: "D1", rationale: "R1" },
+      { id: "RI-002", title: "Second Refactor", description: "D2", rationale: "R2" },
+    ]);
+
+    await withCwd(projectRoot, async () => {
+      await runExecuteRefactor(
+        { provider: "claude" },
+        {
+          loadSkillFn: makeSkillFn(),
+          invokeAgentFn: async (opts) =>
+            makeAgentResult(opts.prompt.includes("RI-001") ? 1 : 0),
+        },
+      );
+    });
+
+    const reportPath = join(projectRoot, ".agents", "flow", "it_000013_refactor-execution-report.md");
+    const content = await readFile(reportPath, "utf8");
+
+    // Iteration number
+    expect(content).toContain("it_000013");
+    // Total, completed, failed counts
+    expect(content).toContain("**Total:** 2");
+    expect(content).toContain("**Completed:** 1");
+    expect(content).toContain("**Failed:** 1");
+    // Table header columns
+    expect(content).toContain("RI ID");
+    expect(content).toContain("Title");
+    expect(content).toContain("Status");
+    expect(content).toContain("Agent Exit Code");
+    // Table rows with item data
+    expect(content).toContain("RI-001");
+    expect(content).toContain("First Refactor");
+    expect(content).toContain("failed");
+    expect(content).toContain("RI-002");
+    expect(content).toContain("Second Refactor");
+    expect(content).toContain("completed");
+  });
+
+  // AC03: Report is written even when items fail
+  test("writes report regardless of whether items failed", async () => {
+    const projectRoot = await createProjectRoot();
+    createdRoots.push(projectRoot);
+    await seedState(projectRoot);
+    await writeRefactorPrd(projectRoot, "000013", [
+      { id: "RI-001", title: "T1", description: "D1", rationale: "R1" },
+      { id: "RI-002", title: "T2", description: "D2", rationale: "R2" },
+    ]);
+
+    await withCwd(projectRoot, async () => {
+      await runExecuteRefactor(
+        { provider: "claude" },
+        {
+          loadSkillFn: makeSkillFn(),
+          invokeAgentFn: async () => makeAgentResult(1), // all items fail
+        },
+      );
+    });
+
+    const reportPath = join(projectRoot, ".agents", "flow", "it_000013_refactor-execution-report.md");
+    const content = await readFile(reportPath, "utf8");
+    expect(content).toContain("**Failed:** 2");
+    expect(content).toContain("**Completed:** 0");
+  });
+
+  // Unit: buildRefactorExecutionReport renders correctly
+  test("buildRefactorExecutionReport produces correct markdown for mixed results", () => {
+    const progress = {
+      entries: [
+        { id: "RI-001", title: "Alpha", status: "completed" as const, agent_exit_code: 0, updated_at: "2026-01-01T00:00:00.000Z" },
+        { id: "RI-002", title: "Beta", status: "failed" as const, agent_exit_code: 2, updated_at: "2026-01-01T00:00:00.000Z" },
+        { id: "RI-003", title: "Gamma", status: "pending" as const, agent_exit_code: null, updated_at: "2026-01-01T00:00:00.000Z" },
+      ],
+    };
+
+    const report = buildRefactorExecutionReport("000014", progress);
+
+    expect(report).toContain("it_000014");
+    expect(report).toContain("**Total:** 3");
+    expect(report).toContain("**Completed:** 1");
+    expect(report).toContain("**Failed:** 1");
+    expect(report).toContain("| RI-001 | Alpha | completed | 0 |");
+    expect(report).toContain("| RI-002 | Beta | failed | 2 |");
+    expect(report).toContain("| RI-003 | Gamma | pending | N/A |");
+    // Table header
+    expect(report).toContain("| RI ID | Title | Status | Agent Exit Code |");
   });
 });
