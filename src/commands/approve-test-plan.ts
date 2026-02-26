@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { $ } from "bun";
 
 import { CLI_PATH } from "../cli-path";
-import type { TestPlan } from "../../schemas/test-plan";
+import type { TestPlan } from "../../scaffold/schemas/tmpl_test-plan";
 import { exists, FLOW_REL_DIR, readState, writeState } from "../state";
 
 interface WriteJsonResult {

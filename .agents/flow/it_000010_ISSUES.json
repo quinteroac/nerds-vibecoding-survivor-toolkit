@@ -1,8 +1,0 @@
-[
-  {
-    "id": "ISSUE-000010-001",
-    "title": "[skipped] TC-007: Assess UX of the interactive guidance flow",
-    "description": "Test case TC-007 resulted in status: skipped.\nEvidence: i can't test this for now as is embedded in the same functionality of what we are testing\nCorrelated requirements: US-002",
-    "status": "fixed"
-  }
-]

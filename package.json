@@ -19,9 +19,11 @@
     "tsconfig.json"
   ],
   "scripts": {
+    "test": "bun test src tests schemas",
     "package": "npm pack",
     "validate:state": "bun run scaffold/schemas/tmpl_validate-state.ts",
-    "validate:progress": "bun run scaffold/schemas/tmpl_validate-progress.ts"
+    "validate:progress": "bun run scaffold/schemas/tmpl_validate-progress.ts",
+    "sync-check": "bun run scripts/sync-check.ts"
   },
   "dependencies": {
     "zod": "^3.23.8"

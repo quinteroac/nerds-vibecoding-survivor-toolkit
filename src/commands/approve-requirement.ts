@@ -154,9 +154,54 @@ function parsePrd(markdown: string): Prd {
 // Main command
 // ---------------------------------------------------------------------------
 
-export async function runApproveRequirement(): Promise<void> {
+interface WriteJsonResult {
+  exitCode: number;
+  stderr: string;
+}
+
+interface ApproveRequirementDeps {
+  existsFn: (path: string) => Promise<boolean>;
+  invokeWriteJsonFn: (
+    projectRoot: string,
+    schemaName: string,
+    outPath: string,
+    data: string,
+  ) => Promise<WriteJsonResult>;
+  nowFn: () => Date;
+  readFileFn: typeof readFile;
+}
+
+async function runWriteJsonCommand(
+  projectRoot: string,
+  schemaName: string,
+  outPath: string,
+  data: string,
+): Promise<WriteJsonResult> {
+  const result =
+    await $`bun ${CLI_PATH} write-json --schema ${schemaName} --out ${outPath} --data ${data}`
+      .cwd(projectRoot)
+      .nothrow()
+      .quiet();
+
+  return {
+    exitCode: result.exitCode,
+    stderr: result.stderr.toString().trim(),
+  };
+}
+
+const defaultDeps: ApproveRequirementDeps = {
+  existsFn: exists,
+  invokeWriteJsonFn: runWriteJsonCommand,
+  nowFn: () => new Date(),
+  readFileFn: readFile,
+};
+
+export async function runApproveRequirement(
+  deps: Partial<ApproveRequirementDeps> = {},
+): Promise<void> {
   const projectRoot = process.cwd();
   const state = await readState(projectRoot);
+  const mergedDeps: ApproveRequirementDeps = { ...defaultDeps, ...deps };
 
   // --- US-001: Validate status ---
   const requirementDefinition = state.phases.define.requirement_definition;
@@ -172,26 +217,26 @@ export async function runApproveRequirement(): Promise<void> {
   }
 
   const requirementPath = join(projectRoot, FLOW_REL_DIR, requirementFile);
-  if (!(await exists(requirementPath))) {
+  if (!(await mergedDeps.existsFn(requirementPath))) {
     throw new Error(`Cannot approve requirement: file not found at ${requirementPath}`);
   }
 
   // --- US-002: Parse PRD markdown and generate JSON ---
-  const markdown = await readFile(requirementPath, "utf-8");
+  const markdown = await mergedDeps.readFileFn(requirementPath, "utf-8");
   const prdData = parsePrd(markdown);
   const prdJsonFileName = `it_${state.current_iteration}_PRD.json`;
   const prdJsonRelPath = join(FLOW_REL_DIR, prdJsonFileName);
 
   // Invoke write-json CLI to validate and write the PRD JSON
-  const prdJsonString = JSON.stringify(prdData);
-  const result =
-    await $`bun ${CLI_PATH} write-json --schema prd --out ${prdJsonRelPath} --data ${prdJsonString}`
-      .cwd(projectRoot)
-      .nothrow()
-      .quiet();
+  const result = await mergedDeps.invokeWriteJsonFn(
+    projectRoot,
+    "prd",
+    prdJsonRelPath,
+    JSON.stringify(prdData),
+  );
 
   if (result.exitCode !== 0) {
-    const stderr = result.stderr.toString().trim();
+    const stderr = result.stderr.trim();
     console.error("PRD JSON generation failed. Requirement remains in_progress.");
     if (stderr) {
       console.error(stderr);
@@ -207,7 +252,7 @@ export async function runApproveRequirement(): Promise<void> {
   state.phases.define.prd_generation.status = "completed";
   state.phases.define.prd_generation.file = prdJsonFileName;
 
-  state.last_updated = new Date().toISOString();
+  state.last_updated = mergedDeps.nowFn().toISOString();
   state.updated_by = "nvst:approve-requirement";
 
   await writeState(projectRoot, state);

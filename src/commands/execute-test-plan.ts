@@ -12,7 +12,7 @@ import {
   type AgentResult,
 } from "../agent";
 import { exists, FLOW_REL_DIR, readState, writeState } from "../state";
-import { TestPlanSchema, type TestPlan } from "../../schemas/test-plan";
+import { TestPlanSchema, type TestPlan } from "../../scaffold/schemas/tmpl_test-plan";
 import { extractJson } from "./create-issue";
 
 export interface ExecuteTestPlanOptions {

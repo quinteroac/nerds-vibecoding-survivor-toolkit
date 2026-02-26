@@ -63,6 +63,20 @@ async function seedState(projectRoot: string, state: State): Promise<void> {
   await writeState(projectRoot, state);
 }
 
+const MINIMAL_PRD = {
+  goals: [] as string[],
+  userStories: [{ id: "US-001", title: "T", description: "D", acceptanceCriteria: [{ id: "AC1", text: "T" }] }],
+  functionalRequirements: [] as Array<{ id?: string; description: string }>,
+};
+
+async function seedPrd(projectRoot: string, iteration: string): Promise<void> {
+  await writeFile(
+    join(projectRoot, ".agents", "flow", `it_${iteration}_PRD.json`),
+    JSON.stringify(MINIMAL_PRD),
+    "utf8",
+  );
+}
+
 const createdRoots: string[] = [];
 
 afterEach(async () => {
@@ -73,7 +87,9 @@ describe("create prototype phase validation", () => {
   test("throws when current_phase is define and PRD is not completed", async () => {
     const root = await createProjectRoot();
     createdRoots.push(root);
-    await seedState(root, makeState({ currentPhase: "define", prdStatus: "pending", projectContextStatus: "pending" }));
+    const iteration = "000009";
+    await seedState(root, makeState({ currentPhase: "define", prdStatus: "pending", projectContextStatus: "pending", iteration }));
+    await seedPrd(root, iteration);
 
     await withCwd(root, async () => {
       await expect(runCreatePrototype({ provider: "claude" })).rejects.toThrow(
@@ -85,7 +101,9 @@ describe("create prototype phase validation", () => {
   test("throws when current_phase is define and project_context is not created", async () => {
     const root = await createProjectRoot();
     createdRoots.push(root);
-    await seedState(root, makeState({ currentPhase: "define", prdStatus: "completed", projectContextStatus: "pending" }));
+    const iteration = "000009";
+    await seedState(root, makeState({ currentPhase: "define", prdStatus: "completed", projectContextStatus: "pending", iteration }));
+    await seedPrd(root, iteration);
 
     await withCwd(root, async () => {
       await expect(runCreatePrototype({ provider: "claude" })).rejects.toThrow(
@@ -99,29 +117,27 @@ describe("create prototype phase validation", () => {
     createdRoots.push(root);
     const iteration = "000009";
     await seedState(root, makeState({ currentPhase: "define", prdStatus: "completed", projectContextStatus: "created", iteration }));
+    await seedPrd(root, iteration);
 
-    const prdContent = {
-      goals: ["Test"],
-      userStories: [
-        { id: "US-001", title: "One", description: "D", acceptanceCriteria: [{ id: "AC1", text: "T" }] },
-      ],
-      functionalRequirements: [{ id: "FR-001", description: "F" }],
-    };
+    await mkdir(join(root, ".agents"), { recursive: true });
     await writeFile(
-      join(root, ".agents", "flow", `it_${iteration}_PRD.json`),
-      JSON.stringify(prdContent),
+      join(root, ".agents", "PROJECT_CONTEXT.md"),
+      "# Project\n## Testing Strategy\n### Quality Checks\n```\nbun test\n```\n",
       "utf8",
     );
 
     const { $ } = await import("bun");
     await $`git init`.cwd(root).nothrow().quiet();
+    await $`git config user.email "test@test" && git config user.name "Test"`.cwd(root).nothrow().quiet();
+    await $`git add -A && git commit -m init`.cwd(root).nothrow().quiet();
 
     await withCwd(root, async () => {
       await expect(runCreatePrototype({ provider: "claude" })).rejects.toThrow(
-        "Required skill missing",
+        "Git working tree is dirty",
       );
     });
 
+    // Transition writes state before the git check; phase is prototype
     const updatedState = await readState(root);
     expect(updatedState.current_phase).toBe("prototype");
   });
@@ -129,7 +145,9 @@ describe("create prototype phase validation", () => {
   test("throws when current_phase is refactor", async () => {
     const root = await createProjectRoot();
     createdRoots.push(root);
-    await seedState(root, makeState({ currentPhase: "refactor" }));
+    const iteration = "000009";
+    await seedState(root, makeState({ currentPhase: "refactor", iteration }));
+    await seedPrd(root, iteration);
 
     await withCwd(root, async () => {
       await expect(runCreatePrototype({ provider: "claude" })).rejects.toThrow(

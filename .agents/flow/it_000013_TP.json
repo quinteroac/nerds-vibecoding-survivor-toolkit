@@ -1,0 +1,324 @@
+{
+  "overallStatus": "pending",
+  "scope": [
+    "`define refactor-plan` command: state guards, agent invocation, state mutation, and CLI routing (`src/commands/define-refactor-plan.ts`, `src/cli.ts`)",
+    "`refine refactor-plan` command: state and file guards, skill loading, prompt context construction, `--challenge` mode, no-mutation guarantee (`src/commands/refine-refactor-plan.ts`, `src/cli.ts`)",
+    "`approve refactor-plan` command: state and file guards, `write-json` invocation, failure atomicity, state mutation, and CLI routing (`src/commands/approve-refactor-plan.ts`, `src/cli.ts`)",
+    "`RefactorPrdSchema` Zod schema: field validation, `RI-NNN` id format enforcement, rejection of invalid objects (`scaffold/schemas/tmpl_refactor-prd.ts`)",
+    "`write-json` schema registry: registration and resolution of the `refactor-prd` schema identifier (`src/commands/write-json.ts`)",
+    "SKILL.md artifacts: existence and structural content of `.agents/skills/plan-refactor/SKILL.md` and `.agents/skills/refine-refactor-plan/SKILL.md`",
+    "Error-handling convention: none of the three new command handlers may call `process.exit()`"
+  ],
+  "environmentData": [
+    "Runtime: Bun v1+ (`bun test` via `bun:test`)",
+    "Language: TypeScript strict mode; test files co-located alongside source (e.g. `src/commands/define-refactor-plan.test.ts`)",
+    "State fixtures: in-memory `state.json` objects covering valid and invalid `current_phase` / `refactor.refactor_plan.status` values, injected via module mocking or helper factories",
+    "File-system fixtures: temporary files for the refactor plan markdown (`.agents/flow/it_000013_refactor-plan.md`) used to test file-existence guards",
+    "Skill file fixtures: actual `.agents/skills/plan-refactor/SKILL.md` and `.agents/skills/refine-refactor-plan/SKILL.md` on disk (tests read them directly)",
+    "Agent mocking: `invokeAgent` stubbed to return `{ exitCode: 0 }` (success) or `{ exitCode: 1 }` (failure) as required per test case",
+    "`writeState` mocking: spy/stub to capture state writes without touching the real `.agents/state.json`",
+    "---",
+    "## User Story: US-001 - Define Refactor Plan"
+  ],
+  "automatedTests": [
+    {
+      "id": "TC-001-01",
+      "description": "Command handler rejects when `current_phase` is not `\"refactor\"` (e.g. `\"prototype\"`)",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-7",
+        "FR-8"
+      ]
+    },
+    {
+      "id": "TC-001-02",
+      "description": "Command handler rejects when `refactor.refactor_plan.status` is not `\"pending\"` (e.g. `\"pending_approval\"`)",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-8"
+      ]
+    },
+    {
+      "id": "TC-001-03",
+      "description": "Skill is loaded from `.agents/skills/plan-refactor/SKILL.md` and `buildPrompt` receives `{ current_iteration }`",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-1"
+      ]
+    },
+    {
+      "id": "TC-001-04",
+      "description": "`invokeAgent` is called with `interactive: true`",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-1"
+      ]
+    },
+    {
+      "id": "TC-001-05",
+      "description": "On agent `exitCode === 0`, `refactor_plan.status` is set to `\"pending_approval\"` and `refactor_plan.file` to `\"it_000013_refactor-plan.md\"`",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-1"
+      ]
+    },
+    {
+      "id": "TC-001-06",
+      "description": "On agent success, `state.last_updated` and `state.updated_by` are set to `\"nvst:define-refactor-plan\"` and `writeState` is called once",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-1",
+        "FR-7"
+      ]
+    },
+    {
+      "id": "TC-001-07",
+      "description": "`src/cli.ts` routes `[\"define\", \"refactor-plan\"]` to the `runDefineRefactorPlan` handler",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-1"
+      ]
+    },
+    {
+      "id": "TC-001-08",
+      "description": "Handler does not call `process.exit()` under any code path",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-8"
+      ]
+    },
+    {
+      "id": "TC-001-09",
+      "description": "`.agents/skills/plan-refactor/SKILL.md` contains required structure: objectives, inputs, output filename pattern, `## Refactor Items` section, `### RI-NNN: <Title>` subsection format, `**Description:**` and `**Rationale:**` fields",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-9"
+      ]
+    },
+    {
+      "id": "TC-002-01",
+      "description": "Command handler rejects when `refactor.refactor_plan.status` is not `\"pending_approval\"`",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-002",
+        "FR-2",
+        "FR-8"
+      ]
+    },
+    {
+      "id": "TC-002-02",
+      "description": "Command handler rejects when `refactor_plan.file` is missing from state",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-002",
+        "FR-2",
+        "FR-8"
+      ]
+    },
+    {
+      "id": "TC-002-03",
+      "description": "Command handler rejects when `refactor_plan.file` points to a non-existent file on disk",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-002",
+        "FR-2",
+        "FR-8"
+      ]
+    },
+    {
+      "id": "TC-002-04",
+      "description": "Skill is loaded from `.agents/skills/refine-refactor-plan/SKILL.md`",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-002",
+        "FR-2",
+        "FR-4"
+      ]
+    },
+    {
+      "id": "TC-002-05",
+      "description": "Prompt context includes `current_iteration`, `refactor_plan_file`, and `refactor_plan_content` (content of the plan file)",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-002",
+        "FR-2"
+      ]
+    },
+    {
+      "id": "TC-002-06",
+      "description": "Without `--challenge` flag, `context.mode` is absent from the prompt context",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-002",
+        "FR-2"
+      ]
+    },
+    {
+      "id": "TC-002-07",
+      "description": "With `--challenge` flag, `context.mode = \"challenger\"` is included in the prompt context",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-002",
+        "FR-2"
+      ]
+    },
+    {
+      "id": "TC-002-08",
+      "description": "State is not mutated after agent invocation (status stays `\"pending_approval\"`)",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-002",
+        "FR-2"
+      ]
+    },
+    {
+      "id": "TC-002-09",
+      "description": "`src/cli.ts` routes `[\"refine\", \"refactor-plan\"]` to the `runRefineRefactorPlan` handler and passes `challenge: true` when `--challenge` is present",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-002",
+        "FR-2"
+      ]
+    },
+    {
+      "id": "TC-002-10",
+      "description": "Handler does not call `process.exit()` under any code path",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-002",
+        "FR-8"
+      ]
+    },
+    {
+      "id": "TC-002-11",
+      "description": "`.agents/skills/refine-refactor-plan/SKILL.md` exists and contains instructions for both edit and challenge modes",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-002",
+        "FR-4"
+      ]
+    },
+    {
+      "id": "TC-003-01",
+      "description": "Command handler rejects when `refactor.refactor_plan.status` is not `\"pending_approval\"`",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-003",
+        "FR-3",
+        "FR-8"
+      ]
+    },
+    {
+      "id": "TC-003-02",
+      "description": "Command handler rejects when `refactor_plan.file` is missing from state",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-003",
+        "FR-3",
+        "FR-8"
+      ]
+    },
+    {
+      "id": "TC-003-03",
+      "description": "Command handler rejects when `refactor_plan.file` points to a non-existent file on disk",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-003",
+        "FR-3",
+        "FR-8"
+      ]
+    },
+    {
+      "id": "TC-003-04",
+      "description": "`RefactorPrdSchema` accepts a valid object with `refactorItems` array where each item has `id` (`RI-NNN` format), `title`, `description`, and `rationale`",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-003",
+        "FR-5"
+      ]
+    },
+    {
+      "id": "TC-003-05",
+      "description": "`RefactorPrdSchema` rejects objects missing any required field (`id`, `title`, `description`, or `rationale`)",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-003",
+        "FR-5"
+      ]
+    },
+    {
+      "id": "TC-003-06",
+      "description": "`RefactorPrdSchema` rejects items where `id` does not match `RI-NNN` format (e.g. `\"RI-1\"`, `\"R-001\"`, `\"\"`)",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-003",
+        "FR-5"
+      ]
+    },
+    {
+      "id": "TC-003-07",
+      "description": "`nvst write-json --schema refactor-prd` resolves `RefactorPrdSchema` without throwing a \"schema not found\" error",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-003",
+        "FR-6"
+      ]
+    },
+    {
+      "id": "TC-003-08",
+      "description": "If `write-json` subprocess exits with non-zero code, state is NOT mutated and command exits with `process.exitCode = 1`",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-003",
+        "FR-3",
+        "FR-8"
+      ]
+    },
+    {
+      "id": "TC-003-09",
+      "description": "On `write-json` success, `refactor_plan.status` is set to `\"approved\"` and state is persisted via `writeState`",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-003",
+        "FR-3"
+      ]
+    },
+    {
+      "id": "TC-003-10",
+      "description": "On success, `state.last_updated` is refreshed and `state.updated_by` is set to `\"nvst:approve-refactor-plan\"`",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-003",
+        "FR-3"
+      ]
+    },
+    {
+      "id": "TC-003-11",
+      "description": "`src/cli.ts` routes `[\"approve\", \"refactor-plan\"]` to the `runApproveRefactorPlan` handler",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-003",
+        "FR-3"
+      ]
+    },
+    {
+      "id": "TC-003-12",
+      "description": "Handler does not call `process.exit()` under any code path",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-003",
+        "FR-8"
+      ]
+    }
+  ],
+  "exploratoryManualTests": []
+}

@@ -3,12 +3,14 @@
 import { join } from "node:path";
 import { parseAgentArg } from "./agent";
 import { runApproveProjectContext } from "./commands/approve-project-context";
+import { runApproveRefactorPlan } from "./commands/approve-refactor-plan";
 import { runApproveRequirement } from "./commands/approve-requirement";
 import { runApproveTestPlan } from "./commands/approve-test-plan";
 import { runCreateIssue, runCreateIssueFromTestReport } from "./commands/create-issue";
 import { runCreateProjectContext } from "./commands/create-project-context";
 import { runCreatePrototype } from "./commands/create-prototype";
 import { runCreateTestPlan } from "./commands/create-test-plan";
+import { runDefineRefactorPlan } from "./commands/define-refactor-plan";
 import { runDefineRequirement } from "./commands/define-requirement";
 import { runDestroy } from "./commands/destroy";
 import { runExecuteAutomatedFix } from "./commands/execute-automated-fix";
@@ -16,6 +18,7 @@ import { runExecuteManualFix } from "./commands/execute-manual-fix";
 import { runExecuteTestPlan } from "./commands/execute-test-plan";
 import { runInit } from "./commands/init";
 import { runRefineProjectContext } from "./commands/refine-project-context";
+import { runRefineRefactorPlan } from "./commands/refine-refactor-plan";
 import { runRefineRequirement } from "./commands/refine-requirement";
 import { runRefineTestPlan } from "./commands/refine-test-plan";
 import { runStartIteration } from "./commands/start-iteration";
@@ -96,14 +99,20 @@ Commands:
                      Mark project context as approved
   approve test-plan
                      Mark test plan as approved and generate structured TP JSON
+  approve refactor-plan
+                     Mark refactor plan as approved and generate structured refactor PRD JSON
   refine project-context --agent <provider> [--challenge]
                      Refine project context via agent (editor or challenge mode)
   define requirement --agent <provider>
                      Create requirement document via agent
+  define refactor-plan --agent <provider>
+                     Create refactor plan document via agent
   refine requirement --agent <provider> [--challenge]
                      Refine requirement document via agent
   refine test-plan --agent <provider> [--challenge]
                      Refine test plan document via agent
+  refine refactor-plan --agent <provider> [--challenge]
+                     Refine refactor plan document via agent
   execute test-plan --agent <provider>
                      Execute approved structured test-plan JSON via agent
   execute automated-fix --agent <provider> [--iterations <N>] [--retry-on-fail <N>]
@@ -330,37 +339,67 @@ Providers: claude, codex, gemini, cursor`);
   }
 
   if (command === "define") {
-    if (args.length === 0 || args[0] !== "requirement") {
-      console.error(`Usage for define: nvst define requirement --agent <provider>`);
+    if (args.length === 0) {
+      console.error(`Usage for define: nvst define <requirement|refactor-plan> --agent <provider>`);
       printUsage();
       process.exitCode = 1;
       return;
     }
 
-    try {
-      const { provider, remainingArgs: postAgentArgs } = parseAgentArg(args.slice(1));
+    const subcommand = args[0];
 
-      if (postAgentArgs.length > 0) {
-        console.error(`Unknown option(s) for define requirement: ${postAgentArgs.join(" ")}`);
+    if (subcommand === "requirement") {
+      try {
+        const { provider, remainingArgs: postAgentArgs } = parseAgentArg(args.slice(1));
+
+        if (postAgentArgs.length > 0) {
+          console.error(`Unknown option(s) for define requirement: ${postAgentArgs.join(" ")}`);
+          printUsage();
+          process.exitCode = 1;
+          return;
+        }
+
+        await runDefineRequirement({ provider });
+        return;
+      } catch (error) {
+        console.error(error instanceof Error ? error.message : String(error));
         printUsage();
         process.exitCode = 1;
         return;
       }
-
-      await runDefineRequirement({ provider });
-      return;
-    } catch (error) {
-      console.error(error instanceof Error ? error.message : String(error));
-      printUsage();
-      process.exitCode = 1;
-      return;
     }
+
+    if (subcommand === "refactor-plan") {
+      try {
+        const { provider, remainingArgs: postAgentArgs } = parseAgentArg(args.slice(1));
+
+        if (postAgentArgs.length > 0) {
+          console.error(`Unknown option(s) for define refactor-plan: ${postAgentArgs.join(" ")}`);
+          printUsage();
+          process.exitCode = 1;
+          return;
+        }
+
+        await runDefineRefactorPlan({ provider });
+        return;
+      } catch (error) {
+        console.error(error instanceof Error ? error.message : String(error));
+        printUsage();
+        process.exitCode = 1;
+        return;
+      }
+    }
+
+    console.error(`Unknown define subcommand: ${subcommand}`);
+    printUsage();
+    process.exitCode = 1;
+    return;
   }
 
   if (command === "refine") {
     if (args.length === 0) {
       console.error(
-        `Usage for refine: nvst refine <requirement|project-context|test-plan> --agent <provider> [--challenge]`,
+        `Usage for refine: nvst refine <requirement|project-context|test-plan|refactor-plan> --agent <provider> [--challenge]`,
       );
       printUsage();
       process.exitCode = 1;
@@ -440,6 +479,29 @@ Providers: claude, codex, gemini, cursor`);
       }
     }
 
+    if (subcommand === "refactor-plan") {
+      try {
+        const { provider, remainingArgs: postAgentArgs } = parseAgentArg(args.slice(1));
+        const challenge = postAgentArgs.includes("--challenge");
+        const unknownArgs = postAgentArgs.filter((arg) => arg !== "--challenge");
+
+        if (unknownArgs.length > 0) {
+          console.error(`Unknown option(s) for refine refactor-plan: ${unknownArgs.join(" ")}`);
+          printUsage();
+          process.exitCode = 1;
+          return;
+        }
+
+        await runRefineRefactorPlan({ provider, challenge });
+        return;
+      } catch (error) {
+        console.error(error instanceof Error ? error.message : String(error));
+        printUsage();
+        process.exitCode = 1;
+        return;
+      }
+    }
+
     console.error(`Unknown refine subcommand: ${subcommand}`);
     printUsage();
     process.exitCode = 1;
@@ -448,7 +510,7 @@ Providers: claude, codex, gemini, cursor`);
 
   if (command === "approve") {
     if (args.length !== 1) {
-      console.error(`Usage for approve: nvst approve <requirement|project-context|test-plan>`);
+      console.error(`Usage for approve: nvst approve <requirement|project-context|test-plan|refactor-plan>`);
       printUsage();
       process.exitCode = 1;
       return;
@@ -468,6 +530,11 @@ Providers: claude, codex, gemini, cursor`);
 
     if (subcommand === "test-plan") {
       await runApproveTestPlan();
+      return;
+    }
+
+    if (subcommand === "refactor-plan") {
+      await runApproveRefactorPlan();
       return;
     }
 

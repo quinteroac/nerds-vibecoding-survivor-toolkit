@@ -1,0 +1,627 @@
+{
+  "iteration": "000013",
+  "testPlanFile": "it_000013_TP.json",
+  "executedTestIds": [
+    "TC-001-09"
+  ],
+  "results": [
+    {
+      "testCaseId": "TC-001-01",
+      "description": "Command handler rejects when `current_phase` is not `\"refactor\"` (e.g. `\"prototype\"`)",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-7",
+        "FR-8"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000013_test-execution-artifacts/TC-001-01_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-001-02",
+      "description": "Command handler rejects when `refactor.refactor_plan.status` is not `\"pending\"` (e.g. `\"pending_approval\"`)",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-8"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000013_test-execution-artifacts/TC-001-02_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-001-03",
+      "description": "Skill is loaded from `.agents/skills/plan-refactor/SKILL.md` and `buildPrompt` receives `{ current_iteration }`",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-1"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000013_test-execution-artifacts/TC-001-03_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-001-04",
+      "description": "`invokeAgent` is called with `interactive: true`",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-1"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000013_test-execution-artifacts/TC-001-04_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-001-05",
+      "description": "On agent `exitCode === 0`, `refactor_plan.status` is set to `\"pending_approval\"` and `refactor_plan.file` to `\"it_000013_refactor-plan.md\"`",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-1"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000013_test-execution-artifacts/TC-001-05_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-001-06",
+      "description": "On agent success, `state.last_updated` and `state.updated_by` are set to `\"nvst:define-refactor-plan\"` and `writeState` is called once",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-1",
+        "FR-7"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000013_test-execution-artifacts/TC-001-06_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-001-07",
+      "description": "`src/cli.ts` routes `[\"define\", \"refactor-plan\"]` to the `runDefineRefactorPlan` handler",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-1"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000013_test-execution-artifacts/TC-001-07_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-001-08",
+      "description": "Handler does not call `process.exit()` under any code path",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-8"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000013_test-execution-artifacts/TC-001-08_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-001-09",
+      "description": "`.agents/skills/plan-refactor/SKILL.md` contains required structure: objectives, inputs, output filename pattern, `## Refactor Items` section, `### RI-NNN: <Title>` subsection format, `**Description:**` and `**Rationale:**` fields",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-9"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "File .agents/skills/plan-refactor/SKILL.md exists. Contains: frontmatter with name/description; ## Inputs (lines 13-18) with table; Outputs section with pattern it_{current_iteration}_refactor-plan.md (lines 20-22); ## Refactor Items in Output Structure (line 37); ### RI-NNN: <Title> format in template (lines 39, 45); **Description:** and **Rationale:** in template (lines 41-43, 47-48) and checklist (line 55).",
+        "notes": "All required structure elements verified present."
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000013_test-execution-artifacts/TC-001-09_attempt_002.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-002-01",
+      "description": "Command handler rejects when `refactor.refactor_plan.status` is not `\"pending_approval\"`",
+      "correlatedRequirements": [
+        "US-002",
+        "FR-2",
+        "FR-8"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000013_test-execution-artifacts/TC-002-01_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-002-02",
+      "description": "Command handler rejects when `refactor_plan.file` is missing from state",
+      "correlatedRequirements": [
+        "US-002",
+        "FR-2",
+        "FR-8"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000013_test-execution-artifacts/TC-002-02_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-002-03",
+      "description": "Command handler rejects when `refactor_plan.file` points to a non-existent file on disk",
+      "correlatedRequirements": [
+        "US-002",
+        "FR-2",
+        "FR-8"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000013_test-execution-artifacts/TC-002-03_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-002-04",
+      "description": "Skill is loaded from `.agents/skills/refine-refactor-plan/SKILL.md`",
+      "correlatedRequirements": [
+        "US-002",
+        "FR-2",
+        "FR-4"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000013_test-execution-artifacts/TC-002-04_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-002-05",
+      "description": "Prompt context includes `current_iteration`, `refactor_plan_file`, and `refactor_plan_content` (content of the plan file)",
+      "correlatedRequirements": [
+        "US-002",
+        "FR-2"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000013_test-execution-artifacts/TC-002-05_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-002-06",
+      "description": "Without `--challenge` flag, `context.mode` is absent from the prompt context",
+      "correlatedRequirements": [
+        "US-002",
+        "FR-2"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000013_test-execution-artifacts/TC-002-06_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-002-07",
+      "description": "With `--challenge` flag, `context.mode = \"challenger\"` is included in the prompt context",
+      "correlatedRequirements": [
+        "US-002",
+        "FR-2"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000013_test-execution-artifacts/TC-002-07_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-002-08",
+      "description": "State is not mutated after agent invocation (status stays `\"pending_approval\"`)",
+      "correlatedRequirements": [
+        "US-002",
+        "FR-2"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000013_test-execution-artifacts/TC-002-08_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-002-09",
+      "description": "`src/cli.ts` routes `[\"refine\", \"refactor-plan\"]` to the `runRefineRefactorPlan` handler and passes `challenge: true` when `--challenge` is present",
+      "correlatedRequirements": [
+        "US-002",
+        "FR-2"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000013_test-execution-artifacts/TC-002-09_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-002-10",
+      "description": "Handler does not call `process.exit()` under any code path",
+      "correlatedRequirements": [
+        "US-002",
+        "FR-8"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000013_test-execution-artifacts/TC-002-10_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-002-11",
+      "description": "`.agents/skills/refine-refactor-plan/SKILL.md` exists and contains instructions for both edit and challenge modes",
+      "correlatedRequirements": [
+        "US-002",
+        "FR-4"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000013_test-execution-artifacts/TC-002-11_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-003-01",
+      "description": "Command handler rejects when `refactor.refactor_plan.status` is not `\"pending_approval\"`",
+      "correlatedRequirements": [
+        "US-003",
+        "FR-3",
+        "FR-8"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000013_test-execution-artifacts/TC-003-01_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-003-02",
+      "description": "Command handler rejects when `refactor_plan.file` is missing from state",
+      "correlatedRequirements": [
+        "US-003",
+        "FR-3",
+        "FR-8"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000013_test-execution-artifacts/TC-003-02_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-003-03",
+      "description": "Command handler rejects when `refactor_plan.file` points to a non-existent file on disk",
+      "correlatedRequirements": [
+        "US-003",
+        "FR-3",
+        "FR-8"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000013_test-execution-artifacts/TC-003-03_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-003-04",
+      "description": "`RefactorPrdSchema` accepts a valid object with `refactorItems` array where each item has `id` (`RI-NNN` format), `title`, `description`, and `rationale`",
+      "correlatedRequirements": [
+        "US-003",
+        "FR-5"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000013_test-execution-artifacts/TC-003-04_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-003-05",
+      "description": "`RefactorPrdSchema` rejects objects missing any required field (`id`, `title`, `description`, or `rationale`)",
+      "correlatedRequirements": [
+        "US-003",
+        "FR-5"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000013_test-execution-artifacts/TC-003-05_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-003-06",
+      "description": "`RefactorPrdSchema` rejects items where `id` does not match `RI-NNN` format (e.g. `\"RI-1\"`, `\"R-001\"`, `\"\"`)",
+      "correlatedRequirements": [
+        "US-003",
+        "FR-5"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000013_test-execution-artifacts/TC-003-06_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-003-07",
+      "description": "`nvst write-json --schema refactor-prd` resolves `RefactorPrdSchema` without throwing a \"schema not found\" error",
+      "correlatedRequirements": [
+        "US-003",
+        "FR-6"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000013_test-execution-artifacts/TC-003-07_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-003-08",
+      "description": "If `write-json` subprocess exits with non-zero code, state is NOT mutated and command exits with `process.exitCode = 1`",
+      "correlatedRequirements": [
+        "US-003",
+        "FR-3",
+        "FR-8"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000013_test-execution-artifacts/TC-003-08_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-003-09",
+      "description": "On `write-json` success, `refactor_plan.status` is set to `\"approved\"` and state is persisted via `writeState`",
+      "correlatedRequirements": [
+        "US-003",
+        "FR-3"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000013_test-execution-artifacts/TC-003-09_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-003-10",
+      "description": "On success, `state.last_updated` is refreshed and `state.updated_by` is set to `\"nvst:approve-refactor-plan\"`",
+      "correlatedRequirements": [
+        "US-003",
+        "FR-3"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000013_test-execution-artifacts/TC-003-10_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-003-11",
+      "description": "`src/cli.ts` routes `[\"approve\", \"refactor-plan\"]` to the `runApproveRefactorPlan` handler",
+      "correlatedRequirements": [
+        "US-003",
+        "FR-3"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000013_test-execution-artifacts/TC-003-11_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-003-12",
+      "description": "Handler does not call `process.exit()` under any code path",
+      "correlatedRequirements": [
+        "US-003",
+        "FR-8"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000013_test-execution-artifacts/TC-003-12_attempt_001.json"
+      ]
+    }
+  ]
+}
