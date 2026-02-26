@@ -69,8 +69,8 @@ describe("refine test-plan command", () => {
 
     expect(source).toContain('import { runRefineTestPlan } from "./commands/refine-test-plan";');
     expect(source).toContain('if (subcommand === "test-plan") {');
-    expect(source).toContain('const challenge = postAgentArgs.includes("--challenge");');
-    expect(source).toContain("await runRefineTestPlan({ provider, challenge });");
+    expect(source).toContain('const challenge = postForceArgs.includes("--challenge");');
+    expect(source).toContain("await runRefineTestPlan({ provider, challenge, force });");
   });
 
   test("loads refine-test-plan skill, reads test plan file context, invokes agent interactively, and does not update state", async () => {

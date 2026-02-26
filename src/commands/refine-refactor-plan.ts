@@ -9,11 +9,13 @@ import {
   type AgentProvider,
   type AgentResult,
 } from "../agent";
+import { assertGuardrail } from "../guardrail";
 import { exists, FLOW_REL_DIR, readState } from "../state";
 
 export interface RefineRefactorPlanOptions {
   provider: AgentProvider;
   challenge: boolean;
+  force?: boolean;
 }
 
 interface RefineRefactorPlanDeps {
@@ -34,17 +36,18 @@ export async function runRefineRefactorPlan(
   opts: RefineRefactorPlanOptions,
   deps: Partial<RefineRefactorPlanDeps> = {},
 ): Promise<void> {
-  const { provider, challenge } = opts;
+  const { provider, challenge, force = false } = opts;
   const projectRoot = process.cwd();
   const state = await readState(projectRoot);
   const mergedDeps: RefineRefactorPlanDeps = { ...defaultDeps, ...deps };
 
   const refactorPlan = state.phases.refactor.refactor_plan;
-  if (refactorPlan.status !== "pending_approval") {
-    throw new Error(
-      `Cannot refine refactor plan from status '${refactorPlan.status}'. Expected pending_approval.`,
-    );
-  }
+  await assertGuardrail(
+    state,
+    refactorPlan.status !== "pending_approval",
+    `Cannot refine refactor plan from status '${refactorPlan.status}'. Expected pending_approval.`,
+    { force },
+  );
 
   const refactorPlanFile = refactorPlan.file;
   if (!refactorPlanFile) {

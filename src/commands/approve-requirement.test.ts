@@ -82,7 +82,7 @@ describe("approve requirement command", () => {
 
     expect(source).toContain('import { runApproveRequirement } from "./commands/approve-requirement";');
     expect(source).toContain('if (subcommand === "requirement") {');
-    expect(source).toContain("await runApproveRequirement();");
+    expect(source).toContain("await runApproveRequirement({ force });");
   });
 
   test("rejects when requirement_definition.status is not in_progress", async () => {

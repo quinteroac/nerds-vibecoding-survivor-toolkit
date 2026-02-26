@@ -1,18 +1,25 @@
 import { join } from "node:path";
 
+import { assertGuardrail } from "../guardrail";
 import { exists, readState, writeState } from "../state";
 
-export async function runApproveProjectContext(): Promise<void> {
+export interface ApproveProjectContextOptions {
+    force?: boolean;
+}
+
+export async function runApproveProjectContext(opts: ApproveProjectContextOptions = {}): Promise<void> {
+    const { force = false } = opts;
     const projectRoot = process.cwd();
     const state = await readState(projectRoot);
 
     // US-002-AC01: Validate status is pending_approval
     const projectContext = state.phases.prototype.project_context;
-    if (projectContext.status !== "pending_approval") {
-        throw new Error(
-            `Cannot approve project context from status '${projectContext.status}'. Expected pending_approval.`,
-        );
-    }
+    await assertGuardrail(
+        state,
+        projectContext.status !== "pending_approval",
+        `Cannot approve project context from status '${projectContext.status}'. Expected pending_approval.`,
+        { force },
+    );
 
     // US-002-AC01: Validate project context file exists
     const contextFile = projectContext.file;

@@ -76,7 +76,7 @@ describe("define refactor-plan command", () => {
 
     expect(source).toContain('import { runDefineRefactorPlan } from "./commands/define-refactor-plan";');
     expect(source).toContain('if (subcommand === "refactor-plan") {');
-    expect(source).toContain("await runDefineRefactorPlan({ provider });");
+    expect(source).toContain("await runDefineRefactorPlan({ provider, force });");
   });
 
   test("rejects when prototype_approved is false", async () => {

@@ -2,26 +2,28 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 
 import { buildPrompt, invokeAgent, loadSkill, type AgentProvider } from "../agent";
+import { assertGuardrail } from "../guardrail";
 import { exists, readState, writeState } from "../state";
 
 export interface RefineProjectContextOptions {
     provider: AgentProvider;
     challenge: boolean;
+    force?: boolean;
 }
 
 export async function runRefineProjectContext(opts: RefineProjectContextOptions): Promise<void> {
-    const { provider, challenge } = opts;
+    const { provider, challenge, force = false } = opts;
     const projectRoot = process.cwd();
     const state = await readState(projectRoot);
 
     // US-003-AC01: Validate status is pending_approval or created
     const projectContext = state.phases.prototype.project_context;
-    if (projectContext.status !== "pending_approval" && projectContext.status !== "created") {
-        throw new Error(
-            `Cannot refine project context from status '${projectContext.status}'. ` +
-            "Expected pending_approval or created.",
-        );
-    }
+    await assertGuardrail(
+        state,
+        projectContext.status !== "pending_approval" && projectContext.status !== "created",
+        `Cannot refine project context from status '${projectContext.status}'. Expected pending_approval or created.`,
+        { force },
+    );
 
     // Validate file reference exists in state
     const contextFile = projectContext.file;

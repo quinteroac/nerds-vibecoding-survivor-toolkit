@@ -2,24 +2,27 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 
 import { buildPrompt, invokeAgent, loadSkill, type AgentProvider } from "../agent";
+import { assertGuardrail } from "../guardrail";
 import { exists, readState, FLOW_REL_DIR } from "../state";
 
 export interface RefineRequirementOptions {
   provider: AgentProvider;
   challenge: boolean;
+  force?: boolean;
 }
 
 export async function runRefineRequirement(opts: RefineRequirementOptions): Promise<void> {
-  const { provider, challenge } = opts;
+  const { provider, challenge, force = false } = opts;
   const projectRoot = process.cwd();
   const state = await readState(projectRoot);
 
   const requirementDefinition = state.phases.define.requirement_definition;
-  if (requirementDefinition.status !== "in_progress") {
-    throw new Error(
-      `Cannot refine requirement from status '${requirementDefinition.status}'. Expected in_progress.`,
-    );
-  }
+  await assertGuardrail(
+    state,
+    requirementDefinition.status !== "in_progress",
+    `Cannot refine requirement from status '${requirementDefinition.status}'. Expected in_progress.`,
+    { force },
+  );
 
   const requirementFile = requirementDefinition.file;
   if (!requirementFile) {

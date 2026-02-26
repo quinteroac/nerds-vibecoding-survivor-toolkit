@@ -16,10 +16,12 @@ import {
   type AgentResult,
 } from "../agent";
 import { CLI_PATH } from "../cli-path";
+import { assertGuardrail } from "../guardrail";
 import { exists, FLOW_REL_DIR, readState, writeState } from "../state";
 
 export interface ExecuteRefactorOptions {
   provider: AgentProvider;
+  force?: boolean;
 }
 
 export { RefactorExecutionProgressSchema };
@@ -79,29 +81,33 @@ export async function runExecuteRefactor(
   deps: Partial<ExecuteRefactorDeps> = {},
 ): Promise<void> {
   const mergedDeps: ExecuteRefactorDeps = { ...defaultDeps, ...deps };
+  const force = opts.force ?? false;
   const projectRoot = process.cwd();
   const state = await readState(projectRoot);
 
   // AC02: Reject if current_phase !== "refactor"
-  if (state.current_phase !== "refactor") {
-    throw new Error(
-      `Cannot execute refactor: current_phase must be 'refactor'. Current phase: '${state.current_phase}'.`,
-    );
-  }
+  await assertGuardrail(
+    state,
+    state.current_phase !== "refactor",
+    `Cannot execute refactor: current_phase must be 'refactor'. Current phase: '${state.current_phase}'.`,
+    { force },
+  );
 
   // AC03: Reject if refactor_plan.status !== "approved"
-  if (state.phases.refactor.refactor_plan.status !== "approved") {
-    throw new Error(
-      `Cannot execute refactor: refactor_plan.status must be 'approved'. Current status: '${state.phases.refactor.refactor_plan.status}'. Run \`bun nvst approve refactor-plan\` first.`,
-    );
-  }
+  await assertGuardrail(
+    state,
+    state.phases.refactor.refactor_plan.status !== "approved",
+    `Cannot execute refactor: refactor_plan.status must be 'approved'. Current status: '${state.phases.refactor.refactor_plan.status}'. Run \`bun nvst approve refactor-plan\` first.`,
+    { force },
+  );
 
   // AC04: Reject if refactor_execution.status is already "completed"
-  if (state.phases.refactor.refactor_execution.status === "completed") {
-    throw new Error(
-      "Cannot execute refactor: refactor_execution.status is already 'completed'.",
-    );
-  }
+  await assertGuardrail(
+    state,
+    state.phases.refactor.refactor_execution.status === "completed",
+    "Cannot execute refactor: refactor_execution.status is already 'completed'.",
+    { force },
+  );
 
   // AC05: Read and validate refactor-prd.json
   const iteration = state.current_iteration;

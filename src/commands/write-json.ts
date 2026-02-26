@@ -88,10 +88,11 @@ export async function runWriteJson({ args }: WriteJsonOptions): Promise<void> {
 
   // --- Parse --data (optional) ---
   const { value: dataArg, remaining: afterData } = extractFlag(afterOut, "--data");
+  const unknownArgs = afterData.filter((arg) => arg !== "--force");
 
   // Reject unknown args
-  if (afterData.length > 0) {
-    console.error(`Error: Unknown option(s): ${afterData.join(" ")}`);
+  if (unknownArgs.length > 0) {
+    console.error(`Error: Unknown option(s): ${unknownArgs.join(" ")}`);
     process.exitCode = 1;
     return;
   }

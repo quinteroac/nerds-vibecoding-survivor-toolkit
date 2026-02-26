@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { $ } from "bun";
 
 import { CLI_PATH } from "../cli-path";
+import { assertGuardrail } from "../guardrail";
 import type { TestPlan } from "../../scaffold/schemas/tmpl_test-plan";
 import { exists, FLOW_REL_DIR, readState, writeState } from "../state";
 
@@ -145,18 +146,31 @@ async function runWriteJsonCommand(
 }
 
 export async function runApproveTestPlan(
-  deps: Partial<ApproveTestPlanDeps> = {},
+  optsOrDeps: { force?: boolean } | Partial<ApproveTestPlanDeps> = {},
+  maybeDeps: Partial<ApproveTestPlanDeps> = {},
 ): Promise<void> {
+  const isDepsArg =
+    typeof optsOrDeps === "object"
+    && optsOrDeps !== null
+    && (
+      "existsFn" in optsOrDeps
+      || "invokeWriteJsonFn" in optsOrDeps
+      || "nowFn" in optsOrDeps
+      || "readFileFn" in optsOrDeps
+    );
+  const force = isDepsArg ? false : ((optsOrDeps as { force?: boolean }).force ?? false);
   const projectRoot = process.cwd();
   const state = await readState(projectRoot);
+  const deps = isDepsArg ? optsOrDeps : maybeDeps;
   const mergedDeps: ApproveTestPlanDeps = { ...defaultDeps, ...deps };
 
   const testPlan = state.phases.prototype.test_plan;
-  if (testPlan.status !== "pending_approval") {
-    throw new Error(
-      `Cannot approve test plan from status '${testPlan.status}'. Expected pending_approval.`,
-    );
-  }
+  await assertGuardrail(
+    state,
+    testPlan.status !== "pending_approval",
+    `Cannot approve test plan from status '${testPlan.status}'. Expected pending_approval.`,
+    { force },
+  );
 
   const testPlanFile = testPlan.file;
   if (!testPlanFile) {

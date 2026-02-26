@@ -8,7 +8,7 @@ describe("US-005: execute refactor CLI routing and help text", () => {
     const source = await readFile(join(import.meta.dir, "cli.ts"), "utf8");
     expect(source).toContain('import { runExecuteRefactor } from "./commands/execute-refactor"');
     expect(source).toContain('if (subcommand === "refactor")');
-    expect(source).toContain("await runExecuteRefactor({ provider })");
+    expect(source).toContain("await runExecuteRefactor({ provider, force })");
   });
 
   // AC02: printUsage includes `execute refactor --agent <provider>` with a one-line description

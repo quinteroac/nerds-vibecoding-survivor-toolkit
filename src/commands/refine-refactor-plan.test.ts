@@ -69,8 +69,8 @@ describe("refine refactor-plan command", () => {
 
     expect(source).toContain('import { runRefineRefactorPlan } from "./commands/refine-refactor-plan";');
     expect(source).toContain('if (subcommand === "refactor-plan") {');
-    expect(source).toContain('const challenge = postAgentArgs.includes("--challenge");');
-    expect(source).toContain("await runRefineRefactorPlan({ provider, challenge });");
+    expect(source).toContain('const challenge = postForceArgs.includes("--challenge");');
+    expect(source).toContain("await runRefineRefactorPlan({ provider, challenge, force });");
   });
 
   test("requires refactor.refactor_plan.status to be pending_approval", async () => {

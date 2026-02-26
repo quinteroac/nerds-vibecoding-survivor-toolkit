@@ -103,7 +103,7 @@ describe("execute refactor command", () => {
 
     expect(source).toContain('import { runExecuteRefactor } from "./commands/execute-refactor";');
     expect(source).toContain('if (subcommand === "refactor") {');
-    expect(source).toContain("await runExecuteRefactor({ provider });");
+    expect(source).toContain("await runExecuteRefactor({ provider, force });");
     expect(source).toContain("execute refactor --agent <provider>");
   });
 
