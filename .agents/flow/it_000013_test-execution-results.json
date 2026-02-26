@@ -2,38 +2,7 @@
   "iteration": "000013",
   "testPlanFile": "it_000013_TP.json",
   "executedTestIds": [
-    "TC-001-01",
-    "TC-001-02",
-    "TC-001-03",
-    "TC-001-04",
-    "TC-001-05",
-    "TC-001-06",
-    "TC-001-07",
-    "TC-001-08",
-    "TC-001-09",
-    "TC-002-01",
-    "TC-002-02",
-    "TC-002-03",
-    "TC-002-04",
-    "TC-002-05",
-    "TC-002-06",
-    "TC-002-07",
-    "TC-002-08",
-    "TC-002-09",
-    "TC-002-10",
-    "TC-002-11",
-    "TC-003-01",
-    "TC-003-02",
-    "TC-003-03",
-    "TC-003-04",
-    "TC-003-05",
-    "TC-003-06",
-    "TC-003-07",
-    "TC-003-08",
-    "TC-003-09",
-    "TC-003-10",
-    "TC-003-11",
-    "TC-003-12"
+    "TC-001-09"
   ],
   "results": [
     {
@@ -47,7 +16,7 @@
       "mode": "automated",
       "payload": {
         "status": "passed",
-        "evidence": "define-refactor-plan.test.ts rejects when currentPhase is prototype; define-refactor-plan.ts throws when current_phase !== 'refactor'.",
+        "evidence": "",
         "notes": ""
       },
       "passFail": "pass",
@@ -66,7 +35,7 @@
       "mode": "automated",
       "payload": {
         "status": "passed",
-        "evidence": "define-refactor-plan.test.ts rejects when refactorPlanStatus is approved; handler throws when refactor_plan.status !== 'pending'.",
+        "evidence": "",
         "notes": ""
       },
       "passFail": "pass",
@@ -85,7 +54,7 @@
       "mode": "automated",
       "payload": {
         "status": "passed",
-        "evidence": "define-refactor-plan.test.ts loads skill 'plan-refactor' and prompt contains 'current_iteration' and '000013'; loadSkillFn(projectRoot, 'plan-refactor') and buildPrompt(skillBody, { current_iteration }).",
+        "evidence": "",
         "notes": ""
       },
       "passFail": "pass",
@@ -104,7 +73,7 @@
       "mode": "automated",
       "payload": {
         "status": "passed",
-        "evidence": "define-refactor-plan.test.ts expects invocation.interactive === true; invokeAgentFn called with interactive: true in define-refactor-plan.ts.",
+        "evidence": "",
         "notes": ""
       },
       "passFail": "pass",
@@ -123,7 +92,7 @@
       "mode": "automated",
       "payload": {
         "status": "passed",
-        "evidence": "define-refactor-plan.test.ts asserts refactor_plan.status === 'pending_approval' and refactor_plan.file === 'it_000013_refactor-plan.md' after agent exitCode 0.",
+        "evidence": "",
         "notes": ""
       },
       "passFail": "pass",
@@ -143,7 +112,7 @@
       "mode": "automated",
       "payload": {
         "status": "passed",
-        "evidence": "define-refactor-plan.test.ts asserts state.last_updated and state.updated_by === 'nvst:define-refactor-plan'; define-refactor-plan.ts calls writeState(projectRoot, state) once on success.",
+        "evidence": "",
         "notes": ""
       },
       "passFail": "pass",
@@ -162,7 +131,7 @@
       "mode": "automated",
       "payload": {
         "status": "passed",
-        "evidence": "cli.ts: command === 'define', subcommand === 'refactor-plan' dispatches to runDefineRefactorPlan({ provider }); define-refactor-plan.test.ts checks cli.ts contains runDefineRefactorPlan and refactor-plan.",
+        "evidence": "",
         "notes": ""
       },
       "passFail": "pass",
@@ -181,7 +150,7 @@
       "mode": "automated",
       "payload": {
         "status": "passed",
-        "evidence": "Grep on src/commands/define-refactor-plan.ts: zero occurrences of process.exit(.",
+        "evidence": "",
         "notes": ""
       },
       "passFail": "pass",
@@ -199,14 +168,14 @@
       ],
       "mode": "automated",
       "payload": {
-        "status": "failed",
-        "evidence": ".agents/skills/plan-refactor/SKILL.md contains only TBD placeholders; missing ## Refactor Items, ### RI-NNN: <Title>, **Description:**, **Rationale:** structure.",
-        "notes": "FR-9 requires the skill to include the stated structure; file has Objective/Inputs/Outputs but no Refactor Items section or subsection format."
+        "status": "passed",
+        "evidence": "File .agents/skills/plan-refactor/SKILL.md exists. Contains: frontmatter with name/description; ## Inputs (lines 13-18) with table; Outputs section with pattern it_{current_iteration}_refactor-plan.md (lines 20-22); ## Refactor Items in Output Structure (line 37); ### RI-NNN: <Title> format in template (lines 39, 45); **Description:** and **Rationale:** in template (lines 41-43, 47-48) and checklist (line 55).",
+        "notes": "All required structure elements verified present."
       },
-      "passFail": "fail",
+      "passFail": "pass",
       "agentExitCode": 0,
       "artifactReferences": [
-        ".agents/flow/it_000013_test-execution-artifacts/TC-001-09_attempt_001.json"
+        ".agents/flow/it_000013_test-execution-artifacts/TC-001-09_attempt_002.json"
       ]
     },
     {
@@ -220,7 +189,7 @@
       "mode": "automated",
       "payload": {
         "status": "passed",
-        "evidence": "refine-refactor-plan.test.ts requires status pending_approval and rejects when status is approved; handler throws when refactor_plan.status !== 'pending_approval'.",
+        "evidence": "",
         "notes": ""
       },
       "passFail": "pass",
@@ -240,7 +209,7 @@
       "mode": "automated",
       "payload": {
         "status": "passed",
-        "evidence": "refine-refactor-plan.test.ts rejects when refactor_plan.file is null; handler throws 'refactor.refactor_plan.file is missing.'.",
+        "evidence": "",
         "notes": ""
       },
       "passFail": "pass",
@@ -260,7 +229,7 @@
       "mode": "automated",
       "payload": {
         "status": "passed",
-        "evidence": "refine-refactor-plan.test.ts rejects when plan file does not exist on disk; handler throws 'file not found at'.",
+        "evidence": "",
         "notes": ""
       },
       "passFail": "pass",
@@ -280,7 +249,7 @@
       "mode": "automated",
       "payload": {
         "status": "passed",
-        "evidence": "refine-refactor-plan.test.ts expects loadedSkill === 'refine-refactor-plan'; loadSkillFn(projectRoot, 'refine-refactor-plan') resolves to .agents/skills/refine-refactor-plan/SKILL.md.",
+        "evidence": "",
         "notes": ""
       },
       "passFail": "pass",
@@ -299,7 +268,7 @@
       "mode": "automated",
       "payload": {
         "status": "passed",
-        "evidence": "refine-refactor-plan.test.ts asserts prompt contains current_iteration, refactor_plan_file, refactor_plan_content and plan file content; refine-refactor-plan.ts builds context with current_iteration, refactor_plan_file, refactor_plan_content.",
+        "evidence": "",
         "notes": ""
       },
       "passFail": "pass",
@@ -318,7 +287,7 @@
       "mode": "automated",
       "payload": {
         "status": "passed",
-        "evidence": "refine-refactor-plan.ts sets context.mode only when challenge is true; without --challenge, context has no mode key.",
+        "evidence": "",
         "notes": ""
       },
       "passFail": "pass",
@@ -337,7 +306,7 @@
       "mode": "automated",
       "payload": {
         "status": "passed",
-        "evidence": "refine-refactor-plan.test.ts 'passes mode=challenger when challenge mode is enabled' asserts invocationPrompt contains '### mode' and 'challenger'; context.mode = 'challenger' when challenge is true.",
+        "evidence": "",
         "notes": ""
       },
       "passFail": "pass",
@@ -356,7 +325,7 @@
       "mode": "automated",
       "payload": {
         "status": "passed",
-        "evidence": "refine-refactor-plan.test.ts compares stateBefore and stateAfter JSON; state unchanged after runRefineRefactorPlan (status remains pending_approval).",
+        "evidence": "",
         "notes": ""
       },
       "passFail": "pass",
@@ -375,7 +344,7 @@
       "mode": "automated",
       "payload": {
         "status": "passed",
-        "evidence": "cli.ts: refine refactor-plan branch sets challenge = postAgentArgs.includes('--challenge') and calls runRefineRefactorPlan({ provider, challenge }); refine-refactor-plan.test.ts checks cli.ts for runRefineRefactorPlan and --challenge.",
+        "evidence": "",
         "notes": ""
       },
       "passFail": "pass",
@@ -394,7 +363,7 @@
       "mode": "automated",
       "payload": {
         "status": "passed",
-        "evidence": "Grep on src/commands/refine-refactor-plan.ts: zero occurrences of process.exit(.",
+        "evidence": "",
         "notes": ""
       },
       "passFail": "pass",
@@ -413,7 +382,7 @@
       "mode": "automated",
       "payload": {
         "status": "passed",
-        "evidence": ".agents/skills/refine-refactor-plan/SKILL.md exists; content includes 'Editor mode' and 'Challenger mode' (edit and challenge instructions).",
+        "evidence": "",
         "notes": ""
       },
       "passFail": "pass",
@@ -433,7 +402,7 @@
       "mode": "automated",
       "payload": {
         "status": "passed",
-        "evidence": "approve-refactor-plan.test.ts requires status pending_approval and rejects when status is pending; handler throws when refactor_plan.status !== 'pending_approval'.",
+        "evidence": "",
         "notes": ""
       },
       "passFail": "pass",
@@ -453,7 +422,7 @@
       "mode": "automated",
       "payload": {
         "status": "passed",
-        "evidence": "approve-refactor-plan.test.ts rejects when refactor_plan.file is null; handler throws 'refactor.refactor_plan.file is missing.'.",
+        "evidence": "",
         "notes": ""
       },
       "passFail": "pass",
@@ -473,7 +442,7 @@
       "mode": "automated",
       "payload": {
         "status": "passed",
-        "evidence": "approve-refactor-plan.test.ts rejects when plan file does not exist; handler throws 'file not found at'.",
+        "evidence": "",
         "notes": ""
       },
       "passFail": "pass",
@@ -492,7 +461,7 @@
       "mode": "automated",
       "payload": {
         "status": "passed",
-        "evidence": "approve-refactor-plan.test.ts validates RefactorPrdSchema.safeParse(parsedPayload) success and refactorItems with id (RI-NNN), title, description, rationale; tmpl_refactor-prd.ts defines RefactorItemSchema with those fields.",
+        "evidence": "",
         "notes": ""
       },
       "passFail": "pass",
@@ -511,7 +480,7 @@
       "mode": "automated",
       "payload": {
         "status": "passed",
-        "evidence": "RefactorPrdSchema uses z.object with required id, title, description, rationale (z.string().min(1) or regex); safeParse returns success: false for missing fields.",
+        "evidence": "",
         "notes": ""
       },
       "passFail": "pass",
@@ -530,7 +499,7 @@
       "mode": "automated",
       "payload": {
         "status": "passed",
-        "evidence": "RefactorPrdSchema id: z.string().regex(/^RI-\\\\d{3}$/); rejects RI-1, R-001, empty string.",
+        "evidence": "",
         "notes": ""
       },
       "passFail": "pass",
@@ -549,7 +518,7 @@
       "mode": "automated",
       "payload": {
         "status": "passed",
-        "evidence": "write-json.ts SCHEMA_REGISTRY has 'refactor-prd': RefactorPrdSchema; schema lookup does not throw 'schema not found'.",
+        "evidence": "",
         "notes": ""
       },
       "passFail": "pass",
@@ -569,7 +538,7 @@
       "mode": "automated",
       "payload": {
         "status": "passed",
-        "evidence": "approve-refactor-plan.test.ts 'prints an error and keeps refactor plan pending_approval when write-json fails' asserts process.exitCode === 1 and state unchanged (status pending_approval, updated_by 'seed').",
+        "evidence": "",
         "notes": ""
       },
       "passFail": "pass",
@@ -588,7 +557,7 @@
       "mode": "automated",
       "payload": {
         "status": "passed",
-        "evidence": "approve-refactor-plan.test.ts asserts refactor_plan.status === 'approved' and state persisted after write-json success; handler sets status to approved and calls writeState.",
+        "evidence": "",
         "notes": ""
       },
       "passFail": "pass",
@@ -607,7 +576,7 @@
       "mode": "automated",
       "payload": {
         "status": "passed",
-        "evidence": "approve-refactor-plan.test.ts asserts state.last_updated and state.updated_by === 'nvst:approve-refactor-plan' on success.",
+        "evidence": "",
         "notes": ""
       },
       "passFail": "pass",
@@ -626,7 +595,7 @@
       "mode": "automated",
       "payload": {
         "status": "passed",
-        "evidence": "cli.ts: approve refactor-plan dispatches to runApproveRefactorPlan(); approve-refactor-plan.test.ts checks cli.ts contains runApproveRefactorPlan and refactor-plan.",
+        "evidence": "",
         "notes": ""
       },
       "passFail": "pass",
@@ -645,7 +614,7 @@
       "mode": "automated",
       "payload": {
         "status": "passed",
-        "evidence": "Grep on src/commands/approve-refactor-plan.ts: zero occurrences of process.exit(.",
+        "evidence": "",
         "notes": ""
       },
       "passFail": "pass",

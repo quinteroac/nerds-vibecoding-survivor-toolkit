@@ -2,8 +2,8 @@
 
 - Test Plan: `it_000013_TP.json`
 - Total Tests: 32
-- Passed: 31
-- Failed: 1
+- Passed: 32
+- Failed: 0
 
 | Test ID | Description | Status | Correlated Requirements | Artifacts |
 | --- | --- | --- | --- | --- |
@@ -15,7 +15,7 @@
 | TC-001-06 | On agent success, `state.last_updated` and `state.updated_by` are set to `"nvst:define-refactor-plan"` and `writeState` is called once | passed | US-001, FR-1, FR-7 | `.agents/flow/it_000013_test-execution-artifacts/TC-001-06_attempt_001.json` |
 | TC-001-07 | `src/cli.ts` routes `["define", "refactor-plan"]` to the `runDefineRefactorPlan` handler | passed | US-001, FR-1 | `.agents/flow/it_000013_test-execution-artifacts/TC-001-07_attempt_001.json` |
 | TC-001-08 | Handler does not call `process.exit()` under any code path | passed | US-001, FR-8 | `.agents/flow/it_000013_test-execution-artifacts/TC-001-08_attempt_001.json` |
-| TC-001-09 | `.agents/skills/plan-refactor/SKILL.md` contains required structure: objectives, inputs, output filename pattern, `## Refactor Items` section, `### RI-NNN: <Title>` subsection format, `**Description:**` and `**Rationale:**` fields | failed | US-001, FR-9 | `.agents/flow/it_000013_test-execution-artifacts/TC-001-09_attempt_001.json` |
+| TC-001-09 | `.agents/skills/plan-refactor/SKILL.md` contains required structure: objectives, inputs, output filename pattern, `## Refactor Items` section, `### RI-NNN: <Title>` subsection format, `**Description:**` and `**Rationale:**` fields | passed | US-001, FR-9 | `.agents/flow/it_000013_test-execution-artifacts/TC-001-09_attempt_002.json` |
 | TC-002-01 | Command handler rejects when `refactor.refactor_plan.status` is not `"pending_approval"` | passed | US-002, FR-2, FR-8 | `.agents/flow/it_000013_test-execution-artifacts/TC-002-01_attempt_001.json` |
 | TC-002-02 | Command handler rejects when `refactor_plan.file` is missing from state | passed | US-002, FR-2, FR-8 | `.agents/flow/it_000013_test-execution-artifacts/TC-002-02_attempt_001.json` |
 | TC-002-03 | Command handler rejects when `refactor_plan.file` points to a non-existent file on disk | passed | US-002, FR-2, FR-8 | `.agents/flow/it_000013_test-execution-artifacts/TC-002-03_attempt_001.json` |
