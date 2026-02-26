@@ -10,6 +10,7 @@ import {
   loadSkill,
   type AgentProvider,
 } from "../agent";
+import { assertGuardrail } from "../guardrail";
 import { exists, FLOW_REL_DIR, readState, writeState } from "../state";
 
 export interface CreatePrototypeOptions {
@@ -17,6 +18,7 @@ export interface CreatePrototypeOptions {
   iterations?: number;
   retryOnFail?: number;
   stopOnCritical?: boolean;
+  force?: boolean;
 }
 
 const ProgressEntrySchema = z.object({
@@ -106,6 +108,7 @@ function parseQualityChecks(projectContextContent: string): string[] {
 export async function runCreatePrototype(opts: CreatePrototypeOptions): Promise<void> {
   const projectRoot = process.cwd();
   const state = await readState(projectRoot);
+  const force = opts.force ?? false;
 
   if (opts.iterations !== undefined && (!Number.isInteger(opts.iterations) || opts.iterations < 1)) {
     throw new Error(
@@ -167,21 +170,28 @@ export async function runCreatePrototype(opts: CreatePrototypeOptions): Promise<
       state.current_phase = "prototype";
       await writeState(projectRoot, state);
     } else {
-      throw new Error(
+      await assertGuardrail(
+        state,
+        true,
         "Cannot create prototype: current_phase is define and prerequisites are not met. Complete define phase and run `bun nvst create project-context --agent <provider>` then `bun nvst approve project-context` first.",
+        { force },
       );
     }
   } else if (state.current_phase !== "prototype") {
-    throw new Error(
+    await assertGuardrail(
+      state,
+      true,
       "Cannot create prototype: current_phase must be define (with approved PRD) or prototype. Complete define phase and run `bun nvst create project-context --agent <provider>` then `bun nvst approve project-context` first.",
+      { force },
     );
   }
 
-  if (state.phases.prototype.project_context.status !== "created") {
-    throw new Error(
-      "Cannot create prototype: prototype.project_context.status must be created. Run `bun nvst create project-context --agent <provider>` and `bun nvst approve project-context` first.",
-    );
-  }
+  await assertGuardrail(
+    state,
+    state.phases.prototype.project_context.status !== "created",
+    "Cannot create prototype: prototype.project_context.status must be created. Run `bun nvst create project-context --agent <provider>` and `bun nvst approve project-context` first.",
+    { force },
+  );
 
   const workingTreeAfterPhase = await dollar`git status --porcelain`.cwd(projectRoot).nothrow().quiet();
   if (workingTreeAfterPhase.exitCode !== 0) {

@@ -7,44 +7,50 @@ import {
   loadSkill,
   type AgentProvider,
 } from "../agent";
+import { assertGuardrail } from "../guardrail";
 import { exists, readState, writeState } from "../state";
 
 export interface CreateProjectContextOptions {
   provider: AgentProvider;
   mode: "strict" | "yolo";
+  force?: boolean;
 }
 
 export async function runCreateProjectContext(opts: CreateProjectContextOptions): Promise<void> {
-  const { provider, mode } = opts;
+  const { provider, mode, force = false } = opts;
   const projectRoot = process.cwd();
   const state = await readState(projectRoot);
 
-  if (state.phases.define.prd_generation.status !== "completed") {
-    throw new Error(
-      "Cannot create project context: define.prd_generation must be completed first.",
-    );
-  }
+  await assertGuardrail(
+    state,
+    state.phases.define.prd_generation.status !== "completed",
+    "Cannot create project context: define.prd_generation must be completed first.",
+    { force },
+  );
 
   const projectContext = state.phases.prototype.project_context;
-  if (projectContext.status === "pending_approval") {
-    throw new Error(
-      "Cannot create project context: project context is pending approval. " +
-      "Run `bun nvst approve project-context` or `bun nvst refine project-context` first.",
-    );
-  }
+  await assertGuardrail(
+    state,
+    projectContext.status === "pending_approval",
+    "Cannot create project context: project context is pending approval. " +
+    "Run `bun nvst approve project-context` or `bun nvst refine project-context` first.",
+    { force },
+  );
 
-  if (projectContext.status === "created") {
-    throw new Error(
-      "Cannot create project context: project context already exists. " +
-      "Use `bun nvst refine project-context` to iterate on it.",
-    );
-  }
+  await assertGuardrail(
+    state,
+    projectContext.status === "created",
+    "Cannot create project context: project context already exists. " +
+    "Use `bun nvst refine project-context` to iterate on it.",
+    { force },
+  );
 
-  if (projectContext.status !== "pending") {
-    throw new Error(
-      `Cannot create project context from status '${projectContext.status}'. Expected pending.`,
-    );
-  }
+  await assertGuardrail(
+    state,
+    projectContext.status !== "pending",
+    `Cannot create project context from status '${projectContext.status}'. Expected pending.`,
+    { force },
+  );
 
   const prdFile = state.phases.define.prd_generation.file;
   if (!prdFile) {

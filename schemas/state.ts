@@ -68,6 +68,7 @@ const historyEntry = z.object({
 export const StateSchema = z.object({
   current_iteration: iterationId,
   current_phase: phase,
+  flow_guardrail: z.enum(["strict", "relaxed"]).optional(),
   phases: z.object({
     define: definePhase,
     prototype: prototypePhase,

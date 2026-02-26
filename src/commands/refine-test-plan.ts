@@ -9,11 +9,13 @@ import {
   type AgentProvider,
   type AgentResult,
 } from "../agent";
+import { assertGuardrail } from "../guardrail";
 import { exists, FLOW_REL_DIR, readState } from "../state";
 
 export interface RefineTestPlanOptions {
   provider: AgentProvider;
   challenge: boolean;
+  force?: boolean;
 }
 
 interface RefineTestPlanDeps {
@@ -34,17 +36,18 @@ export async function runRefineTestPlan(
   opts: RefineTestPlanOptions,
   deps: Partial<RefineTestPlanDeps> = {},
 ): Promise<void> {
-  const { provider, challenge } = opts;
+  const { provider, challenge, force = false } = opts;
   const projectRoot = process.cwd();
   const state = await readState(projectRoot);
   const mergedDeps: RefineTestPlanDeps = { ...defaultDeps, ...deps };
 
   const testPlan = state.phases.prototype.test_plan;
-  if (testPlan.status !== "pending_approval") {
-    throw new Error(
-      `Cannot refine test plan from status '${testPlan.status}'. Expected pending_approval.`,
-    );
-  }
+  await assertGuardrail(
+    state,
+    testPlan.status !== "pending_approval",
+    `Cannot refine test plan from status '${testPlan.status}'. Expected pending_approval.`,
+    { force },
+  );
 
   const testPlanFile = testPlan.file;
   if (!testPlanFile) {

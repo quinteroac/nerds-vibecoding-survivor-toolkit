@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { $ } from "bun";
 
 import { CLI_PATH } from "../cli-path";
+import { assertGuardrail } from "../guardrail";
 import type { RefactorPrd } from "../../scaffold/schemas/tmpl_refactor-prd";
 import { exists, FLOW_REL_DIR, readState, writeState } from "../state";
 
@@ -131,18 +132,31 @@ async function runWriteJsonCommand(
 }
 
 export async function runApproveRefactorPlan(
-  deps: Partial<ApproveRefactorPlanDeps> = {},
+  optsOrDeps: { force?: boolean } | Partial<ApproveRefactorPlanDeps> = {},
+  maybeDeps: Partial<ApproveRefactorPlanDeps> = {},
 ): Promise<void> {
+  const isDepsArg =
+    typeof optsOrDeps === "object"
+    && optsOrDeps !== null
+    && (
+      "existsFn" in optsOrDeps
+      || "invokeWriteJsonFn" in optsOrDeps
+      || "nowFn" in optsOrDeps
+      || "readFileFn" in optsOrDeps
+    );
+  const force = isDepsArg ? false : ((optsOrDeps as { force?: boolean }).force ?? false);
   const projectRoot = process.cwd();
   const state = await readState(projectRoot);
+  const deps = isDepsArg ? optsOrDeps : maybeDeps;
   const mergedDeps: ApproveRefactorPlanDeps = { ...defaultDeps, ...deps };
 
   const refactorPlan = state.phases.refactor.refactor_plan;
-  if (refactorPlan.status !== "pending_approval") {
-    throw new Error(
-      `Cannot approve refactor plan from status '${refactorPlan.status}'. Expected pending_approval.`,
-    );
-  }
+  await assertGuardrail(
+    state,
+    refactorPlan.status !== "pending_approval",
+    `Cannot approve refactor plan from status '${refactorPlan.status}'. Expected pending_approval.`,
+    { force },
+  );
 
   const refactorPlanFile = refactorPlan.file;
   if (!refactorPlanFile) {

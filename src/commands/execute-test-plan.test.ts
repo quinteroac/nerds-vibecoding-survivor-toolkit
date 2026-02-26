@@ -114,7 +114,7 @@ describe("execute test-plan command", () => {
     expect(source).toContain("if (command === \"execute\") {");
     expect(source).toContain('if (subcommand === "test-plan") {');
     expect(source).toContain("const { provider, remainingArgs: postAgentArgs } = parseAgentArg(args.slice(1));");
-    expect(source).toContain("await runExecuteTestPlan({ provider });");
+    expect(source).toContain("await runExecuteTestPlan({ provider, force });");
     expect(source).toContain("execute test-plan --agent <provider>");
   });
 

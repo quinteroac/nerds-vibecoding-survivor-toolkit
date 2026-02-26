@@ -1,0 +1,28 @@
+{
+  "entries": [
+    {
+      "id": "RI-001",
+      "title": "Document `src/guardrail.ts` in PROJECT_CONTEXT.md",
+      "status": "completed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "updated_at": "2026-02-26T17:02:59.497Z"
+    },
+    {
+      "id": "RI-002",
+      "title": "Avoid duplicate \"Aborted.\" when user declines guardrail",
+      "status": "completed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "updated_at": "2026-02-26T17:04:19.098Z"
+    },
+    {
+      "id": "RI-003",
+      "title": "Introduce TECHNICAL_DEBT.md and record known debt",
+      "status": "completed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "updated_at": "2026-02-26T17:05:20.080Z"
+    }
+  ]
+}

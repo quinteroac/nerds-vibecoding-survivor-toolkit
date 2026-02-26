@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { $ } from "bun";
 
 import { CLI_PATH } from "../cli-path";
+import { assertGuardrail } from "../guardrail";
 import type { Prd } from "../../scaffold/schemas/tmpl_prd";
 import { exists, readState, writeState, FLOW_REL_DIR } from "../state";
 
@@ -197,19 +198,32 @@ const defaultDeps: ApproveRequirementDeps = {
 };
 
 export async function runApproveRequirement(
-  deps: Partial<ApproveRequirementDeps> = {},
+  optsOrDeps: { force?: boolean } | Partial<ApproveRequirementDeps> = {},
+  maybeDeps: Partial<ApproveRequirementDeps> = {},
 ): Promise<void> {
+  const isDepsArg =
+    typeof optsOrDeps === "object"
+    && optsOrDeps !== null
+    && (
+      "existsFn" in optsOrDeps
+      || "invokeWriteJsonFn" in optsOrDeps
+      || "nowFn" in optsOrDeps
+      || "readFileFn" in optsOrDeps
+    );
+  const force = isDepsArg ? false : ((optsOrDeps as { force?: boolean }).force ?? false);
   const projectRoot = process.cwd();
   const state = await readState(projectRoot);
+  const deps = isDepsArg ? optsOrDeps : maybeDeps;
   const mergedDeps: ApproveRequirementDeps = { ...defaultDeps, ...deps };
 
   // --- US-001: Validate status ---
   const requirementDefinition = state.phases.define.requirement_definition;
-  if (requirementDefinition.status !== "in_progress") {
-    throw new Error(
-      `Cannot approve requirement from status '${requirementDefinition.status}'. Expected in_progress.`,
-    );
-  }
+  await assertGuardrail(
+    state,
+    requirementDefinition.status !== "in_progress",
+    `Cannot approve requirement from status '${requirementDefinition.status}'. Expected in_progress.`,
+    { force },
+  );
 
   const requirementFile = requirementDefinition.file;
   if (!requirementFile) {

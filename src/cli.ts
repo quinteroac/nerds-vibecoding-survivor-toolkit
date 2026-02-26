@@ -2,6 +2,7 @@
 
 import { join } from "node:path";
 import { parseAgentArg } from "./agent";
+import { GuardrailAbortError } from "./guardrail";
 import { runApproveProjectContext } from "./commands/approve-project-context";
 import { runApproveRefactorPlan } from "./commands/approve-refactor-plan";
 import { runApproveRequirement } from "./commands/approve-requirement";
@@ -80,13 +81,21 @@ function parseOptionalIntegerFlag(
   return { value: parsed, remainingArgs };
 }
 
+function parseForce(args: string[]): { force: boolean; remainingArgs: string[] } {
+  const force = args.includes("--force");
+  return {
+    force,
+    remainingArgs: args.filter((arg) => arg !== "--force"),
+  };
+}
+
 function printUsage() {
   console.log(`Usage: nvst <command> [options]
 
 Commands:
   init               Initialize toolkit files in the current directory
   start iteration    Start a new iteration (archives previous if exists)
-  create project-context --agent <provider> [--mode strict|yolo]
+  create project-context --agent <provider> [--mode strict|yolo] [--force]
                      Generate/update .agents/PROJECT_CONTEXT.md via agent
   create test-plan --agent <provider> [--force]
                      Generate test plan document for current iteration
@@ -104,23 +113,23 @@ Commands:
                      Mark refactor plan as approved and generate structured refactor PRD JSON
   refine project-context --agent <provider> [--challenge]
                      Refine project context via agent (editor or challenge mode)
-  define requirement --agent <provider>
+  define requirement --agent <provider> [--force]
                      Create requirement document via agent
-  define refactor-plan --agent <provider>
+  define refactor-plan --agent <provider> [--force]
                      Create refactor plan document via agent
-  refine requirement --agent <provider> [--challenge]
+  refine requirement --agent <provider> [--challenge] [--force]
                      Refine requirement document via agent
-  refine test-plan --agent <provider> [--challenge]
+  refine test-plan --agent <provider> [--challenge] [--force]
                      Refine test plan document via agent
-  refine refactor-plan --agent <provider> [--challenge]
+  refine refactor-plan --agent <provider> [--challenge] [--force]
                      Refine refactor plan document via agent
-  execute test-plan --agent <provider>
+  execute test-plan --agent <provider> [--force]
                      Execute approved structured test-plan JSON via agent
   execute automated-fix --agent <provider> [--iterations <N>] [--retry-on-fail <N>]
                      Attempt automated fixes for open issues in current iteration
   execute manual-fix --agent <provider>
                      Find manual-fix issues for current iteration and confirm execution
-  execute refactor --agent <provider>
+  execute refactor --agent <provider> [--force]
                      Execute approved refactor items via agent in order
   approve requirement
                      Mark requirement definition as approved
@@ -134,7 +143,7 @@ Options:
   --iterations       Maximum prototype passes (integer >= 1)
   --retry-on-fail    Retry attempts per failed story (integer >= 0)
   --stop-on-critical Stop execution after critical failures
-  --force            Overwrite output file without confirmation
+  --force            Bypass flow guardrail confirmation (and overwrite test-plan output)
   --challenge        Run refine in challenger mode
   --clean            When used with destroy, also removes .agents/flow/archived
   -h, --help         Show this help message
@@ -165,8 +174,9 @@ async function main() {
   }
 
   if (command === "init") {
-    if (args.length > 0) {
-      console.error(`Unknown option(s) for init: ${args.join(" ")}`);
+    const { remainingArgs: unknownArgs } = parseForce(args);
+    if (unknownArgs.length > 0) {
+      console.error(`Unknown option(s) for init: ${unknownArgs.join(" ")}`);
       printUsage();
       process.exitCode = 1;
       return;
@@ -176,8 +186,9 @@ async function main() {
   }
 
   if (command === "destroy") {
-    const clean = args.includes("--clean");
-    const unknownArgs = args.filter((arg) => arg !== "--clean");
+    const { remainingArgs: argsWithoutForce } = parseForce(args);
+    const clean = argsWithoutForce.includes("--clean");
+    const unknownArgs = argsWithoutForce.filter((arg) => arg !== "--clean");
     if (unknownArgs.length > 0) {
       console.error(`Unknown option(s) for destroy: ${unknownArgs.join(" ")}`);
       printUsage();
@@ -189,7 +200,8 @@ async function main() {
   }
 
   if (command === "start") {
-    if (args[0] !== "iteration" || args.length !== 1) {
+    const { remainingArgs: argsWithoutForce } = parseForce(args);
+    if (argsWithoutForce[0] !== "iteration" || argsWithoutForce.length !== 1) {
       console.error(`Usage for start: nvst start iteration`);
       printUsage();
       process.exitCode = 1;
@@ -215,15 +227,16 @@ async function main() {
       try {
         const { provider, remainingArgs: postAgentArgs } = parseAgentArg(args.slice(1));
         const { mode, remainingArgs: postModeArgs } = parseMode(postAgentArgs);
+        const { force, remainingArgs: postForceArgs } = parseForce(postModeArgs);
 
-        if (postModeArgs.length > 0) {
-          console.error(`Unknown option(s) for create project-context: ${postModeArgs.join(" ")}`);
+        if (postForceArgs.length > 0) {
+          console.error(`Unknown option(s) for create project-context: ${postForceArgs.join(" ")}`);
           printUsage();
           process.exitCode = 1;
           return;
         }
 
-        await runCreateProjectContext({ provider, mode });
+        await runCreateProjectContext({ provider, mode, force });
         return;
       } catch (error) {
         console.error(error instanceof Error ? error.message : String(error));
@@ -246,8 +259,9 @@ async function main() {
           remainingArgs: postRetryArgs,
         } = parseOptionalIntegerFlag(postIterationsArgs, "--retry-on-fail", 0);
 
-        const stopOnCritical = postRetryArgs.includes("--stop-on-critical");
-        const unknownArgs = postRetryArgs.filter((arg) => arg !== "--stop-on-critical");
+        const { force, remainingArgs: postForceArgs } = parseForce(postRetryArgs);
+        const stopOnCritical = postForceArgs.includes("--stop-on-critical");
+        const unknownArgs = postForceArgs.filter((arg) => arg !== "--stop-on-critical");
         if (unknownArgs.length > 0) {
           console.error(`Unknown option(s) for create prototype: ${unknownArgs.join(" ")}`);
           printUsage();
@@ -255,7 +269,7 @@ async function main() {
           return;
         }
 
-        await runCreatePrototype({ provider, iterations, retryOnFail, stopOnCritical });
+        await runCreatePrototype({ provider, iterations, retryOnFail, stopOnCritical, force });
         return;
       } catch (error) {
         console.error(error instanceof Error ? error.message : String(error));
@@ -290,9 +304,10 @@ async function main() {
 
     if (subcommand === "issue") {
       const subArgs = args.slice(1);
+      const { remainingArgs: subArgsWithoutForce } = parseForce(subArgs);
 
       // Check for --help before parsing
-      if (subArgs.includes("--help") || subArgs.includes("-h")) {
+      if (subArgsWithoutForce.includes("--help") || subArgsWithoutForce.includes("-h")) {
         console.log(`Usage for create issue:
   nvst create issue --agent <provider>           Create issues interactively via agent
   nvst create issue --test-execution-report      Derive issues from test execution results
@@ -304,8 +319,8 @@ Providers: claude, codex, gemini, cursor`);
 
       try {
         // Check for --test-execution-report flag
-        if (subArgs.includes("--test-execution-report")) {
-          const remaining = subArgs.filter((a) => a !== "--test-execution-report");
+        if (subArgsWithoutForce.includes("--test-execution-report")) {
+          const remaining = subArgsWithoutForce.filter((a) => a !== "--test-execution-report");
           if (remaining.length > 0) {
             console.error(`Unknown option(s) for create issue --test-execution-report: ${remaining.join(" ")}`);
             printUsage();
@@ -316,7 +331,7 @@ Providers: claude, codex, gemini, cursor`);
           return;
         }
 
-        const { provider, remainingArgs: postAgentArgs } = parseAgentArg(subArgs);
+        const { provider, remainingArgs: postAgentArgs } = parseAgentArg(subArgsWithoutForce);
 
         if (postAgentArgs.length > 0) {
           console.error(`Unknown option(s) for create issue: ${postAgentArgs.join(" ")}`);
@@ -354,15 +369,15 @@ Providers: claude, codex, gemini, cursor`);
     if (subcommand === "requirement") {
       try {
         const { provider, remainingArgs: postAgentArgs } = parseAgentArg(args.slice(1));
-
-        if (postAgentArgs.length > 0) {
-          console.error(`Unknown option(s) for define requirement: ${postAgentArgs.join(" ")}`);
+        const { force, remainingArgs: postForceArgs } = parseForce(postAgentArgs);
+        if (postForceArgs.length > 0) {
+          console.error(`Unknown option(s) for define requirement: ${postForceArgs.join(" ")}`);
           printUsage();
           process.exitCode = 1;
           return;
         }
 
-        await runDefineRequirement({ provider });
+        await runDefineRequirement({ provider, force });
         return;
       } catch (error) {
         console.error(error instanceof Error ? error.message : String(error));
@@ -375,15 +390,15 @@ Providers: claude, codex, gemini, cursor`);
     if (subcommand === "refactor-plan") {
       try {
         const { provider, remainingArgs: postAgentArgs } = parseAgentArg(args.slice(1));
-
-        if (postAgentArgs.length > 0) {
-          console.error(`Unknown option(s) for define refactor-plan: ${postAgentArgs.join(" ")}`);
+        const { force, remainingArgs: postForceArgs } = parseForce(postAgentArgs);
+        if (postForceArgs.length > 0) {
+          console.error(`Unknown option(s) for define refactor-plan: ${postForceArgs.join(" ")}`);
           printUsage();
           process.exitCode = 1;
           return;
         }
 
-        await runDefineRefactorPlan({ provider });
+        await runDefineRefactorPlan({ provider, force });
         return;
       } catch (error) {
         console.error(error instanceof Error ? error.message : String(error));
@@ -414,8 +429,9 @@ Providers: claude, codex, gemini, cursor`);
     if (subcommand === "requirement") {
       try {
         const { provider, remainingArgs: postAgentArgs } = parseAgentArg(args.slice(1));
-        const challenge = postAgentArgs.includes("--challenge");
-        const unknownArgs = postAgentArgs.filter((arg) => arg !== "--challenge");
+        const { force, remainingArgs: postForceArgs } = parseForce(postAgentArgs);
+        const challenge = postForceArgs.includes("--challenge");
+        const unknownArgs = postForceArgs.filter((arg) => arg !== "--challenge");
 
         if (unknownArgs.length > 0) {
           console.error(`Unknown option(s) for refine requirement: ${unknownArgs.join(" ")}`);
@@ -424,7 +440,7 @@ Providers: claude, codex, gemini, cursor`);
           return;
         }
 
-        await runRefineRequirement({ provider, challenge });
+        await runRefineRequirement({ provider, challenge, force });
         return;
       } catch (error) {
         console.error(error instanceof Error ? error.message : String(error));
@@ -437,8 +453,9 @@ Providers: claude, codex, gemini, cursor`);
     if (subcommand === "project-context") {
       try {
         const { provider, remainingArgs: postAgentArgs } = parseAgentArg(args.slice(1));
-        const challenge = postAgentArgs.includes("--challenge");
-        const unknownArgs = postAgentArgs.filter((arg) => arg !== "--challenge");
+        const { force, remainingArgs: postForceArgs } = parseForce(postAgentArgs);
+        const challenge = postForceArgs.includes("--challenge");
+        const unknownArgs = postForceArgs.filter((arg) => arg !== "--challenge");
 
         if (unknownArgs.length > 0) {
           console.error(
@@ -449,7 +466,7 @@ Providers: claude, codex, gemini, cursor`);
           return;
         }
 
-        await runRefineProjectContext({ provider, challenge });
+        await runRefineProjectContext({ provider, challenge, force });
         return;
       } catch (error) {
         console.error(error instanceof Error ? error.message : String(error));
@@ -462,8 +479,9 @@ Providers: claude, codex, gemini, cursor`);
     if (subcommand === "test-plan") {
       try {
         const { provider, remainingArgs: postAgentArgs } = parseAgentArg(args.slice(1));
-        const challenge = postAgentArgs.includes("--challenge");
-        const unknownArgs = postAgentArgs.filter((arg) => arg !== "--challenge");
+        const { force, remainingArgs: postForceArgs } = parseForce(postAgentArgs);
+        const challenge = postForceArgs.includes("--challenge");
+        const unknownArgs = postForceArgs.filter((arg) => arg !== "--challenge");
 
         if (unknownArgs.length > 0) {
           console.error(`Unknown option(s) for refine test-plan: ${unknownArgs.join(" ")}`);
@@ -472,7 +490,7 @@ Providers: claude, codex, gemini, cursor`);
           return;
         }
 
-        await runRefineTestPlan({ provider, challenge });
+        await runRefineTestPlan({ provider, challenge, force });
         return;
       } catch (error) {
         console.error(error instanceof Error ? error.message : String(error));
@@ -485,8 +503,9 @@ Providers: claude, codex, gemini, cursor`);
     if (subcommand === "refactor-plan") {
       try {
         const { provider, remainingArgs: postAgentArgs } = parseAgentArg(args.slice(1));
-        const challenge = postAgentArgs.includes("--challenge");
-        const unknownArgs = postAgentArgs.filter((arg) => arg !== "--challenge");
+        const { force, remainingArgs: postForceArgs } = parseForce(postAgentArgs);
+        const challenge = postForceArgs.includes("--challenge");
+        const unknownArgs = postForceArgs.filter((arg) => arg !== "--challenge");
 
         if (unknownArgs.length > 0) {
           console.error(`Unknown option(s) for refine refactor-plan: ${unknownArgs.join(" ")}`);
@@ -495,7 +514,7 @@ Providers: claude, codex, gemini, cursor`);
           return;
         }
 
-        await runRefineRefactorPlan({ provider, challenge });
+        await runRefineRefactorPlan({ provider, challenge, force });
         return;
       } catch (error) {
         console.error(error instanceof Error ? error.message : String(error));
@@ -512,7 +531,7 @@ Providers: claude, codex, gemini, cursor`);
   }
 
   if (command === "approve") {
-    if (args.length !== 1) {
+    if (args.length === 0) {
       console.error(`Usage for approve: nvst approve <requirement|project-context|test-plan|refactor-plan>`);
       printUsage();
       process.exitCode = 1;
@@ -520,24 +539,31 @@ Providers: claude, codex, gemini, cursor`);
     }
 
     const subcommand = args[0];
+    const { force, remainingArgs: unknownArgs } = parseForce(args.slice(1));
+    if (unknownArgs.length > 0) {
+      console.error(`Unknown option(s) for approve ${subcommand}: ${unknownArgs.join(" ")}`);
+      printUsage();
+      process.exitCode = 1;
+      return;
+    }
 
     if (subcommand === "requirement") {
-      await runApproveRequirement();
+      await runApproveRequirement({ force });
       return;
     }
 
     if (subcommand === "project-context") {
-      await runApproveProjectContext();
+      await runApproveProjectContext({ force });
       return;
     }
 
     if (subcommand === "test-plan") {
-      await runApproveTestPlan();
+      await runApproveTestPlan({ force });
       return;
     }
 
     if (subcommand === "refactor-plan") {
-      await runApproveRefactorPlan();
+      await runApproveRefactorPlan({ force });
       return;
     }
 
@@ -560,14 +586,15 @@ Providers: claude, codex, gemini, cursor`);
     if (subcommand === "test-plan") {
       try {
         const { provider, remainingArgs: postAgentArgs } = parseAgentArg(args.slice(1));
-        if (postAgentArgs.length > 0) {
-          console.error(`Unknown option(s) for execute test-plan: ${postAgentArgs.join(" ")}`);
+        const { force, remainingArgs: postForceArgs } = parseForce(postAgentArgs);
+        if (postForceArgs.length > 0) {
+          console.error(`Unknown option(s) for execute test-plan: ${postForceArgs.join(" ")}`);
           printUsage();
           process.exitCode = 1;
           return;
         }
 
-        await runExecuteTestPlan({ provider });
+        await runExecuteTestPlan({ provider, force });
         return;
       } catch (error) {
         console.error(error instanceof Error ? error.message : String(error));
@@ -589,8 +616,9 @@ Providers: claude, codex, gemini, cursor`);
           remainingArgs: postRetryArgs,
         } = parseOptionalIntegerFlag(postIterationsArgs, "--retry-on-fail", 0);
 
-        if (postRetryArgs.length > 0) {
-          console.error(`Unknown option(s) for execute automated-fix: ${postRetryArgs.join(" ")}`);
+        const { remainingArgs: postForceArgs } = parseForce(postRetryArgs);
+        if (postForceArgs.length > 0) {
+          console.error(`Unknown option(s) for execute automated-fix: ${postForceArgs.join(" ")}`);
           printUsage();
           process.exitCode = 1;
           return;
@@ -609,8 +637,9 @@ Providers: claude, codex, gemini, cursor`);
     if (subcommand === "manual-fix") {
       try {
         const { provider, remainingArgs: postAgentArgs } = parseAgentArg(args.slice(1));
-        if (postAgentArgs.length > 0) {
-          console.error(`Unknown option(s) for execute manual-fix: ${postAgentArgs.join(" ")}`);
+        const { remainingArgs: postForceArgs } = parseForce(postAgentArgs);
+        if (postForceArgs.length > 0) {
+          console.error(`Unknown option(s) for execute manual-fix: ${postForceArgs.join(" ")}`);
           printUsage();
           process.exitCode = 1;
           return;
@@ -629,14 +658,15 @@ Providers: claude, codex, gemini, cursor`);
     if (subcommand === "refactor") {
       try {
         const { provider, remainingArgs: postAgentArgs } = parseAgentArg(args.slice(1));
-        if (postAgentArgs.length > 0) {
-          console.error(`Unknown option(s) for execute refactor: ${postAgentArgs.join(" ")}`);
+        const { force, remainingArgs: postForceArgs } = parseForce(postAgentArgs);
+        if (postForceArgs.length > 0) {
+          console.error(`Unknown option(s) for execute refactor: ${postForceArgs.join(" ")}`);
           printUsage();
           process.exitCode = 1;
           return;
         }
 
-        await runExecuteRefactor({ provider });
+        await runExecuteRefactor({ provider, force });
         return;
       } catch (error) {
         console.error(error instanceof Error ? error.message : String(error));
@@ -663,6 +693,10 @@ Providers: claude, codex, gemini, cursor`);
 }
 
 main().catch((error) => {
+  if (error instanceof GuardrailAbortError) {
+    // exitCode already set and "Aborted." already written by assertGuardrail
+    return;
+  }
   console.error("nvst failed:", error);
   process.exitCode = 1;
 });

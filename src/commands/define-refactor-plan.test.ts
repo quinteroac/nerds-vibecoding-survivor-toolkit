@@ -76,7 +76,7 @@ describe("define refactor-plan command", () => {
 
     expect(source).toContain('import { runDefineRefactorPlan } from "./commands/define-refactor-plan";');
     expect(source).toContain('if (subcommand === "refactor-plan") {');
-    expect(source).toContain("await runDefineRefactorPlan({ provider });");
+    expect(source).toContain("await runDefineRefactorPlan({ provider, force });");
   });
 
   test("rejects when prototype_approved is false", async () => {
@@ -89,6 +89,27 @@ describe("define refactor-plan command", () => {
         "Cannot define refactor plan: phases.prototype.prototype_approved must be true",
       );
     });
+  });
+
+  test("allows bypassing prototype_approved guard with force", async () => {
+    const projectRoot = await createProjectRoot();
+    createdRoots.push(projectRoot);
+    await seedState(projectRoot, { prototypeApproved: false });
+
+    await withCwd(projectRoot, async () => {
+      await runDefineRefactorPlan(
+        { provider: "codex", force: true },
+        {
+          loadSkillFn: async () => "Refactor planning instructions",
+          invokeAgentFn: async () => ({ exitCode: 0, stdout: "", stderr: "" }),
+          nowFn: () => new Date("2026-02-26T10:00:00.000Z"),
+        },
+      );
+    });
+
+    const state = await readState(projectRoot);
+    expect(state.phases.refactor.evaluation_report.status).toBe("created");
+    expect(state.phases.refactor.refactor_plan.status).toBe("pending_approval");
   });
 
   test("rejects when current_phase is define", async () => {

@@ -11,12 +11,14 @@ import {
   type AgentProvider,
   type AgentResult,
 } from "../agent";
+import { assertGuardrail } from "../guardrail";
 import { exists, FLOW_REL_DIR, readState, writeState } from "../state";
 import { TestPlanSchema, type TestPlan } from "../../scaffold/schemas/tmpl_test-plan";
 import { extractJson } from "./create-issue";
 
 export interface ExecuteTestPlanOptions {
   provider: AgentProvider;
+  force?: boolean;
 }
 
 const ExecutionPayloadSchema = z.object({
@@ -321,13 +323,15 @@ export async function runExecuteTestPlan(
   const projectRoot = process.cwd();
   const mergedDeps: ExecuteTestPlanDeps = { ...defaultDeps, ...deps };
   const state = await readState(projectRoot);
+  const force = opts.force ?? false;
 
   const tpGeneration = state.phases.prototype.tp_generation;
-  if (tpGeneration.status !== "created") {
-    throw new Error(
-      `Cannot execute test plan: prototype.tp_generation.status must be created. Current status: '${tpGeneration.status}'. Run \`bun nvst approve test-plan\` first.`,
-    );
-  }
+  await assertGuardrail(
+    state,
+    tpGeneration.status !== "created",
+    `Cannot execute test plan: prototype.tp_generation.status must be created. Current status: '${tpGeneration.status}'. Run \`bun nvst approve test-plan\` first.`,
+    { force },
+  );
 
   if (!tpGeneration.file) {
     throw new Error("Cannot execute test plan: prototype.tp_generation.file is missing.");

@@ -68,7 +68,7 @@ describe("approve test-plan command", () => {
 
     expect(source).toContain('import { runApproveTestPlan } from "./commands/approve-test-plan";');
     expect(source).toContain('if (subcommand === "test-plan") {');
-    expect(source).toContain("await runApproveTestPlan();");
+    expect(source).toContain("await runApproveTestPlan({ force });");
   });
 
   test("requires test_plan.status to be pending_approval", async () => {

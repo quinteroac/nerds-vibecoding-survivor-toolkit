@@ -10,6 +10,7 @@ import {
   type AgentProvider,
   type AgentResult,
 } from "../agent";
+import { assertGuardrail } from "../guardrail";
 import { exists, FLOW_REL_DIR, readState, writeState } from "../state";
 import { TestPlanSchema, type TestPlan } from "../../scaffold/schemas/tmpl_test-plan";
 
@@ -155,11 +156,12 @@ export async function runCreateTestPlan(
   const state = await readState(projectRoot);
   const mergedDeps: CreateTestPlanDeps = { ...defaultDeps, ...deps };
 
-  if (state.phases.prototype.project_context.status !== "created") {
-    throw new Error(
-      "Cannot create test plan: prototype.project_context.status must be created. Run `bun nvst approve project-context` first.",
-    );
-  }
+  await assertGuardrail(
+    state,
+    state.phases.prototype.project_context.status !== "created",
+    "Cannot create test plan: prototype.project_context.status must be created. Run `bun nvst approve project-context` first.",
+    { force: opts.force },
+  );
 
   const iteration = state.current_iteration;
   const fileName = `it_${iteration}_test-plan.md`;

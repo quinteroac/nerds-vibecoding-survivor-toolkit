@@ -69,7 +69,7 @@ describe("approve refactor-plan command", () => {
 
     expect(source).toContain('import { runApproveRefactorPlan } from "./commands/approve-refactor-plan";');
     expect(source).toContain('if (subcommand === "refactor-plan") {');
-    expect(source).toContain("await runApproveRefactorPlan();");
+    expect(source).toContain("await runApproveRefactorPlan({ force });");
   });
 
   test("requires refactor.refactor_plan.status to be pending_approval", async () => {

@@ -1,25 +1,31 @@
 import { buildPrompt, invokeAgent, loadSkill, type AgentProvider } from "../agent";
+import { assertGuardrail } from "../guardrail";
 import { readState, writeState } from "../state";
 
 export interface DefineRequirementOptions {
   provider: AgentProvider;
+  force?: boolean;
 }
 
 export async function runDefineRequirement(opts: DefineRequirementOptions): Promise<void> {
-  const { provider } = opts;
+  const { provider, force = false } = opts;
   const projectRoot = process.cwd();
   const state = await readState(projectRoot);
 
-  if (state.current_phase !== "define") {
-    throw new Error("Cannot define requirement: current_phase must be 'define'.");
-  }
+  await assertGuardrail(
+    state,
+    state.current_phase !== "define",
+    "Cannot define requirement: current_phase must be 'define'.",
+    { force },
+  );
 
   const requirementDefinition = state.phases.define.requirement_definition;
-  if (requirementDefinition.status !== "pending") {
-    throw new Error(
-      `Cannot define requirement from status '${requirementDefinition.status}'. Expected pending.`,
-    );
-  }
+  await assertGuardrail(
+    state,
+    requirementDefinition.status !== "pending",
+    `Cannot define requirement from status '${requirementDefinition.status}'. Expected pending.`,
+    { force },
+  );
 
   const skillBody = await loadSkill(projectRoot, "create-pr-document");
   const prompt = buildPrompt(skillBody, {
