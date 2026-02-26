@@ -1,0 +1,370 @@
+{
+  "overallStatus": "pending",
+  "scope": [
+    "`execute refactor` command: precondition guards, refactor-prd read/validation, progress file lifecycle, agent invocation, state mutation, and report generation (`src/commands/execute-refactor.ts`, `src/cli.ts`)",
+    "Resume behaviour: loading and validating existing progress file, skipping completed items, re-attempting pending/failed items, and rejecting when progress item IDs do not match the current refactor-prd",
+    "Progress file schema: structure and validation for `.agents/flow/it_{iteration}_refactor-execution-progress.json` (entries with `id`, `title`, `status`, `attempt_count`, `last_agent_exit_code`, `updated_at`)",
+    "Report generation: markdown report path, content (iteration, counts, table with RI ID | Title | Status | Agent Exit Code), and writing regardless of success/failure",
+    "`execute-refactor-item` skill: existence, front-matter, and content requirements at `.agents/skills/execute-refactor-item/SKILL.md`",
+    "Error-handling convention: command handler must not call `process.exit()`; use `process.exitCode` and throw `Error` with descriptive messages"
+  ],
+  "environmentData": [
+    "Runtime: Bun v1+ (`bun test` via `bun:test`)",
+    "Language: TypeScript strict mode; test files co-located alongside source (e.g. `src/commands/execute-refactor.test.ts`)",
+    "State fixtures: in-memory `state.json` objects with valid/invalid `current_phase`, `refactor_plan.status`, and `refactor_execution.status`; injected via module mocking or helper factories",
+    "File-system fixtures: temporary or in-memory `it_{iteration}_refactor-prd.json` and `it_{iteration}_refactor-execution-progress.json` for schema and path tests",
+    "Agent mocking: `invokeAgent` stubbed to return `{ exitCode: 0 }` or `{ exitCode: 1 }` as required; `write-json` subprocess stubbed where progress writes are tested",
+    "Skill file: actual `.agents/skills/execute-refactor-item/SKILL.md` on disk for existence and content assertions",
+    "---",
+    "## User Story: US-001 - Execute approved refactor items via agent"
+  ],
+  "automatedTests": [
+    {
+      "id": "TC-001-01",
+      "description": "Command accepts `bun nvst execute refactor --agent <provider>` for provider in `claude`, `codex`, `gemini`, `cursor`",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-1"
+      ]
+    },
+    {
+      "id": "TC-001-02",
+      "description": "Command rejects with clear error when `current_phase !== \"refactor\"` (e.g. `\"prototype\"`)",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-2"
+      ]
+    },
+    {
+      "id": "TC-001-03",
+      "description": "Command rejects with clear error when `refactor_plan.status !== \"approved\"`",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-2"
+      ]
+    },
+    {
+      "id": "TC-001-04",
+      "description": "Command rejects with clear error when `refactor_execution.status === \"completed\"`",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-2"
+      ]
+    },
+    {
+      "id": "TC-001-05",
+      "description": "Command rejects when `it_{iteration}_refactor-prd.json` is missing",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-3"
+      ]
+    },
+    {
+      "id": "TC-001-06",
+      "description": "Command rejects when refactor-prd file fails `RefactorPrdSchema.safeParse()` (schema mismatch)",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-3"
+      ]
+    },
+    {
+      "id": "TC-001-07",
+      "description": "Before processing, `refactor_execution.status` is set to `\"in_progress\"` in state",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-9"
+      ]
+    },
+    {
+      "id": "TC-001-08",
+      "description": "For each RI-NNN item, agent is invoked with skill `execute-refactor-item` and prompt variables `current_iteration`, `item_id`, `item_title`, `item_description`, `item_rationale`",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-6"
+      ]
+    },
+    {
+      "id": "TC-001-09",
+      "description": "Agent is invoked with `interactive: true` (same as create prototype)",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-6"
+      ]
+    },
+    {
+      "id": "TC-001-10",
+      "description": "After each agent invocation, item result is recorded to progress file via schema-validated write (e.g. `nvst write-json`) before next item",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-7"
+      ]
+    },
+    {
+      "id": "TC-001-11",
+      "description": "Non-zero agent exit code marks the item as `failed` in progress file; execution continues to next item",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-7",
+        "FR-9"
+      ]
+    },
+    {
+      "id": "TC-001-12",
+      "description": "When all items complete successfully, `refactor_execution.status` is set to `\"completed\"` in state",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-9"
+      ]
+    },
+    {
+      "id": "TC-001-13",
+      "description": "When any item failed, `refactor_execution.status` remains `\"in_progress\"`",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-9"
+      ]
+    },
+    {
+      "id": "TC-001-14",
+      "description": "`refactor_execution.file` is set to progress file name (e.g. `it_{iteration}_refactor-execution-progress.json`)",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-9"
+      ]
+    },
+    {
+      "id": "TC-001-15",
+      "description": "After run, `state.last_updated` and `state.updated_by = \"nvst:execute-refactor\"` are written",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-9"
+      ]
+    },
+    {
+      "id": "TC-001-16",
+      "description": "Progress file path is `.agents/flow/it_{iteration}_refactor-execution-progress.json`",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-5"
+      ]
+    },
+    {
+      "id": "TC-001-17",
+      "description": "Progress file schema has entries with `id`, `title`, `status`, `attempt_count`, `last_agent_exit_code`, `updated_at`",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-4"
+      ]
+    },
+    {
+      "id": "TC-001-18",
+      "description": "`src/commands/execute-refactor.ts` exists and exports `runExecuteRefactor`",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-10"
+      ]
+    },
+    {
+      "id": "TC-001-19",
+      "description": "Handler does not call `process.exit()` under any code path",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-10"
+      ]
+    },
+    {
+      "id": "TC-001-20",
+      "description": "Typecheck and lint pass for the codebase",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-001"
+      ]
+    },
+    {
+      "id": "TC-002-01",
+      "description": "When `refactor_execution.status === \"in_progress\"` and progress file exists, command loads the existing progress file",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-002",
+        "FR-4",
+        "FR-5"
+      ]
+    },
+    {
+      "id": "TC-002-02",
+      "description": "Progress file is validated against its schema on load; command rejects with clear error on schema mismatch",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-002",
+        "FR-4"
+      ]
+    },
+    {
+      "id": "TC-002-03",
+      "description": "Items whose progress entry is `\"completed\"` are skipped (agent not invoked for them)",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-002",
+        "FR-4"
+      ]
+    },
+    {
+      "id": "TC-002-04",
+      "description": "Items whose progress entry is `\"pending\"` or `\"failed\"` are re-attempted",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-002",
+        "FR-4"
+      ]
+    },
+    {
+      "id": "TC-002-05",
+      "description": "Command rejects with clear error when existing progress item IDs do not match IDs in current `refactor-prd.json`",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-002",
+        "FR-4"
+      ]
+    },
+    {
+      "id": "TC-002-06",
+      "description": "Typecheck and lint pass",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-002"
+      ]
+    },
+    {
+      "id": "TC-003-01",
+      "description": "After all items are processed, report file `it_{iteration}_refactor-execution-report.md` is written to `.agents/flow/`",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-003",
+        "FR-8"
+      ]
+    },
+    {
+      "id": "TC-003-03",
+      "description": "Report is written even when one or more items failed",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-003",
+        "FR-8"
+      ]
+    },
+    {
+      "id": "TC-003-04",
+      "description": "Typecheck and lint pass",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-003"
+      ]
+    },
+    {
+      "id": "TC-004-01",
+      "description": "File `.agents/skills/execute-refactor-item/SKILL.md` exists",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-004",
+        "FR-11"
+      ]
+    },
+    {
+      "id": "TC-004-02",
+      "description": "Skill front-matter includes `name: execute-refactor-item`, `description`, and `user-invocable: false`",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-004",
+        "FR-11"
+      ]
+    },
+    {
+      "id": "TC-004-03",
+      "description": "Skill instructs agent to read item `id`, `title`, `description`, `rationale`; locate and apply code changes; verify compile/typecheck; confirm completion",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-004",
+        "FR-11"
+      ]
+    },
+    {
+      "id": "TC-004-04",
+      "description": "Skill references `.agents/PROJECT_CONTEXT.md` as source of conventions",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-004",
+        "FR-11"
+      ]
+    },
+    {
+      "id": "TC-004-05",
+      "description": "Typecheck/lint: skill is Markdown only, no compiled code change",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-004"
+      ]
+    },
+    {
+      "id": "TC-005-01",
+      "description": "`src/cli.ts` routes `execute refactor` (with `--agent <provider>`) to `runExecuteRefactor`",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-005",
+        "FR-12"
+      ]
+    },
+    {
+      "id": "TC-005-02",
+      "description": "`printUsage()` includes `execute refactor --agent <provider>` with a one-line description",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-005",
+        "FR-12"
+      ]
+    },
+    {
+      "id": "TC-005-03",
+      "description": "Unknown options after `--agent <provider>` cause clear error and exit code 1 (consistent with other execute subcommands)",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-005",
+        "FR-12"
+      ]
+    },
+    {
+      "id": "TC-005-04",
+      "description": "Typecheck and lint pass",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-005"
+      ]
+    }
+  ],
+  "exploratoryManualTests": [
+    {
+      "id": "TC-003-02",
+      "description": "Report includes iteration number, total items, count completed, count failed, and table with columns `RI ID \\",
+      "status": "pending",
+      "correlatedRequirements": []
+    }
+  ]
+}

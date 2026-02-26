@@ -15,6 +15,7 @@ import { runDefineRequirement } from "./commands/define-requirement";
 import { runDestroy } from "./commands/destroy";
 import { runExecuteAutomatedFix } from "./commands/execute-automated-fix";
 import { runExecuteManualFix } from "./commands/execute-manual-fix";
+import { runExecuteRefactor } from "./commands/execute-refactor";
 import { runExecuteTestPlan } from "./commands/execute-test-plan";
 import { runInit } from "./commands/init";
 import { runRefineProjectContext } from "./commands/refine-project-context";
@@ -119,6 +120,8 @@ Commands:
                      Attempt automated fixes for open issues in current iteration
   execute manual-fix --agent <provider>
                      Find manual-fix issues for current iteration and confirm execution
+  execute refactor --agent <provider>
+                     Execute approved refactor items via agent in order
   approve requirement
                      Mark requirement definition as approved
   write-json --schema <name> --out <path> [--data '<json>']
@@ -614,6 +617,26 @@ Providers: claude, codex, gemini, cursor`);
         }
 
         await runExecuteManualFix({ provider });
+        return;
+      } catch (error) {
+        console.error(error instanceof Error ? error.message : String(error));
+        printUsage();
+        process.exitCode = 1;
+        return;
+      }
+    }
+
+    if (subcommand === "refactor") {
+      try {
+        const { provider, remainingArgs: postAgentArgs } = parseAgentArg(args.slice(1));
+        if (postAgentArgs.length > 0) {
+          console.error(`Unknown option(s) for execute refactor: ${postAgentArgs.join(" ")}`);
+          printUsage();
+          process.exitCode = 1;
+          return;
+        }
+
+        await runExecuteRefactor({ provider });
         return;
       } catch (error) {
         console.error(error instanceof Error ? error.message : String(error));
