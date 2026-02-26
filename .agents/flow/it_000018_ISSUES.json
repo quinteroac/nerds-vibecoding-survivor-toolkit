@@ -15,7 +15,7 @@
     "id": "ISSUE-000018-003",
     "title": "[skipped] TC-011: Typecheck passes.",
     "description": "Test case TC-011 resulted in status: skipped.\nEvidence: bun tsc --noEmit was not executed in this session (terminal execution unavailable).\nCorrelated requirements: US-002",
-    "status": "open"
+    "status": "fixed"
   },
   {
     "id": "ISSUE-000018-004",

@@ -75,4 +75,18 @@ describe("project-wide type checking", () => {
     expect(exitCode, stderr).toBe(0);
     expect(after).toEqual(before);
   });
+
+  it("TC-011: Typecheck passes.", async () => {
+    const cwd = process.cwd();
+    const proc = Bun.spawn(["bun", "tsc", "--noEmit"], {
+      cwd,
+      stdout: "pipe",
+      stderr: "pipe",
+    });
+
+    const exitCode = await proc.exited;
+    const stderr = await new Response(proc.stderr).text();
+
+    expect(exitCode, stderr).toBe(0);
+  });
 });
