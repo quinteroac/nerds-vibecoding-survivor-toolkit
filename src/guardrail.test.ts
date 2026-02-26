@@ -75,14 +75,20 @@ describe("assertGuardrail – no violation", () => {
 // ---------------------------------------------------------------------------
 
 describe("assertGuardrail – strict mode", () => {
-  test("throws Error with the violation message when flow_guardrail is 'strict'", async () => {
+  test("US-003-AC03: strict mode throws the same violation message and never prompts", async () => {
     const state = makeState("strict");
+    let promptCalled = false;
 
     await expect(
       assertGuardrail(state, true, "current_phase is 'prototype' but 'define' is required.", {
+        readLineFn: async () => {
+          promptCalled = true;
+          return "y";
+        },
         stderrWriteFn: () => {},
       }),
     ).rejects.toThrow("current_phase is 'prototype' but 'define' is required.");
+    expect(promptCalled).toBe(false);
   });
 
   test("throws Error (not GuardrailAbortError) in strict mode", async () => {
@@ -95,14 +101,20 @@ describe("assertGuardrail – strict mode", () => {
     ).rejects.not.toBeInstanceOf(GuardrailAbortError);
   });
 
-  test("throws Error when flow_guardrail is absent (defaults to strict)", async () => {
+  test("US-003-AC04: absent flow_guardrail defaults to strict hard-error behavior", async () => {
     const state = makeState(undefined);
+    let promptCalled = false;
 
     await expect(
       assertGuardrail(state, true, "strict default violation", {
+        readLineFn: async () => {
+          promptCalled = true;
+          return "y";
+        },
         stderrWriteFn: () => {},
       }),
     ).rejects.toThrow("strict default violation");
+    expect(promptCalled).toBe(false);
   });
 
   test("does not print warning to stderr in strict mode without force", async () => {
