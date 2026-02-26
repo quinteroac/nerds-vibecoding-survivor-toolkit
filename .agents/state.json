@@ -1,15 +1,16 @@
 {
   "current_iteration": "000018",
   "current_phase": "define",
+  "flow_guardrail": "relaxed",
   "phases": {
     "define": {
       "requirement_definition": {
-        "status": "pending",
-        "file": null
+        "status": "approved",
+        "file": "it_000018_product-requirement-document.md"
       },
       "prd_generation": {
-        "status": "pending",
-        "file": null
+        "status": "completed",
+        "file": "it_000018_PRD.json"
       }
     },
     "prototype": {
@@ -54,7 +55,8 @@
       }
     }
   },
-  "last_updated": "2026-02-26T21:24:14.140Z",
+  "last_updated": "2026-02-26T23:09:00.508Z",
+  "updated_by": "nvst:approve-requirement",
   "history": [
     {
       "iteration": "000001",
@@ -141,6 +143,5 @@
       "archived_at": "2026-02-26T21:24:14.140Z",
       "archived_path": ".agents/flow/archived/000017"
     }
-  ],
-  "flow_guardrail": "relaxed"
+  ]
 }

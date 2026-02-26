@@ -1,0 +1,140 @@
+{
+  "goals": [
+    "Replace both hard dirty-tree errors in `runCreatePrototype` with an interactive yes/no prompt.",
+    "On confirmation, stage all changes and create a conventional commit, then continue the prototype build normally.",
+    "On decline (or default/Enter), exit cleanly with an informative message — no error thrown, no changes made.",
+    "Maintain full testability via the existing dependency-injection pattern (`CreatePrototypeDeps`)."
+  ],
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Prompt on dirty working tree instead of throwing",
+      "description": "As a developer running `bun nvst create prototype`, I want the command to ask me whether to commit uncommitted changes so that I do not have to manually commit and re-run the command when my tree is dirty.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-001-AC01",
+          "text": "When either dirty-tree check (phase-transition check or post-transition check) detects uncommitted changes, the command prints: `Working tree has uncommitted changes. Stage and commit them now to proceed? [y/N]` and waits for user input."
+        },
+        {
+          "id": "US-001-AC02",
+          "text": "Typing `y` or `Y` (followed by Enter) proceeds to UC-002."
+        },
+        {
+          "id": "US-001-AC03",
+          "text": "Typing anything else, pressing Enter with no input, or providing no input (non-interactive / piped stdin) is treated as \"No\" and proceeds to UC-003."
+        },
+        {
+          "id": "US-001-AC04",
+          "text": "The original hard-error messages (`\"Git working tree is dirty. Commit your changes...\"`) are removed from both check sites."
+        },
+        {
+          "id": "US-001-AC05",
+          "text": "Typecheck / lint passes (`bun tsc --noEmit`)."
+        }
+      ]
+    },
+    {
+      "id": "US-002",
+      "title": "Auto-commit on confirmation",
+      "description": "As a developer, I want `create prototype` to stage and commit my changes automatically after I confirm so that the prototype build starts with a clean working tree without manual intervention.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-002-AC01",
+          "text": "On confirmation, the command runs `git add -A` followed by `git commit -m \"chore: pre-prototype commit it_<iteration>\"` (where `<iteration>` is `state.current_iteration`)."
+        },
+        {
+          "id": "US-002-AC02",
+          "text": "If the `git add -A` or `git commit` fails (e.g. pre-commit hook rejects), the command throws a descriptive error: `Pre-prototype commit failed:\\n<stderr>` and exits with `process.exitCode = 1` without continuing the build."
+        },
+        {
+          "id": "US-002-AC03",
+          "text": "After a successful commit the prototype build proceeds normally (no further dirty-tree error)."
+        },
+        {
+          "id": "US-002-AC04",
+          "text": "Typecheck / lint passes."
+        }
+      ]
+    },
+    {
+      "id": "US-003",
+      "title": "Clean exit on decline",
+      "description": "As a developer, I want the command to exit gracefully when I decline to commit so that I can manually handle my changes at my own pace.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-003-AC01",
+          "text": "On decline, the command prints `Aborted. Commit or discard your changes and re-run \\`bun nvst create prototype\\`.` and returns without throwing."
+        },
+        {
+          "id": "US-003-AC02",
+          "text": "`process.exitCode` is NOT set to 1 (clean exit)."
+        },
+        {
+          "id": "US-003-AC03",
+          "text": "No state changes are written to `state.json`."
+        },
+        {
+          "id": "US-003-AC04",
+          "text": "Typecheck / lint passes."
+        }
+      ]
+    },
+    {
+      "id": "US-004",
+      "title": "Unit tests for confirm and decline branches",
+      "description": "As a developer maintaining the codebase, I want unit tests covering the new interactive flow so that regressions are caught automatically.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-004-AC01",
+          "text": "A test exists for the **confirm** path: a mock `confirmFn` returns `true`; a mock `gitAddAndCommitFn` is called with the correct commit message; the build continues (no error thrown)."
+        },
+        {
+          "id": "US-004-AC02",
+          "text": "A test exists for the **decline** path: a mock `confirmFn` returns `false`; no git operations are performed; the function returns cleanly."
+        },
+        {
+          "id": "US-004-AC03",
+          "text": "A test exists for the **git commit failure** path: `confirmFn` returns `true`, `gitAddAndCommitFn` rejects; the handler throws a descriptive error."
+        },
+        {
+          "id": "US-004-AC04",
+          "text": "All new tests pass (`bun test`)."
+        },
+        {
+          "id": "US-004-AC05",
+          "text": "Typecheck / lint passes."
+        }
+      ]
+    }
+  ],
+  "functionalRequirements": [
+    {
+      "id": "FR-1",
+      "description": "** Add a `confirmFn: (message: string) => Promise<boolean>` field to `CreatePrototypeDeps`. The default implementation reads one line from `process.stdin` and returns `true` only if the trimmed input is `\"y\"` or `\"Y\"`."
+    },
+    {
+      "id": "FR-2",
+      "description": "** Add a `gitAddAndCommitFn: (cwd: string, message: string) => Promise<{ exitCode: number; stderr: string }>` field to `CreatePrototypeDeps`. The default implementation runs `git add -A` then `git commit -m <message>` using `Bun.$`."
+    },
+    {
+      "id": "FR-3",
+      "description": "** Replace the first dirty-tree hard error (lines 209–213, phase-transition block) with a call to `confirmFn`. On `true`: call `gitAddAndCommitFn`; on failure throw `Pre-prototype commit failed:\\n<stderr>`; on `false`: log the abort message and return."
+    },
+    {
+      "id": "FR-4",
+      "description": "** Replace the second dirty-tree hard error (lines 246–250, post-transition check) with the same `confirmFn` flow as FR-3."
+    },
+    {
+      "id": "FR-5",
+      "description": "** The conventional commit message format is: `chore: pre-prototype commit it_<iteration>`."
+    },
+    {
+      "id": "FR-6",
+      "description": "** Non-interactive environments (stdin not a TTY / piped input) must default to \"No\" without hanging. The default `confirmFn` implementation should detect `process.stdin.isTTY === false` and return `false` immediately."
+    },
+    {
+      "id": "FR-7",
+      "description": "** All existing tests must continue to pass; inject `confirmFn` returning `false` (or `true` as needed) in existing tests that exercise the dirty-tree path."
+    }
+  ]
+}

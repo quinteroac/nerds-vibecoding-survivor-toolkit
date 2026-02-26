@@ -1,7 +1,5 @@
 ##New Features
 
-- Add new command "bun nvst approve prototype" this will complete the process, it will create the last commit, it will push the branch to the repo and it will create the PR if gh tool is available.
-
 
 
 ##Improvements
