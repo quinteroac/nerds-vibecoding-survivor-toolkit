@@ -1,6 +1,6 @@
 {
   "current_iteration": "000018",
-  "current_phase": "define",
+  "current_phase": "prototype",
   "flow_guardrail": "relaxed",
   "phases": {
     "define": {
