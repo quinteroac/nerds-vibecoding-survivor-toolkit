@@ -9,6 +9,7 @@ import { runCreateIssue, runCreateIssueFromTestReport } from "./commands/create-
 import { runCreateProjectContext } from "./commands/create-project-context";
 import { runCreatePrototype } from "./commands/create-prototype";
 import { runCreateTestPlan } from "./commands/create-test-plan";
+import { runDefineRefactorPlan } from "./commands/define-refactor-plan";
 import { runDefineRequirement } from "./commands/define-requirement";
 import { runDestroy } from "./commands/destroy";
 import { runExecuteAutomatedFix } from "./commands/execute-automated-fix";
@@ -100,6 +101,8 @@ Commands:
                      Refine project context via agent (editor or challenge mode)
   define requirement --agent <provider>
                      Create requirement document via agent
+  define refactor-plan --agent <provider>
+                     Create refactor plan document via agent
   refine requirement --agent <provider> [--challenge]
                      Refine requirement document via agent
   refine test-plan --agent <provider> [--challenge]
@@ -330,31 +333,61 @@ Providers: claude, codex, gemini, cursor`);
   }
 
   if (command === "define") {
-    if (args.length === 0 || args[0] !== "requirement") {
-      console.error(`Usage for define: nvst define requirement --agent <provider>`);
+    if (args.length === 0) {
+      console.error(`Usage for define: nvst define <requirement|refactor-plan> --agent <provider>`);
       printUsage();
       process.exitCode = 1;
       return;
     }
 
-    try {
-      const { provider, remainingArgs: postAgentArgs } = parseAgentArg(args.slice(1));
+    const subcommand = args[0];
 
-      if (postAgentArgs.length > 0) {
-        console.error(`Unknown option(s) for define requirement: ${postAgentArgs.join(" ")}`);
+    if (subcommand === "requirement") {
+      try {
+        const { provider, remainingArgs: postAgentArgs } = parseAgentArg(args.slice(1));
+
+        if (postAgentArgs.length > 0) {
+          console.error(`Unknown option(s) for define requirement: ${postAgentArgs.join(" ")}`);
+          printUsage();
+          process.exitCode = 1;
+          return;
+        }
+
+        await runDefineRequirement({ provider });
+        return;
+      } catch (error) {
+        console.error(error instanceof Error ? error.message : String(error));
         printUsage();
         process.exitCode = 1;
         return;
       }
-
-      await runDefineRequirement({ provider });
-      return;
-    } catch (error) {
-      console.error(error instanceof Error ? error.message : String(error));
-      printUsage();
-      process.exitCode = 1;
-      return;
     }
+
+    if (subcommand === "refactor-plan") {
+      try {
+        const { provider, remainingArgs: postAgentArgs } = parseAgentArg(args.slice(1));
+
+        if (postAgentArgs.length > 0) {
+          console.error(`Unknown option(s) for define refactor-plan: ${postAgentArgs.join(" ")}`);
+          printUsage();
+          process.exitCode = 1;
+          return;
+        }
+
+        await runDefineRefactorPlan({ provider });
+        return;
+      } catch (error) {
+        console.error(error instanceof Error ? error.message : String(error));
+        printUsage();
+        process.exitCode = 1;
+        return;
+      }
+    }
+
+    console.error(`Unknown define subcommand: ${subcommand}`);
+    printUsage();
+    process.exitCode = 1;
+    return;
   }
 
   if (command === "refine") {

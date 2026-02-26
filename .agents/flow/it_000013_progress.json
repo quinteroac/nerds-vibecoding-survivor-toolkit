@@ -1,0 +1,31 @@
+{
+  "entries": [
+    {
+      "use_case_id": "US-001",
+      "status": "completed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "quality_checks": [],
+      "last_error_summary": "",
+      "updated_at": "2026-02-26T02:01:34.842Z"
+    },
+    {
+      "use_case_id": "US-002",
+      "status": "pending",
+      "attempt_count": 0,
+      "last_agent_exit_code": null,
+      "quality_checks": [],
+      "last_error_summary": "",
+      "updated_at": "2026-02-26T01:58:44.882Z"
+    },
+    {
+      "use_case_id": "US-003",
+      "status": "pending",
+      "attempt_count": 0,
+      "last_agent_exit_code": null,
+      "quality_checks": [],
+      "last_error_summary": "",
+      "updated_at": "2026-02-26T01:58:44.882Z"
+    }
+  ]
+}
