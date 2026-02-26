@@ -1,0 +1,8 @@
+[
+  {
+    "id": "ISSUE-000013-001",
+    "title": "[failed] TC-001-09: `.agents/skills/plan-refactor/SKILL.md` contains required structure: objectives, inputs, output filename pattern, `## Refactor Items` section, `### RI-NNN: <Title>` subsection format, `**Description:**` and `**Rationale:**` fields",
+    "description": "Test case TC-001-09 resulted in status: failed.\nNotes: FR-9 requires the skill to include the stated structure; file has Objective/Inputs/Outputs but no Refactor Items section or subsection format.\nEvidence: .agents/skills/plan-refactor/SKILL.md contains only TBD placeholders; missing ## Refactor Items, ### RI-NNN: <Title>, **Description:**, **Rationale:** structure.\nCorrelated requirements: US-001, FR-9",
+    "status": "fixed"
+  }
+]

@@ -1,0 +1,292 @@
+{
+  "entries": [
+    {
+      "id": "TC-001-01",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-26T03:00:24.841Z"
+    },
+    {
+      "id": "TC-001-02",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-26T03:00:24.841Z"
+    },
+    {
+      "id": "TC-001-03",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-26T03:00:24.841Z"
+    },
+    {
+      "id": "TC-001-04",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-26T03:00:24.841Z"
+    },
+    {
+      "id": "TC-001-05",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-26T03:00:24.842Z"
+    },
+    {
+      "id": "TC-001-06",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-26T03:00:24.842Z"
+    },
+    {
+      "id": "TC-001-07",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-26T03:00:24.842Z"
+    },
+    {
+      "id": "TC-001-08",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-26T03:00:24.842Z"
+    },
+    {
+      "id": "TC-001-09",
+      "type": "automated",
+      "status": "failed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "FR-9 requires the skill to include the stated structure; file has Objective/Inputs/Outputs but no Refactor Items section or subsection format.",
+      "updated_at": "2026-02-26T03:00:24.842Z"
+    },
+    {
+      "id": "TC-002-01",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-26T03:00:24.843Z"
+    },
+    {
+      "id": "TC-002-02",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-26T03:00:24.843Z"
+    },
+    {
+      "id": "TC-002-03",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-26T03:00:24.844Z"
+    },
+    {
+      "id": "TC-002-04",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-26T03:00:24.844Z"
+    },
+    {
+      "id": "TC-002-05",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-26T03:00:24.845Z"
+    },
+    {
+      "id": "TC-002-06",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-26T03:00:24.845Z"
+    },
+    {
+      "id": "TC-002-07",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-26T03:00:24.846Z"
+    },
+    {
+      "id": "TC-002-08",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-26T03:00:24.846Z"
+    },
+    {
+      "id": "TC-002-09",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-26T03:00:24.847Z"
+    },
+    {
+      "id": "TC-002-10",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-26T03:00:24.847Z"
+    },
+    {
+      "id": "TC-002-11",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-26T03:00:24.847Z"
+    },
+    {
+      "id": "TC-003-01",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-26T03:00:24.847Z"
+    },
+    {
+      "id": "TC-003-02",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-26T03:00:24.847Z"
+    },
+    {
+      "id": "TC-003-03",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-26T03:00:24.847Z"
+    },
+    {
+      "id": "TC-003-04",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-26T03:00:24.847Z"
+    },
+    {
+      "id": "TC-003-05",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-26T03:00:24.847Z"
+    },
+    {
+      "id": "TC-003-06",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-26T03:00:24.847Z"
+    },
+    {
+      "id": "TC-003-07",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-26T03:00:24.847Z"
+    },
+    {
+      "id": "TC-003-08",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-26T03:00:24.848Z"
+    },
+    {
+      "id": "TC-003-09",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-26T03:00:24.848Z"
+    },
+    {
+      "id": "TC-003-10",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-26T03:00:24.848Z"
+    },
+    {
+      "id": "TC-003-11",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-26T03:00:24.848Z"
+    },
+    {
+      "id": "TC-003-12",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-26T03:00:24.848Z"
+    }
+  ]
+}
