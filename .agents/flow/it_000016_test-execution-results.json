@@ -1,0 +1,352 @@
+{
+  "iteration": "000016",
+  "testPlanFile": "it_000016_TP.json",
+  "executedTestIds": [],
+  "results": [
+    {
+      "testCaseId": "TC-US001-01",
+      "description": "CLI routes `approve prototype` to `runApprovePrototype` in `src/commands/approve-prototype.ts`",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-1"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000016_test-execution-artifacts/TC-US001-01_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US001-02",
+      "description": "With dirty working tree, command runs `git add -A` and creates a commit with message `feat: approve prototype it_<iteration>` using iteration from state",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-3"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000016_test-execution-artifacts/TC-US001-02_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US001-03",
+      "description": "With clean working tree, command prints an informative message and does not create an empty commit",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-3"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000016_test-execution-artifacts/TC-US001-03_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US001-04",
+      "description": "When commit fails due to pre-commit hook, error message includes `Pre-commit hook failed:\\n` plus hook output",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-3"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000016_test-execution-artifacts/TC-US001-04_attempt_001.json",
+        ".agents/flow/it_000016_test-execution-artifacts/TC-US001-04_attempt_002.json",
+        ".agents/flow/it_000016_test-execution-artifacts/TC-US001-04_attempt_003.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US001-05",
+      "description": "Typecheck passes for the codebase (e.g. `bun run tsc --noEmit` or equivalent)",
+      "correlatedRequirements": [
+        "US-001"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000016_test-execution-artifacts/TC-US001-05_attempt_001.json",
+        ".agents/flow/it_000016_test-execution-artifacts/TC-US001-05_attempt_002.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US002-01",
+      "description": "After a successful commit, command runs `git push -u origin <current-branch>`",
+      "correlatedRequirements": [
+        "US-002",
+        "FR-4"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000016_test-execution-artifacts/TC-US002-01_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US002-02",
+      "description": "When push fails (e.g. no remote), command throws a descriptive error, sets process.exitCode to 1, and does not update state.json",
+      "correlatedRequirements": [
+        "US-002",
+        "FR-4",
+        "FR-7"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000016_test-execution-artifacts/TC-US002-02_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US002-03",
+      "description": "Typecheck passes for the codebase",
+      "correlatedRequirements": [
+        "US-002"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000016_test-execution-artifacts/TC-US002-03_attempt_001.json",
+        ".agents/flow/it_000016_test-execution-artifacts/TC-US002-03_attempt_002.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US003-01",
+      "description": "When `gh` is available, command runs `gh pr create` with title `feat: prototype it_<iteration>` and body referencing iteration",
+      "correlatedRequirements": [
+        "US-003",
+        "FR-5"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000016_test-execution-artifacts/TC-US003-01_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US003-02",
+      "description": "When `gh` is not available, command prints a clear skip message to stdout and exits with code 0",
+      "correlatedRequirements": [
+        "US-003",
+        "FR-5"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000016_test-execution-artifacts/TC-US003-02_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US003-03",
+      "description": "When `gh pr create` fails (e.g. PR already exists), error is surfaced as non-fatal warning and state.json is still updated",
+      "correlatedRequirements": [
+        "US-003",
+        "FR-5",
+        "FR-6"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000016_test-execution-artifacts/TC-US003-03_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US003-04",
+      "description": "Typecheck passes for the codebase",
+      "correlatedRequirements": [
+        "US-003"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000016_test-execution-artifacts/TC-US003-04_attempt_001.json",
+        ".agents/flow/it_000016_test-execution-artifacts/TC-US003-04_attempt_002.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US004-01",
+      "description": "After successful commit and push, state.json is updated: `phases.prototype.prototype_approved` is true and `last_updated` is refreshed",
+      "correlatedRequirements": [
+        "US-004",
+        "FR-6"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000016_test-execution-artifacts/TC-US004-01_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US004-02",
+      "description": "When `prototype_approved` is already true, command throws a descriptive error and exits with code 1",
+      "correlatedRequirements": [
+        "US-004",
+        "FR-2",
+        "FR-7"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000016_test-execution-artifacts/TC-US004-02_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US004-03",
+      "description": "When current phase is not \"prototype\", assertGuardrail blocks execution with a descriptive message",
+      "correlatedRequirements": [
+        "US-004",
+        "FR-8"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000016_test-execution-artifacts/TC-US004-03_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US004-04",
+      "description": "Handler calls assertGuardrail at the start with correct context",
+      "correlatedRequirements": [
+        "FR-8"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000016_test-execution-artifacts/TC-US004-04_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US004-05",
+      "description": "All error paths set process.exitCode = 1 and never call process.exit()",
+      "correlatedRequirements": [
+        "FR-7"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000016_test-execution-artifacts/TC-US004-05_attempt_001.json"
+      ]
+    },
+    {
+      "testCaseId": "TC-US004-06",
+      "description": "Typecheck passes for the codebase",
+      "correlatedRequirements": [
+        "US-004"
+      ],
+      "mode": "automated",
+      "payload": {
+        "status": "passed",
+        "evidence": "",
+        "notes": ""
+      },
+      "passFail": "pass",
+      "agentExitCode": 0,
+      "artifactReferences": [
+        ".agents/flow/it_000016_test-execution-artifacts/TC-US004-06_attempt_001.json",
+        ".agents/flow/it_000016_test-execution-artifacts/TC-US004-06_attempt_002.json"
+      ]
+    }
+  ]
+}

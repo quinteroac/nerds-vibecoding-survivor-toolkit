@@ -8,7 +8,9 @@ import {
   buildPrompt,
   invokeAgent,
   loadSkill,
+  type AgentInvokeOptions,
   type AgentProvider,
+  type AgentResult,
 } from "../agent";
 import { assertGuardrail } from "../guardrail";
 import { exists, FLOW_REL_DIR, readState, writeState } from "../state";
@@ -39,6 +41,44 @@ const ProgressEntrySchema = z.object({
 export const PrototypeProgressSchema = z.object({
   entries: z.array(ProgressEntrySchema),
 });
+
+interface CreatePrototypeDeps {
+  invokeAgentFn: (options: AgentInvokeOptions) => Promise<AgentResult>;
+  loadSkillFn: (projectRoot: string, skillName: string) => Promise<string>;
+  checkGhAvailableFn: (projectRoot: string) => Promise<boolean>;
+  createPullRequestFn: (
+    projectRoot: string,
+    title: string,
+    body: string,
+  ) => Promise<{ exitCode: number; stderr: string }>;
+  logFn: (message: string) => void;
+  warnFn: (message: string) => void;
+}
+
+const defaultDeps: CreatePrototypeDeps = {
+  invokeAgentFn: invokeAgent,
+  loadSkillFn: loadSkill,
+  checkGhAvailableFn: async (projectRoot) => {
+    const proc = Bun.spawn(["gh", "--version"], {
+      cwd: projectRoot,
+      stdout: "ignore",
+      stderr: "ignore",
+    });
+    return (await proc.exited) === 0;
+  },
+  createPullRequestFn: async (projectRoot, title, body) => {
+    const result = await dollar`gh pr create --title ${title} --body ${body}`
+      .cwd(projectRoot)
+      .nothrow()
+      .quiet();
+    return {
+      exitCode: result.exitCode,
+      stderr: result.stderr.toString().trim(),
+    };
+  },
+  logFn: console.log,
+  warnFn: console.warn,
+};
 
 function sortedValues(values: string[]): string[] {
   return [...values].sort((a, b) => a.localeCompare(b));
@@ -105,7 +145,11 @@ function parseQualityChecks(projectContextContent: string): string[] {
     .filter((line) => line.length > 0);
 }
 
-export async function runCreatePrototype(opts: CreatePrototypeOptions): Promise<void> {
+export async function runCreatePrototype(
+  opts: CreatePrototypeOptions,
+  deps: Partial<CreatePrototypeDeps> = {},
+): Promise<void> {
+  const mergedDeps: CreatePrototypeDeps = { ...defaultDeps, ...deps };
   const projectRoot = process.cwd();
   const state = await readState(projectRoot);
   const force = opts.force ?? false;
@@ -283,7 +327,7 @@ export async function runCreatePrototype(opts: CreatePrototypeOptions): Promise<
   });
 
   if (eligibleStories.length === 0) {
-    console.log("No pending or failed user stories to implement. Exiting without changes.");
+    mergedDeps.logFn("No pending or failed user stories to implement. Exiting without changes.");
     return;
   }
 
@@ -295,7 +339,7 @@ export async function runCreatePrototype(opts: CreatePrototypeOptions): Promise<
 
   let skillTemplate: string;
   try {
-    skillTemplate = await loadSkill(projectRoot, "implement-user-story");
+    skillTemplate = await mergedDeps.loadSkillFn(projectRoot, "implement-user-story");
   } catch {
     throw new Error(
       "Required skill missing: expected .agents/skills/implement-user-story/SKILL.md.",
@@ -334,7 +378,7 @@ export async function runCreatePrototype(opts: CreatePrototypeOptions): Promise<
         user_story: JSON.stringify(story, null, 2),
       });
 
-      const agentResult = await invokeAgent({
+      const agentResult = await mergedDeps.invokeAgentFn({
         provider: opts.provider,
         prompt,
         cwd: projectRoot,
@@ -383,7 +427,7 @@ export async function runCreatePrototype(opts: CreatePrototypeOptions): Promise<
           entry.updated_at = new Date().toISOString();
           await writeFile(progressPath, `${JSON.stringify(progressData, null, 2)}\n`, "utf8");
 
-          console.log(
+          mergedDeps.logFn(
             `iteration=it_${iteration} story=${story.id} attempt=${entry.attempt_count} outcome=commit_failed`,
           );
 
@@ -391,7 +435,7 @@ export async function runCreatePrototype(opts: CreatePrototypeOptions): Promise<
             haltedByCritical = true;
           }
         } else {
-          console.log(
+          mergedDeps.logFn(
             `iteration=it_${iteration} story=${story.id} attempt=${entry.attempt_count} outcome=passed`,
           );
         }
@@ -399,7 +443,7 @@ export async function runCreatePrototype(opts: CreatePrototypeOptions): Promise<
         break;
       }
 
-      console.log(
+      mergedDeps.logFn(
         `iteration=it_${iteration} story=${story.id} attempt=${entry.attempt_count} outcome=failed`,
       );
 
@@ -423,13 +467,25 @@ export async function runCreatePrototype(opts: CreatePrototypeOptions): Promise<
   await writeState(projectRoot, state);
 
   if (storiesAttempted === 0) {
-    console.log("No user stories attempted.");
+    mergedDeps.logFn("No user stories attempted.");
     return;
   }
 
   if (allCompleted) {
-    console.log("Prototype implementation completed for all user stories.");
+    const ghAvailable = await mergedDeps.checkGhAvailableFn(projectRoot);
+    if (!ghAvailable) {
+      mergedDeps.logFn("gh CLI not found — skipping PR creation");
+    } else {
+      const prTitle = `feat: prototype it_${iteration}`;
+      const prBody = `Prototype for iteration it_${iteration}`;
+      const prResult = await mergedDeps.createPullRequestFn(projectRoot, prTitle, prBody);
+      if (prResult.exitCode !== 0) {
+        const suffix = prResult.stderr.length > 0 ? `: ${prResult.stderr}` : "";
+        mergedDeps.warnFn(`gh pr create failed (non-fatal)${suffix}`);
+      }
+    }
+    mergedDeps.logFn("Prototype implementation completed for all user stories.");
   } else {
-    console.log("Prototype implementation paused with remaining pending or failed stories.");
+    mergedDeps.logFn("Prototype implementation paused with remaining pending or failed stories.");
   }
 }

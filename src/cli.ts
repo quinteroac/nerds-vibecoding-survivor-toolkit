@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { parseAgentArg } from "./agent";
 import { GuardrailAbortError } from "./guardrail";
 import { runApproveProjectContext } from "./commands/approve-project-context";
+import { runApprovePrototype } from "./commands/approve-prototype";
 import { runApproveRefactorPlan } from "./commands/approve-refactor-plan";
 import { runApproveRequirement } from "./commands/approve-requirement";
 import { runApproveTestPlan } from "./commands/approve-test-plan";
@@ -109,6 +110,8 @@ Commands:
                      Mark project context as approved
   approve test-plan
                      Mark test plan as approved and generate structured TP JSON
+  approve prototype
+                     Stage and commit all pending changes for current iteration
   approve refactor-plan
                      Mark refactor plan as approved and generate structured refactor PRD JSON
   refine project-context --agent <provider> [--challenge]
@@ -532,7 +535,7 @@ Providers: claude, codex, gemini, cursor`);
 
   if (command === "approve") {
     if (args.length === 0) {
-      console.error(`Usage for approve: nvst approve <requirement|project-context|test-plan|refactor-plan>`);
+      console.error(`Usage for approve: nvst approve <requirement|project-context|test-plan|prototype|refactor-plan>`);
       printUsage();
       process.exitCode = 1;
       return;
@@ -559,6 +562,11 @@ Providers: claude, codex, gemini, cursor`);
 
     if (subcommand === "test-plan") {
       await runApproveTestPlan({ force });
+      return;
+    }
+
+    if (subcommand === "prototype") {
+      await runApprovePrototype({ force });
       return;
     }
 

@@ -1,0 +1,127 @@
+{
+  "goals": [
+    "Automate the final step of the prototype phase: commit → push → PR creation.",
+    "Mark the prototype as approved in `state.json` so the workflow can advance to the refactor phase.",
+    "Exit cleanly (code 0) on success, non-zero on any error; never call `process.exit()`."
+  ],
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Commit pending changes",
+      "description": "As a developer using `bun nvst`, I want `approve prototype` to stage and commit all pending changes with a conventional commit message so that my prototype work is captured in a single, well-labelled commit.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-001-AC01",
+          "text": "Running `bun nvst approve prototype` stages all changes (`git add -A`) and creates a commit with message `feat: approve prototype it_000016` (using the current iteration from `state.json`)."
+        },
+        {
+          "id": "US-001-AC02",
+          "text": "If there are no changes to commit (clean working tree), the command prints an informative message and continues without creating an empty commit."
+        },
+        {
+          "id": "US-001-AC03",
+          "text": "Typecheck / lint passes."
+        }
+      ]
+    },
+    {
+      "id": "US-002",
+      "title": "Push the branch to the remote",
+      "description": "As a developer, I want the command to push the current branch to the remote repository so that my work is backed up and visible to collaborators.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-002-AC01",
+          "text": "After committing, the command runs `git push -u origin <current-branch>`."
+        },
+        {
+          "id": "US-002-AC02",
+          "text": "If the push fails (e.g. no remote configured), the command throws a descriptive error, sets `process.exitCode = 1`, and does NOT update `state.json`."
+        },
+        {
+          "id": "US-002-AC03",
+          "text": "Typecheck / lint passes."
+        }
+      ]
+    },
+    {
+      "id": "US-003",
+      "title": "Create a PR via `gh` CLI (when available)",
+      "description": "As a developer, I want the command to automatically create a pull request if the `gh` CLI is available so that the prototype can be reviewed without leaving the terminal.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-003-AC01",
+          "text": "If `gh` is available (detected via `Bun.spawn` or `Bun.$` checking the exit code of `gh --version`), the command runs `gh pr create` with a generated title (`feat: prototype it_000016`) and a generic body referencing the iteration number (e.g. `Prototype for iteration it_000016`)."
+        },
+        {
+          "id": "US-003-AC02",
+          "text": "If `gh` is not available, the command prints a clear skip message (e.g. `gh CLI not found — skipping PR creation`) and exits with code 0."
+        },
+        {
+          "id": "US-003-AC03",
+          "text": "If `gh pr create` fails (e.g. PR already exists), the error is surfaced as a non-fatal warning and `state.json` is still updated."
+        },
+        {
+          "id": "US-003-AC04",
+          "text": "Typecheck / lint passes."
+        }
+      ]
+    },
+    {
+      "id": "US-004",
+      "title": "Mark prototype as approved in `state.json`",
+      "description": "As a developer, I want `state.json` to reflect that the prototype has been approved so that subsequent NVST commands (e.g. `define refactor-plan`) can validate the correct phase.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-004-AC01",
+          "text": "After a successful commit and push, `state.json` is updated: `phases.prototype.prototype_approved` is set to `true` and `last_updated` is refreshed."
+        },
+        {
+          "id": "US-004-AC02",
+          "text": "If the command is run when `prototype_approved` is already `true`, it throws a descriptive error and exits with code 1."
+        },
+        {
+          "id": "US-004-AC03",
+          "text": "If the current phase is not `\"prototype\"`, the guardrail (`assertGuardrail`) blocks execution with a descriptive message."
+        },
+        {
+          "id": "US-004-AC04",
+          "text": "Typecheck / lint passes."
+        }
+      ]
+    }
+  ],
+  "functionalRequirements": [
+    {
+      "id": "FR-1",
+      "description": "** Register the command `approve prototype` in `src/cli.ts` and dispatch to `src/commands/approve-prototype.ts` (handler: `runApprovePrototype`)."
+    },
+    {
+      "id": "FR-2",
+      "description": "** Validate state before any I/O: `current_phase === \"prototype\"` and `phases.prototype.prototype_approved === false`; throw with a descriptive message otherwise."
+    },
+    {
+      "id": "FR-3",
+      "description": "** Detect whether the working tree is clean; if not clean, run `git add -A` followed by `git commit -m \"feat: approve prototype it_<iteration>\"`. If the commit fails due to a pre-commit hook, surface the hook output wrapped in a structured message: `Pre-commit hook failed:\\n<hook output>`."
+    },
+    {
+      "id": "FR-4",
+      "description": "** Run `git push -u origin <current-branch>` after committing; propagate push failures as thrown errors."
+    },
+    {
+      "id": "FR-5",
+      "description": "** Detect `gh` availability; if present run `gh pr create --title \"feat: prototype it_<iteration>\" --body \"Prototype for iteration it_<iteration>\"`; if absent print a skip message to stdout."
+    },
+    {
+      "id": "FR-6",
+      "description": "** On successful commit + push, update `state.json`: set `phases.prototype.prototype_approved = true` and `last_updated` to current ISO timestamp."
+    },
+    {
+      "id": "FR-7",
+      "description": "** Use `process.exitCode = 1` for all error exits; never call `process.exit()`."
+    },
+    {
+      "id": "FR-8",
+      "description": "** Call `assertGuardrail` at the start of the handler to enforce the flow guardrail mode configured in `state.json`."
+    }
+  ]
+}
