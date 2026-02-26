@@ -17,6 +17,7 @@ import { runExecuteManualFix } from "./commands/execute-manual-fix";
 import { runExecuteTestPlan } from "./commands/execute-test-plan";
 import { runInit } from "./commands/init";
 import { runRefineProjectContext } from "./commands/refine-project-context";
+import { runRefineRefactorPlan } from "./commands/refine-refactor-plan";
 import { runRefineRequirement } from "./commands/refine-requirement";
 import { runRefineTestPlan } from "./commands/refine-test-plan";
 import { runStartIteration } from "./commands/start-iteration";
@@ -107,6 +108,8 @@ Commands:
                      Refine requirement document via agent
   refine test-plan --agent <provider> [--challenge]
                      Refine test plan document via agent
+  refine refactor-plan --agent <provider> [--challenge]
+                     Refine refactor plan document via agent
   execute test-plan --agent <provider>
                      Execute approved structured test-plan JSON via agent
   execute automated-fix --agent <provider> [--iterations <N>] [--retry-on-fail <N>]
@@ -393,7 +396,7 @@ Providers: claude, codex, gemini, cursor`);
   if (command === "refine") {
     if (args.length === 0) {
       console.error(
-        `Usage for refine: nvst refine <requirement|project-context|test-plan> --agent <provider> [--challenge]`,
+        `Usage for refine: nvst refine <requirement|project-context|test-plan|refactor-plan> --agent <provider> [--challenge]`,
       );
       printUsage();
       process.exitCode = 1;
@@ -464,6 +467,29 @@ Providers: claude, codex, gemini, cursor`);
         }
 
         await runRefineTestPlan({ provider, challenge });
+        return;
+      } catch (error) {
+        console.error(error instanceof Error ? error.message : String(error));
+        printUsage();
+        process.exitCode = 1;
+        return;
+      }
+    }
+
+    if (subcommand === "refactor-plan") {
+      try {
+        const { provider, remainingArgs: postAgentArgs } = parseAgentArg(args.slice(1));
+        const challenge = postAgentArgs.includes("--challenge");
+        const unknownArgs = postAgentArgs.filter((arg) => arg !== "--challenge");
+
+        if (unknownArgs.length > 0) {
+          console.error(`Unknown option(s) for refine refactor-plan: ${unknownArgs.join(" ")}`);
+          printUsage();
+          process.exitCode = 1;
+          return;
+        }
+
+        await runRefineRefactorPlan({ provider, challenge });
         return;
       } catch (error) {
         console.error(error instanceof Error ? error.message : String(error));
