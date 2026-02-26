@@ -69,6 +69,8 @@ export async function runDefineRefactorPlan(
     throw new Error(`Agent invocation failed with exit code ${result.exitCode}.`);
   }
 
+  state.phases.refactor.evaluation_report.status = "created";
+  state.phases.refactor.evaluation_report.file = `it_${state.current_iteration}_evaluation-report.md`;
   refactorPlan.status = "pending_approval";
   refactorPlan.file = `it_${state.current_iteration}_refactor-plan.md`;
   state.last_updated = mergedDeps.nowFn().toISOString();
@@ -76,5 +78,7 @@ export async function runDefineRefactorPlan(
 
   await writeState(projectRoot, state);
 
-  console.log("Refactor plan definition completed and marked as pending approval.");
+  console.log(
+    "Evaluation report and refactor plan created. Refactor plan is pending approval.",
+  );
 }

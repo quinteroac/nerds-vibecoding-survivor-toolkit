@@ -1,36 +1,64 @@
 ---
 name: plan-refactor
-description: "Produces an ordered refactor plan from the evaluation report. Triggered by: bun nvst define refactor-plan."
+description: "Evaluates the prototype and produces an ordered refactor plan. Triggered by: bun nvst define refactor-plan."
 user-invocable: true
 ---
 
-# Plan Refactor
+# Evaluate and Plan Refactor
 
-Read the evaluation report for the current iteration and produce an ordered refactor plan saved as `it_{current_iteration}_refactor-plan.md`.
+This skill runs in two parts within a single session. **Do NOT implement code.** Only produce documents.
 
-**Do NOT implement code. Only produce the refactor plan document.**
+## Part 1: Evaluate the Prototype
 
-## Inputs
+Evaluate the current prototype before planning refactorings.
+
+### Evaluation Inputs
 
 | Source | Used for |
 |--------|----------|
-| `current_iteration` | Iteration identifier used in the output filename |
-| `it_{current_iteration}_evaluation-report.md` | Source of identified issues, technical debt, and improvement recommendations |
+| `.agents/PROJECT_CONTEXT.md` | Documented conventions, architecture, and standards to validate against |
+| `.agents/TECHNICAL_DEBT.md` | Existing technical debt (if present) |
+| `.agents/flow/it_{current_iteration}_PRD.json` | Implemented scope for this iteration |
+| Prototype codebase | Actual structure, patterns, and quality |
 
-## Outputs
+### Evaluation Output
 
-`it_{current_iteration}_refactor-plan.md` — ordered refactor plan with one entry per refactor item.
+Write `it_{current_iteration}_evaluation-report.md` to `.agents/flow/` with this structure:
 
-## Instructions
+```markdown
+# Evaluation Report — Iteration {current_iteration}
 
-1. Read the evaluation report in full before writing any output.
-2. Identify quick wins (low effort, high impact) and critical refactorings (high urgency or high risk).
-3. For items that require a user decision (e.g. trade-offs between approaches), ask the user before committing to an entry.
-4. Order items by priority: critical blockers first, quick wins second, long-term improvements last.
-5. Assign each item a unique id in `RI-NNN` format (e.g. `RI-001`, `RI-002`).
-6. Write the output file using the structure defined below.
+## Strengths
+- What works well in the current prototype
 
-## Output Structure
+## Technical Debt
+- Known debt items, with brief impact/effort notes
+
+## Violations of PROJECT_CONTEXT.md
+- Conventions, architecture, or standards not followed
+
+## Recommendations
+Each item: description, impact, urgency, effort, scope. Optional numeric score for ordering.
+```
+
+Complete Part 1 before starting Part 2. The evaluation report is the input for the refactor plan.
+
+---
+
+## Part 2: Define the Refactor Plan
+
+From the evaluation report you just produced, define an ordered refactor plan.
+
+### Plan Inputs
+
+| Source | Used for |
+|--------|----------|
+| `it_{current_iteration}_evaluation-report.md` | Issues, technical debt, and recommendations to prioritise |
+| User (interactive) | Decisions on trade-offs or approaches that need clarification |
+
+### Plan Output
+
+Write `it_{current_iteration}_refactor-plan.md` to `.agents/flow/` with this structure:
 
 ```markdown
 # Refactor Plan — Iteration {current_iteration}
@@ -50,10 +78,22 @@ Read the evaluation report for the current iteration and produce an ordered refa
 **Rationale:** ...
 ```
 
+### Plan Instructions
+
+1. Read the evaluation report in full before writing the refactor plan.
+2. Identify quick wins (low effort, high impact) and critical refactorings (high urgency or high risk).
+3. For items that require a user decision (e.g. trade-offs between approaches), ask the user before committing to an entry.
+4. Order items by priority: critical blockers first, quick wins second, long-term improvements last.
+5. Assign each item a unique id in `RI-NNN` format (e.g. `RI-001`, `RI-002`).
+6. Write the refactor plan file.
+
+---
+
 ## Checklist
 
 - [ ] Output is in English
-- [ ] Output file is `it_{current_iteration}_refactor-plan.md`
-- [ ] Each item has a unique `RI-NNN` id, a `**Description:**`, and a `**Rationale:**`
-- [ ] Items are ordered by priority
+- [ ] Part 1: `it_{current_iteration}_evaluation-report.md` written to `.agents/flow/`
+- [ ] Part 2: `it_{current_iteration}_refactor-plan.md` written to `.agents/flow/`
+- [ ] Each refactor item has a unique `RI-NNN` id, `**Description:**`, and `**Rationale:**`
+- [ ] Refactor items are ordered by priority
 - [ ] State files are not modified by this skill

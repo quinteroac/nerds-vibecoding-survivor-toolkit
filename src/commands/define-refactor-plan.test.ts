@@ -121,6 +121,7 @@ describe("define refactor-plan command", () => {
 
     const state = await readState(projectRoot);
     expect(state.current_phase).toBe("refactor");
+    expect(state.phases.refactor.evaluation_report.status).toBe("created");
     expect(state.phases.refactor.refactor_plan.status).toBe("pending_approval");
   });
 
@@ -174,6 +175,10 @@ describe("define refactor-plan command", () => {
     expect(invocation.prompt).toContain("000013");
 
     const state = await readState(projectRoot);
+    expect(state.phases.refactor.evaluation_report.status).toBe("created");
+    expect(state.phases.refactor.evaluation_report.file).toBe(
+      "it_000013_evaluation-report.md",
+    );
     expect(state.phases.refactor.refactor_plan.status).toBe("pending_approval");
     expect(state.phases.refactor.refactor_plan.file).toBe("it_000013_refactor-plan.md");
     expect(state.last_updated).toBe("2026-02-26T10:00:00.000Z");
