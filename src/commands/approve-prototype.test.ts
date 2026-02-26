@@ -11,6 +11,10 @@ async function createProjectRoot(): Promise<string> {
   return mkdtemp(join(tmpdir(), "nvst-approve-prototype-"));
 }
 
+async function createBareRemoteRoot(): Promise<string> {
+  return mkdtemp(join(tmpdir(), "nvst-approve-prototype-remote-"));
+}
+
 async function withCwd<T>(cwd: string, fn: () => Promise<T>): Promise<T> {
   const previous = process.cwd();
   process.chdir(cwd);
@@ -64,6 +68,7 @@ const createdRoots: string[] = [];
 
 afterEach(async () => {
   await Promise.all(createdRoots.splice(0).map((root) => rm(root, { recursive: true, force: true })));
+  process.exitCode = 0;
 });
 
 describe("approve prototype command", () => {
@@ -77,12 +82,17 @@ describe("approve prototype command", () => {
 
   test("stages all pending changes and creates conventional commit using current iteration", async () => {
     const projectRoot = await createProjectRoot();
+    const remoteRoot = await createBareRemoteRoot();
     createdRoots.push(projectRoot);
+    createdRoots.push(remoteRoot);
 
     await seedState(projectRoot, "000016");
     await runGit(projectRoot, "git init");
     await runGit(projectRoot, "git config user.email 'nvst@example.com'");
     await runGit(projectRoot, "git config user.name 'NVST Test'");
+    await runGit(projectRoot, "git branch -M main");
+    await runGit(remoteRoot, "git init --bare");
+    await runGit(projectRoot, `git remote add origin ${remoteRoot}`);
 
     await writeFile(join(projectRoot, "tracked-modified.txt"), "before\n", "utf8");
     await writeFile(join(projectRoot, "tracked-deleted.txt"), "delete me\n", "utf8");
@@ -106,6 +116,9 @@ describe("approve prototype command", () => {
 
     const status = await runGit(projectRoot, "git status --porcelain");
     expect(status).toBe("");
+
+    const upstream = await runGit(projectRoot, "git rev-parse --abbrev-ref --symbolic-full-name @{u}");
+    expect(upstream).toBe("origin/main");
   });
 
   test("prints informative message and skips commit when working tree is clean", async () => {
@@ -136,5 +149,39 @@ describe("approve prototype command", () => {
     expect(afterHead).toBe(beforeHead);
     expect(commitCount).toBe("1");
     expect(logs).toContain("No pending changes to commit; working tree is clean.");
+  });
+
+  test("throws descriptive error on push failure, sets process.exitCode, and does not update state.json", async () => {
+    const projectRoot = await createProjectRoot();
+    createdRoots.push(projectRoot);
+
+    await seedState(projectRoot, "000016");
+    await runGit(projectRoot, "git init");
+    await runGit(projectRoot, "git config user.email 'nvst@example.com'");
+    await runGit(projectRoot, "git config user.name 'NVST Test'");
+
+    await writeFile(join(projectRoot, "tracked.txt"), "before\n", "utf8");
+    await runGit(projectRoot, "git add -A && git commit -m 'chore: seed'");
+    await writeFile(join(projectRoot, "tracked.txt"), "after\n", "utf8");
+
+    const statePath = join(projectRoot, ".agents", "state.json");
+    const beforeState = await Bun.file(statePath).text();
+    process.exitCode = 0;
+
+    let caught: unknown = null;
+    await withCwd(projectRoot, async () => {
+      try {
+        await runApprovePrototype();
+      } catch (error) {
+        caught = error;
+      }
+    });
+
+    expect(caught).toBeInstanceOf(Error);
+    expect((caught as Error).message).toContain("Failed to push prototype approval commit");
+    expect(process.exitCode).toBe(1);
+
+    const afterState = await Bun.file(statePath).text();
+    expect(afterState).toBe(beforeState);
   });
 });

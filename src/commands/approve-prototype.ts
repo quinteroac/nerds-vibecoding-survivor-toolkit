@@ -13,6 +13,8 @@ interface ApprovePrototypeDeps {
   readStateFn: typeof readState;
   runGitStatusFn: (projectRoot: string) => Promise<CommandResult>;
   runStageAndCommitFn: (projectRoot: string, message: string) => Promise<CommandResult>;
+  runCurrentBranchFn: (projectRoot: string) => Promise<CommandResult>;
+  runPushFn: (projectRoot: string, branch: string) => Promise<CommandResult>;
 }
 
 const defaultDeps: ApprovePrototypeDeps = {
@@ -31,6 +33,28 @@ const defaultDeps: ApprovePrototypeDeps = {
   },
   runStageAndCommitFn: async (projectRoot: string, message: string): Promise<CommandResult> => {
     const result = await dollar`git add -A && git commit -m ${message}`
+      .cwd(projectRoot)
+      .nothrow()
+      .quiet();
+    return {
+      exitCode: result.exitCode,
+      stdout: result.stdout.toString().trim(),
+      stderr: result.stderr.toString().trim(),
+    };
+  },
+  runCurrentBranchFn: async (projectRoot: string): Promise<CommandResult> => {
+    const result = await dollar`git branch --show-current`
+      .cwd(projectRoot)
+      .nothrow()
+      .quiet();
+    return {
+      exitCode: result.exitCode,
+      stdout: result.stdout.toString().trim(),
+      stderr: result.stderr.toString().trim(),
+    };
+  },
+  runPushFn: async (projectRoot: string, branch: string): Promise<CommandResult> => {
+    const result = await dollar`git push -u origin ${branch}`
       .cwd(projectRoot)
       .nothrow()
       .quiet();
@@ -66,6 +90,21 @@ export async function runApprovePrototype(
   if (commitResult.exitCode !== 0) {
     throw new Error(
       `Failed to create prototype approval commit: ${commitResult.stderr || "git commit command failed."}`,
+    );
+  }
+
+  const branchResult = await mergedDeps.runCurrentBranchFn(projectRoot);
+  if (branchResult.exitCode !== 0 || !branchResult.stdout) {
+    throw new Error(
+      `Failed to detect current branch for push: ${branchResult.stderr || "branch name is empty."}`,
+    );
+  }
+
+  const pushResult = await mergedDeps.runPushFn(projectRoot, branchResult.stdout);
+  if (pushResult.exitCode !== 0) {
+    process.exitCode = 1;
+    throw new Error(
+      `Failed to push prototype approval commit to origin/${branchResult.stdout}: ${pushResult.stderr || "git push command failed."}`,
     );
   }
 
