@@ -1,0 +1,8 @@
+[
+  {
+    "id": "ISSUE-000017-001",
+    "title": "Start iteration overrides flow_guardrail configuration",
+    "description": "When running start iteration with flow_guardrail configured, the command removes or overwrites that configuration. Expected: flow_guardrail settings should be preserved when starting an iteration.",
+    "status": "fixed"
+  }
+]

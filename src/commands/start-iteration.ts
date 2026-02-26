@@ -92,6 +92,11 @@ export async function runStartIteration(): Promise<void> {
     };
   }
 
+  // Preserve flow_guardrail so user configuration is not lost when starting an iteration
+  if (parsedState.flow_guardrail !== undefined) {
+    nextState.flow_guardrail = parsedState.flow_guardrail;
+  }
+
   await writeState(projectRoot, nextState);
 
   console.log(

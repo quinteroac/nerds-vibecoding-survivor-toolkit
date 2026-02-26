@@ -89,6 +89,58 @@ describe("start-iteration command", () => {
     });
   });
 
+  test("preserves flow_guardrail when starting a new iteration", async () => {
+    const projectRoot = await createProjectRoot();
+    createdRoots.push(projectRoot);
+    const flowDir = join(projectRoot, ".agents", "flow");
+    await mkdir(flowDir, { recursive: true });
+
+    await writeFile(
+      join(projectRoot, ".agents", "state.json"),
+      JSON.stringify(
+        {
+          current_iteration: "000003",
+          current_phase: "define",
+          flow_guardrail: "relaxed",
+          phases: {
+            define: {
+              requirement_definition: { status: "pending", file: null },
+              prd_generation: { status: "pending", file: null },
+            },
+            prototype: {
+              project_context: { status: "pending", file: null },
+              test_plan: { status: "pending", file: null },
+              tp_generation: { status: "pending", file: null },
+              prototype_build: { status: "pending", file: null },
+              test_execution: { status: "pending", file: null },
+              prototype_approved: false,
+            },
+            refactor: {
+              evaluation_report: { status: "pending", file: null },
+              refactor_plan: { status: "pending", file: null },
+              refactor_execution: { status: "pending", file: null },
+              changelog: { status: "pending", file: null },
+            },
+          },
+          last_updated: "2026-02-22T20:00:00.000Z",
+          history: [],
+        },
+        null,
+        2,
+      ),
+    );
+
+    await writeFile(join(flowDir, "it_000003_PRD.json"), "{}");
+
+    await withCwd(projectRoot, async () => {
+      await runStartIteration();
+    });
+
+    const state = await readState(projectRoot);
+    expect(state.current_iteration).toBe("000004");
+    expect(state.flow_guardrail).toBe("relaxed");
+  });
+
   test("does not preserve project_context when it was pending", async () => {
     const projectRoot = await createProjectRoot();
     createdRoots.push(projectRoot);
