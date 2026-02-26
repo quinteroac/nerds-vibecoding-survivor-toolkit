@@ -32,6 +32,7 @@ Apply the provided refactor item to the codebase, following the project's conven
 | `refactor_item_description` (context variable) | Detailed description of the change to apply |
 | `refactor_item_rationale` (context variable) | Why this refactor is needed |
 | `iteration` (context variable) | Current iteration number for context |
+| `.agents/PROJECT_CONTEXT.md` | Documented conventions, architecture, and standards to follow |
 
 ---
 
