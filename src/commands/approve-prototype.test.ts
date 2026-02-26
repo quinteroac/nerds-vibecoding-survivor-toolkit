@@ -33,11 +33,22 @@ async function runGit(projectRoot: string, command: string): Promise<string> {
   return result.stdout.toString().trim();
 }
 
-async function seedState(projectRoot: string, iteration = "000016"): Promise<void> {
+interface SeedStateOptions {
+  iteration?: string;
+  currentPhase?: "define" | "prototype" | "refactor";
+  prototypeApproved?: boolean;
+}
+
+async function seedState(projectRoot: string, opts: SeedStateOptions = {}): Promise<void> {
+  const {
+    iteration = "000016",
+    currentPhase = "prototype",
+    prototypeApproved = false,
+  } = opts;
   await mkdir(join(projectRoot, ".agents", "flow"), { recursive: true });
   await writeState(projectRoot, {
     current_iteration: iteration,
-    current_phase: "prototype",
+    current_phase: currentPhase,
     phases: {
       define: {
         requirement_definition: { status: "approved", file: "it_000016_product-requirement-document.md" },
@@ -49,7 +60,7 @@ async function seedState(projectRoot: string, iteration = "000016"): Promise<voi
         tp_generation: { status: "created", file: "it_000016_TP.json" },
         prototype_build: { status: "created", file: "it_000016_progress.json" },
         test_execution: { status: "completed", file: "it_000016_test-execution-progress.json" },
-        prototype_approved: false,
+        prototype_approved: prototypeApproved,
       },
       refactor: {
         evaluation_report: { status: "pending", file: null },
@@ -77,16 +88,16 @@ describe("approve prototype command", () => {
 
     expect(source).toContain('import { runApprovePrototype } from "./commands/approve-prototype";');
     expect(source).toContain('if (subcommand === "prototype") {');
-    expect(source).toContain("await runApprovePrototype();");
+    expect(source).toContain("await runApprovePrototype({ force });");
   });
 
-  test("stages all pending changes and creates conventional commit using current iteration", async () => {
+  test("stages all pending changes, commits/pushes, and marks prototype as approved", async () => {
     const projectRoot = await createProjectRoot();
     const remoteRoot = await createBareRemoteRoot();
     createdRoots.push(projectRoot);
     createdRoots.push(remoteRoot);
 
-    await seedState(projectRoot, "000016");
+    await seedState(projectRoot, { iteration: "000016" });
     await runGit(projectRoot, "git init");
     await runGit(projectRoot, "git config user.email 'nvst@example.com'");
     await runGit(projectRoot, "git config user.name 'NVST Test'");
@@ -102,6 +113,8 @@ describe("approve prototype command", () => {
     await rm(join(projectRoot, "tracked-deleted.txt"));
     await writeFile(join(projectRoot, "untracked-added.txt"), "new\n", "utf8");
 
+    const beforeState = await Bun.file(join(projectRoot, ".agents", "state.json")).json();
+
     await withCwd(projectRoot, async () => {
       await runApprovePrototype();
     });
@@ -114,18 +127,19 @@ describe("approve prototype command", () => {
     expect(changedFiles).toContain("tracked-deleted.txt");
     expect(changedFiles).toContain("untracked-added.txt");
 
-    const status = await runGit(projectRoot, "git status --porcelain");
-    expect(status).toBe("");
-
     const upstream = await runGit(projectRoot, "git rev-parse --abbrev-ref --symbolic-full-name @{u}");
     expect(upstream).toBe("origin/main");
+
+    const afterState = await Bun.file(join(projectRoot, ".agents", "state.json")).json();
+    expect(afterState.phases.prototype.prototype_approved).toBe(true);
+    expect(afterState.last_updated).not.toBe(beforeState.last_updated);
   });
 
   test("prints informative message and skips commit when working tree is clean", async () => {
     const projectRoot = await createProjectRoot();
     createdRoots.push(projectRoot);
 
-    await seedState(projectRoot, "000016");
+    await seedState(projectRoot, { iteration: "000016" });
     await runGit(projectRoot, "git init");
     await runGit(projectRoot, "git config user.email 'nvst@example.com'");
     await runGit(projectRoot, "git config user.name 'NVST Test'");
@@ -136,7 +150,7 @@ describe("approve prototype command", () => {
     const logs: string[] = [];
 
     await withCwd(projectRoot, async () => {
-      await runApprovePrototype({
+      await runApprovePrototype({}, {
         logFn: (message) => {
           logs.push(message);
         },
@@ -155,7 +169,7 @@ describe("approve prototype command", () => {
     const projectRoot = await createProjectRoot();
     createdRoots.push(projectRoot);
 
-    await seedState(projectRoot, "000016");
+    await seedState(projectRoot, { iteration: "000016" });
     await runGit(projectRoot, "git init");
     await runGit(projectRoot, "git config user.email 'nvst@example.com'");
     await runGit(projectRoot, "git config user.name 'NVST Test'");
@@ -183,5 +197,45 @@ describe("approve prototype command", () => {
 
     const afterState = await Bun.file(statePath).text();
     expect(afterState).toBe(beforeState);
+  });
+
+  test("throws descriptive error when prototype is already approved", async () => {
+    const projectRoot = await createProjectRoot();
+    createdRoots.push(projectRoot);
+    await seedState(projectRoot, { prototypeApproved: true });
+
+    let caught: unknown = null;
+    await withCwd(projectRoot, async () => {
+      try {
+        await runApprovePrototype();
+      } catch (error) {
+        caught = error;
+      }
+    });
+
+    expect(caught).toBeInstanceOf(Error);
+    expect((caught as Error).message).toContain(
+      "Cannot approve prototype: phases.prototype.prototype_approved is already true.",
+    );
+  });
+
+  test("blocks approval when current phase is not prototype", async () => {
+    const projectRoot = await createProjectRoot();
+    createdRoots.push(projectRoot);
+    await seedState(projectRoot, { currentPhase: "define" });
+
+    let caught: unknown = null;
+    await withCwd(projectRoot, async () => {
+      try {
+        await runApprovePrototype();
+      } catch (error) {
+        caught = error;
+      }
+    });
+
+    expect(caught).toBeInstanceOf(Error);
+    expect((caught as Error).message).toContain(
+      "Cannot approve prototype: current_phase must be 'prototype'. Current: 'define'.",
+    );
   });
 });

@@ -566,7 +566,7 @@ Providers: claude, codex, gemini, cursor`);
     }
 
     if (subcommand === "prototype") {
-      await runApprovePrototype();
+      await runApprovePrototype({ force });
       return;
     }
 
