@@ -1,0 +1,164 @@
+{
+  "goals": [
+    "Prevent unnecessary process crashes caused by phase/status mismatches.",
+    "Give developers two escape hatches: interactive confirmation when `flow_guardrail` is `\"relaxed\"`, and `--force` (scriptable).",
+    "Default to strict (hard error) when `flow_guardrail` is absent; allow teams to opt into relaxed (warn + prompt) or to keep strict via `state.json`.",
+    "Centralize guardrail logic so all commands behave consistently."
+  ],
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Warning and confirmation instead of error",
+      "description": "As a developer running `bun nvst <command>` interactively, I want out-of-sequence commands to warn me and ask for confirmation instead of crashing so that I can recover from workflow missteps without having to restart or manually edit state.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-001-AC01",
+          "text": "When a phase/status violation is detected and `flow_guardrail` is `\"relaxed\"`, the command prints a warning to stderr describing the specific violation (e.g. `Warning: current_phase is 'prototype' but 'define' is required.`)"
+        },
+        {
+          "id": "US-001-AC02",
+          "text": "Immediately after the warning, the command prints a confirmation prompt to stderr: `Proceed anyway? [y/N]`"
+        },
+        {
+          "id": "US-001-AC03",
+          "text": "If the user enters `y` or `Y` and presses Enter, the command continues normally"
+        },
+        {
+          "id": "US-001-AC04",
+          "text": "If the user enters anything else or presses Enter without input, the command exits with `process.exitCode = 1` and prints `Aborted.` to stderr, making no changes to state or files"
+        },
+        {
+          "id": "US-001-AC05",
+          "text": "When in relaxed mode without `--force`, if the command cannot read a line from stdin (e.g. stdin is closed or not a TTY), the command treats it as no confirmation: exit with code 1 and print `Aborted.` to stderr, without modifying state or files"
+        },
+        {
+          "id": "US-001-AC06",
+          "text": "The warning and prompt are written to stderr, not stdout"
+        },
+        {
+          "id": "US-001-AC07",
+          "text": "Typecheck / lint passes"
+        }
+      ]
+    },
+    {
+      "id": "US-002",
+      "title": "`--force` flag bypasses confirmation prompt",
+      "description": "As a developer, I want to pass `--force` to any NVST command to skip the interactive confirmation so that I can bypass the guardrail in scripts or quickly without manual confirmation.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-002-AC01",
+          "text": "All commands that perform phase/status validation accept a `--force` flag (e.g. `bun nvst define requirement --force`)"
+        },
+        {
+          "id": "US-002-AC02",
+          "text": "With `--force`, the warning message is still printed to stderr, but no confirmation prompt is shown and the command proceeds immediately"
+        },
+        {
+          "id": "US-002-AC03",
+          "text": "`--force` works in both `\"relaxed\"` and `\"strict\"` modes (it always bypasses the check)"
+        },
+        {
+          "id": "US-002-AC04",
+          "text": "Commands that do not yet implement phase/status validation (and therefore do not accept `--force`) ignore unknown flags so that invocations like `bun nvst <command> --force` do not cause a parse error or exit code ≠ 0 when the command runs successfully; if a command is updated to perform guardrail checks, it must accept `--force`"
+        },
+        {
+          "id": "US-002-AC05",
+          "text": "Typecheck / lint passes"
+        }
+      ]
+    },
+    {
+      "id": "US-003",
+      "title": "`flow_guardrail=\"strict\"` restores hard-error behavior",
+      "description": "As a developer or CI operator, I want to set `flow_guardrail=\"strict\"` in `state.json` so that phase violations throw a hard error (the original behavior) and cannot be bypassed interactively.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-003-AC01",
+          "text": "`StateSchema` in `scaffold/schemas/tmpl_state.ts` accepts a new optional top-level field `flow_guardrail: z.enum([\"strict\", \"relaxed\"]).optional()`; all other existing fields are unchanged"
+        },
+        {
+          "id": "US-003-AC02",
+          "text": "The corresponding schema copy in `schemas/` is updated to match"
+        },
+        {
+          "id": "US-003-AC03",
+          "text": "When `flow_guardrail` is `\"strict\"` and a violation is detected (and `--force` is not passed), the command throws an `Error` with the same message as today (no prompt)"
+        },
+        {
+          "id": "US-003-AC04",
+          "text": "When `flow_guardrail` is absent, behavior defaults to `\"strict\"` (hard error, same as today)"
+        },
+        {
+          "id": "US-003-AC05",
+          "text": "Existing `state.json` files without `flow_guardrail` continue to parse successfully (field is optional)"
+        },
+        {
+          "id": "US-003-AC06",
+          "text": "Typecheck / lint passes"
+        }
+      ]
+    },
+    {
+      "id": "US-004",
+      "title": "Shared guardrail utility used by all commands",
+      "description": "As a maintainer of NVST, I want the warn/prompt/throw decision centralized in a single utility function so that all commands behave consistently and future changes require editing only one place.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-004-AC01",
+          "text": "A new exported function (e.g. `assertGuardrail(state, condition, message, options: { force: boolean })`) is added to an appropriate shared module (e.g. `src/guardrail.ts`)"
+        },
+        {
+          "id": "US-004-AC02",
+          "text": "The function: throws if `strict` and not `force`; warns + prompts if `relaxed` and not `force`; warns and skips prompt if `force`"
+        },
+        {
+          "id": "US-004-AC03",
+          "text": "All existing commands that inline `throw new Error(...)` for phase/status violations are updated to call `assertGuardrail` instead — specifically: `define-requirement.ts`, `create-prototype.ts`, `execute-refactor.ts`, `define-refactor-plan.ts`, and any other command with a phase guard"
+        },
+        {
+          "id": "US-004-AC04",
+          "text": "No command retains an inline phase-guard `throw`; all route through `assertGuardrail`"
+        },
+        {
+          "id": "US-004-AC05",
+          "text": "Typecheck / lint passes"
+        }
+      ]
+    }
+  ],
+  "functionalRequirements": [
+    {
+      "id": "FR-1",
+      "description": "** `StateSchema` gains an optional top-level field `flow_guardrail: z.enum([\"strict\", \"relaxed\"]).optional()`. No existing field is renamed, removed, or type-changed."
+    },
+    {
+      "id": "FR-2",
+      "description": "** When `flow_guardrail` is absent, the runtime default is `\"strict\"`."
+    },
+    {
+      "id": "FR-3",
+      "description": "** A new shared function `assertGuardrail(state, violated, message, opts)` in `src/guardrail.ts` encapsulates the three behaviors: throw (strict, no force), warn+prompt (relaxed, no force), warn+skip (force)."
+    },
+    {
+      "id": "FR-4",
+      "description": "** The confirmation prompt reads stdin line by line; only `y` or `Y` is treated as confirmation."
+    },
+    {
+      "id": "FR-5",
+      "description": "** `--force` is parsed by each command handler from its `argv` and forwarded to `assertGuardrail`."
+    },
+    {
+      "id": "FR-6",
+      "description": "** Warning and prompt output goes to stderr; normal command output continues to go to stdout."
+    },
+    {
+      "id": "FR-7",
+      "description": "** Commands affected by this change: `define-requirement`, `create-prototype`, `execute-refactor`, `define-refactor-plan`. Any other command with a phase guard must also be updated (implementor to audit at implementation time)."
+    },
+    {
+      "id": "FR-8",
+      "description": "** The schema copy under `schemas/` must mirror the change to `scaffold/schemas/tmpl_state.ts`."
+    }
+  ]
+}
