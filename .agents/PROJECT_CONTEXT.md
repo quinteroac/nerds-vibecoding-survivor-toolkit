@@ -5,7 +5,7 @@
 ## Conventions
 - Naming: files use `kebab-case.ts`; exported command handlers use `camelCase` with `run` prefix (e.g. `runCreateProjectContext`); other exported helpers use standard `camelCase`; types/interfaces use `PascalCase`; Zod schemas use `PascalCaseSchema` (e.g. `StateSchema`); constants use `UPPER_SNAKE_CASE`
 - Formatting: no enforced formatter (no Prettier/ESLint config); rely on TypeScript strict mode for correctness
-- Git flow: trunk-based on `master`; conventional commit prefixes (`feat:`, `fix:`, `refactor:`)
+- Git flow: trunk-based on `main`; conventional commit prefixes (`feat:`, `fix:`, `refactor:`); iteration work commonly happens on `feature/it_XXXXXX` branches
 - Workflow: NVST manages iterations via `state.json`; all commands validate state before acting and persist transitions back
 
 ## Tech Stack
@@ -26,7 +26,7 @@
 - Approach: initial unit tests for core modules; schema validation scripts and manual CLI verification for the rest
 - Runner: `bun:test` (Bun built-in)
 - Coverage targets: none defined yet
-- Test location convention: co-located `*.test.ts` files alongside source (e.g. `src/state.test.ts`)
+- Test location convention: co-located `src/**/*.test.ts` for most unit/command tests; `tests/**/*.test.ts` for workflow/integration tests; `schemas/**/*.test.ts` for schema tests
 
 ## Product Architecture
 - NVST is a CLI toolkit (`bun nvst <command>`) that orchestrates an iterative development workflow through three phases: Define → Prototype → Refactor
@@ -57,7 +57,13 @@
 - `nvst start iteration`: begin a new iteration cycle
 - `nvst create project-context` / `refine project-context` / `approve project-context`: full project context definition and refinement flow
 - `nvst define requirement` / `refine requirement` / `approve requirement`: full requirement definition flow with interactive refinement and challenge mode
+- `nvst create test-plan` / `refine test-plan` / `approve test-plan`: test plan definition and approval flow
+- `nvst define refactor-plan` / `refine refactor-plan` / `approve refactor-plan`: refactor plan definition and approval flow
 - `nvst create prototype`: iterative agent-driven implementation of user stories with progress tracking, quality checks, and git automation
+- `nvst create issue`: issue creation flow (including `--test-execution-report`)
+- `nvst execute test-plan`: execute approved structured test plan JSON via agent
+- `nvst execute automated-fix` / `nvst execute manual-fix`: issue-driven fixing flows
+- `nvst execute refactor`: execute approved refactor items via agent
 - `nvst write-json`: schema-validated JSON generation from agent output
-- Agent invocation system: multi-provider support (Claude, Codex, Gemini) with skill-based prompt loading
+- Agent invocation system: multi-provider support (Claude, Codex, Gemini, Cursor CLI) with skill-based prompt loading
 - State management: Zod-validated `state.json` with phase/status tracking
