@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { mkdtemp } from "node:fs/promises";
 
+import type { AgentResult } from "../agent";
 import { readState, writeState } from "../state";
 import type { State } from "../../scaffold/schemas/tmpl_state";
 import { runCreatePrototype } from "./create-prototype";
@@ -75,6 +76,22 @@ async function seedPrd(projectRoot: string, iteration: string): Promise<void> {
     JSON.stringify(MINIMAL_PRD),
     "utf8",
   );
+}
+
+async function seedProjectContext(projectRoot: string): Promise<void> {
+  await mkdir(join(projectRoot, ".agents"), { recursive: true });
+  await writeFile(join(projectRoot, ".agents", "PROJECT_CONTEXT.md"), "# Project Context\n", "utf8");
+}
+
+async function initGitRepo(projectRoot: string): Promise<void> {
+  const { $ } = await import("bun");
+  await $`git init`.cwd(projectRoot).nothrow().quiet();
+  await $`git config user.email "test@test" && git config user.name "Test"`.cwd(projectRoot).nothrow().quiet();
+  await $`git add -A && git commit -m init`.cwd(projectRoot).nothrow().quiet();
+}
+
+function makeAgentResult(exitCode: number): AgentResult {
+  return { exitCode, stdout: "", stderr: "" };
 }
 
 const createdRoots: string[] = [];
@@ -167,5 +184,127 @@ describe("create prototype phase validation", () => {
         "PRD source of truth missing",
       );
     });
+  });
+});
+
+describe("create prototype gh PR creation", () => {
+  test("runs gh pr create with generated title/body when gh is available", async () => {
+    const root = await createProjectRoot();
+    createdRoots.push(root);
+    const iteration = "000016";
+    await seedState(root, makeState({ currentPhase: "prototype", projectContextStatus: "created", iteration }));
+    await seedPrd(root, iteration);
+    await seedProjectContext(root);
+    await initGitRepo(root);
+
+    let prTitle = "";
+    let prBody = "";
+
+    await withCwd(root, async () => {
+      await runCreatePrototype(
+        { provider: "claude" },
+        {
+          loadSkillFn: async () => "Implement story",
+          invokeAgentFn: async ({ cwd }) => {
+            if (!cwd) {
+              throw new Error("Expected cwd");
+            }
+            await writeFile(join(cwd, "story.txt"), "implemented\n", "utf8");
+            return makeAgentResult(0);
+          },
+          checkGhAvailableFn: async () => true,
+          createPullRequestFn: async (_projectRoot, title, body) => {
+            prTitle = title;
+            prBody = body;
+            return { exitCode: 0, stderr: "" };
+          },
+        },
+      );
+    });
+
+    expect(prTitle).toBe("feat: prototype it_000016");
+    expect(prBody).toBe("Prototype for iteration it_000016");
+  });
+
+  test("logs skip message and exits cleanly when gh is unavailable", async () => {
+    const root = await createProjectRoot();
+    createdRoots.push(root);
+    const iteration = "000016";
+    await seedState(root, makeState({ currentPhase: "prototype", projectContextStatus: "created", iteration }));
+    await seedPrd(root, iteration);
+    await seedProjectContext(root);
+    await initGitRepo(root);
+
+    let createPrCalled = false;
+    const logs: string[] = [];
+
+    await withCwd(root, async () => {
+      await runCreatePrototype(
+        { provider: "claude" },
+        {
+          loadSkillFn: async () => "Implement story",
+          invokeAgentFn: async ({ cwd }) => {
+            if (!cwd) {
+              throw new Error("Expected cwd");
+            }
+            await writeFile(join(cwd, "story.txt"), "implemented\n", "utf8");
+            return makeAgentResult(0);
+          },
+          checkGhAvailableFn: async () => false,
+          createPullRequestFn: async () => {
+            createPrCalled = true;
+            return { exitCode: 0, stderr: "" };
+          },
+          logFn: (message) => {
+            logs.push(message);
+          },
+        },
+      );
+    });
+
+    expect(createPrCalled).toBe(false);
+    expect(logs).toContain("gh CLI not found — skipping PR creation");
+  });
+
+  test("treats gh pr create failures as non-fatal warnings and still updates state", async () => {
+    const root = await createProjectRoot();
+    createdRoots.push(root);
+    const iteration = "000016";
+    await seedState(root, makeState({ currentPhase: "prototype", projectContextStatus: "created", iteration }));
+    await seedPrd(root, iteration);
+    await seedProjectContext(root);
+    await initGitRepo(root);
+
+    const warnings: string[] = [];
+
+    await withCwd(root, async () => {
+      await runCreatePrototype(
+        { provider: "claude" },
+        {
+          loadSkillFn: async () => "Implement story",
+          invokeAgentFn: async ({ cwd }) => {
+            if (!cwd) {
+              throw new Error("Expected cwd");
+            }
+            await writeFile(join(cwd, "story.txt"), "implemented\n", "utf8");
+            return makeAgentResult(0);
+          },
+          checkGhAvailableFn: async () => true,
+          createPullRequestFn: async () => ({
+            exitCode: 1,
+            stderr: "a pull request for branch already exists",
+          }),
+          warnFn: (message) => {
+            warnings.push(message);
+          },
+        },
+      );
+    });
+
+    expect(warnings).toHaveLength(1);
+    expect(warnings[0]).toContain("gh pr create failed (non-fatal)");
+
+    const updatedState = await readState(root);
+    expect(updatedState.phases.prototype.prototype_build.status).toBe("created");
   });
 });
