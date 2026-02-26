@@ -387,7 +387,7 @@ describe("execute refactor command", () => {
     expect(progress.entries[1].last_agent_exit_code).toBe(0);
   });
 
-  // AC09: Progress file is written after each agent invocation
+  // AC09: Progress file is written after each agent invocation (via write-json)
   test("writes progress file after each agent invocation", async () => {
     const projectRoot = await createProjectRoot();
     createdRoots.push(projectRoot);
@@ -398,7 +398,6 @@ describe("execute refactor command", () => {
     ]);
 
     const progressSnapshots: Array<ReturnType<typeof RefactorExecutionProgressSchema.parse>> = [];
-    const progressPath = join(projectRoot, ".agents", "flow", "it_000013_refactor-execution-progress.json");
 
     await withCwd(projectRoot, async () => {
       await runExecuteRefactor(
@@ -407,26 +406,23 @@ describe("execute refactor command", () => {
           loadSkillFn: makeSkillFn(),
           invokeAgentFn: async (opts) => {
             const id = opts.prompt.includes("RI-001") ? "RI-001" : "RI-002";
-            const result = makeAgentResult(id === "RI-001" ? 1 : 0);
-            // Read the progress file after agent returns (before next iteration)
-            return result;
+            return makeAgentResult(id === "RI-001" ? 1 : 0);
           },
-          writeFileFn: async (path, content, encoding) => {
-            await writeFile(path, content as string, encoding as "utf8");
-            // Capture progress after write
-            if (path === progressPath) {
-              const parsed = JSON.parse(content as string) as unknown;
+          invokeWriteJsonFn: async (_root, schemaName, _outPath, data) => {
+            if (schemaName === "refactor-execution-progress") {
+              const parsed = JSON.parse(data) as unknown;
               const validation = RefactorExecutionProgressSchema.safeParse(parsed);
               if (validation.success) {
                 progressSnapshots.push(validation.data);
               }
             }
+            return { exitCode: 0, stderr: "" };
           },
         },
       );
     });
 
-    // Two snapshots: one per item
+    // Two snapshots: one per item (after RI-001, after RI-002)
     expect(progressSnapshots.length).toBeGreaterThanOrEqual(2);
     // After RI-001 write: RI-001 failed
     const afterRi001 = progressSnapshots.find((s) =>
@@ -759,6 +755,19 @@ describe("execute refactor command", () => {
       expect(result.data.entries[1].attempt_count).toBe(1);
       expect(result.data.entries[1].last_agent_exit_code).toBe(0);
       expect(result.data.entries[2].last_agent_exit_code).toBe(1);
+    }
+  });
+
+  test("TC-001-17 / FR-4: RefactorExecutionProgressSchema accepts status in_progress", () => {
+    const payloadWithInProgress = {
+      entries: [
+        { id: "RI-001", title: "T1", status: "in_progress", attempt_count: 1, last_agent_exit_code: null, updated_at: "2026-01-01T00:00:00.000Z" },
+      ],
+    };
+    const result = RefactorExecutionProgressSchema.safeParse(payloadWithInProgress);
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.entries[0].status).toBe("in_progress");
     }
   });
 

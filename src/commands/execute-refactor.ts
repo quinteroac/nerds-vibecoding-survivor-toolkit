@@ -1,8 +1,12 @@
+import { $ } from "bun";
 import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { z } from "zod";
 
 import { RefactorPrdSchema } from "../../scaffold/schemas/tmpl_refactor-prd";
+import {
+  RefactorExecutionProgressSchema,
+  type RefactorExecutionProgress,
+} from "../../scaffold/schemas/tmpl_refactor-execution-progress";
 import {
   buildPrompt,
   invokeAgent,
@@ -11,30 +15,30 @@ import {
   type AgentProvider,
   type AgentResult,
 } from "../agent";
+import { CLI_PATH } from "../cli-path";
 import { exists, FLOW_REL_DIR, readState, writeState } from "../state";
 
 export interface ExecuteRefactorOptions {
   provider: AgentProvider;
 }
 
-const RefactorExecutionEntrySchema = z.object({
-  id: z.string(),
-  title: z.string(),
-  status: z.enum(["pending", "completed", "failed"]),
-  attempt_count: z.number().int(),
-  last_agent_exit_code: z.number().int().nullable(),
-  updated_at: z.string(),
-});
+export { RefactorExecutionProgressSchema };
+export type { RefactorExecutionProgress };
 
-export const RefactorExecutionProgressSchema = z.object({
-  entries: z.array(RefactorExecutionEntrySchema),
-});
-
-export type RefactorExecutionProgress = z.infer<typeof RefactorExecutionProgressSchema>;
+interface WriteJsonResult {
+  exitCode: number;
+  stderr: string;
+}
 
 interface ExecuteRefactorDeps {
   existsFn: (path: string) => Promise<boolean>;
   invokeAgentFn: (options: AgentInvokeOptions) => Promise<AgentResult>;
+  invokeWriteJsonFn: (
+    projectRoot: string,
+    schemaName: string,
+    outPath: string,
+    data: string,
+  ) => Promise<WriteJsonResult>;
   loadSkillFn: (projectRoot: string, skillName: string) => Promise<string>;
   logFn: (message: string) => void;
   nowFn: () => Date;
@@ -42,9 +46,27 @@ interface ExecuteRefactorDeps {
   writeFileFn: typeof writeFile;
 }
 
+async function runWriteJsonCommand(
+  projectRoot: string,
+  schemaName: string,
+  outPath: string,
+  data: string,
+): Promise<WriteJsonResult> {
+  const result =
+    await $`bun ${CLI_PATH} write-json --schema ${schemaName} --out ${outPath} --data ${data}`
+      .cwd(projectRoot)
+      .nothrow()
+      .quiet();
+  return {
+    exitCode: result.exitCode,
+    stderr: result.stderr.toString().trim(),
+  };
+}
+
 const defaultDeps: ExecuteRefactorDeps = {
   existsFn: exists,
   invokeAgentFn: invokeAgent,
+  invokeWriteJsonFn: runWriteJsonCommand,
   loadSkillFn: loadSkill,
   logFn: console.log,
   nowFn: () => new Date(),
@@ -177,11 +199,17 @@ export async function runExecuteRefactor(
         updated_at: now,
       })),
     };
-    await mergedDeps.writeFileFn(
-      progressPath,
-      `${JSON.stringify(progressData, null, 2)}\n`,
-      "utf8",
+    const writeResult = await mergedDeps.invokeWriteJsonFn(
+      projectRoot,
+      "refactor-execution-progress",
+      join(FLOW_REL_DIR, progressFileName),
+      JSON.stringify(progressData),
     );
+    if (writeResult.exitCode !== 0) {
+      throw new Error(
+        `Failed to write refactor execution progress: ${writeResult.stderr || "write-json exited non-zero"}.`,
+      );
+    }
   }
 
   // AC07, AC08, AC09, AC10: Process each item in order
@@ -191,13 +219,28 @@ export async function runExecuteRefactor(
       continue;
     }
 
-    // AC07: Build prompt with skill and item context
+    // Set current item to in_progress before invoking agent (FR-4; observability on interrupt)
+    entry.status = "in_progress";
+    entry.updated_at = mergedDeps.nowFn().toISOString();
+    const writeInProgressResult = await mergedDeps.invokeWriteJsonFn(
+      projectRoot,
+      "refactor-execution-progress",
+      join(FLOW_REL_DIR, progressFileName),
+      JSON.stringify(progressData),
+    );
+    if (writeInProgressResult.exitCode !== 0) {
+      throw new Error(
+        `Failed to write refactor execution progress: ${writeInProgressResult.stderr || "write-json exited non-zero"}.`,
+      );
+    }
+
+    // AC07: Build prompt with skill and item context (FR-6 variable names)
     const prompt = buildPrompt(skillTemplate, {
-      iteration,
-      refactor_item_id: item.id,
-      refactor_item_title: item.title,
-      refactor_item_description: item.description,
-      refactor_item_rationale: item.rationale,
+      current_iteration: iteration,
+      item_id: item.id,
+      item_title: item.title,
+      item_description: item.description,
+      item_rationale: item.rationale,
     });
 
     // AC08: Invoke agent in interactive mode
@@ -215,11 +258,17 @@ export async function runExecuteRefactor(
     entry.last_agent_exit_code = agentResult.exitCode;
     entry.updated_at = mergedDeps.nowFn().toISOString();
 
-    await mergedDeps.writeFileFn(
-      progressPath,
-      `${JSON.stringify(progressData, null, 2)}\n`,
-      "utf8",
+    const writeResult = await mergedDeps.invokeWriteJsonFn(
+      projectRoot,
+      "refactor-execution-progress",
+      join(FLOW_REL_DIR, progressFileName),
+      JSON.stringify(progressData),
     );
+    if (writeResult.exitCode !== 0) {
+      throw new Error(
+        `Failed to write refactor execution progress: ${writeResult.stderr || "write-json exited non-zero"}.`,
+      );
+    }
 
     mergedDeps.logFn(
       `iteration=it_${iteration} item=${item.id} outcome=${entry.status}`,

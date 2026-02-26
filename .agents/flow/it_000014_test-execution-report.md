@@ -2,8 +2,8 @@
 
 - Test Plan: `it_000014_TP.json`
 - Total Tests: 39
-- Passed: 37
-- Failed: 2
+- Passed: 39
+- Failed: 0
 
 | Test ID | Description | Status | Correlated Requirements | Artifacts |
 | --- | --- | --- | --- | --- |
@@ -23,7 +23,7 @@
 | TC-001-14 | `refactor_execution.file` is set to progress file name (e.g. `it_{iteration}_refactor-execution-progress.json`) | passed | US-001, FR-9 | `.agents/flow/it_000014_test-execution-artifacts/TC-001-14_attempt_001.json` |
 | TC-001-15 | After run, `state.last_updated` and `state.updated_by = "nvst:execute-refactor"` are written | passed | US-001, FR-9 | `.agents/flow/it_000014_test-execution-artifacts/TC-001-15_attempt_001.json` |
 | TC-001-16 | Progress file path is `.agents/flow/it_{iteration}_refactor-execution-progress.json` | passed | US-001, FR-5 | `.agents/flow/it_000014_test-execution-artifacts/TC-001-16_attempt_001.json` |
-| TC-001-17 | Progress file schema has entries with `id`, `title`, `status`, `attempt_count`, `last_agent_exit_code`, `updated_at` | failed | US-001, FR-4 | `.agents/flow/it_000014_test-execution-artifacts/TC-001-17_attempt_001.json` |
+| TC-001-17 | Progress file schema has entries with `id`, `title`, `status`, `attempt_count`, `last_agent_exit_code`, `updated_at` | passed | US-001, FR-4 | `.agents/flow/it_000014_test-execution-artifacts/TC-001-17_attempt_002.json` |
 | TC-001-18 | `src/commands/execute-refactor.ts` exists and exports `runExecuteRefactor` | passed | US-001, FR-10 | `.agents/flow/it_000014_test-execution-artifacts/TC-001-18_attempt_001.json` |
 | TC-001-19 | Handler does not call `process.exit()` under any code path | passed | US-001, FR-10 | `.agents/flow/it_000014_test-execution-artifacts/TC-001-19_attempt_001.json` |
 | TC-001-20 | Typecheck and lint pass for the codebase | passed | US-001 | `.agents/flow/it_000014_test-execution-artifacts/TC-001-20_attempt_001.json` |
@@ -45,5 +45,5 @@
 | TC-005-02 | `printUsage()` includes `execute refactor --agent <provider>` with a one-line description | passed | US-005, FR-12 | `.agents/flow/it_000014_test-execution-artifacts/TC-005-02_attempt_001.json` |
 | TC-005-03 | Unknown options after `--agent <provider>` cause clear error and exit code 1 (consistent with other execute subcommands) | passed | US-005, FR-12 | `.agents/flow/it_000014_test-execution-artifacts/TC-005-03_attempt_001.json` |
 | TC-005-04 | Typecheck and lint pass | passed | US-005 | `.agents/flow/it_000014_test-execution-artifacts/TC-005-04_attempt_001.json` |
-| TC-003-02 | Report includes iteration number, total items, count completed, count failed, and table with columns `RI ID \ | skipped |  | `.agents/flow/it_000014_test-execution-artifacts/TC-003-02_attempt_001.json` |
+| TC-003-02 | Report includes iteration number, total items, count completed, count failed, and table with columns `RI ID \ | passed |  | `.agents/flow/it_000014_test-execution-artifacts/TC-003-02_attempt_002.json` |
 

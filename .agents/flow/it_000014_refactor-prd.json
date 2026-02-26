@@ -1,0 +1,16 @@
+{
+  "refactorItems": [
+    {
+      "id": "RI-001",
+      "title": "Add `in_progress` to refactor progress entry status",
+      "description": "The progress file schema and logic currently use only `\"pending\" | \"completed\" | \"failed\"` for each entry. FR-4 specifies `\"pending\" | \"in_progress\" | \"completed\" | \"failed\"`. Extend `RefactorExecutionProgressSchema` in `execute-refactor.ts` to include `\"in_progress\"`, and set the current item’s entry to `in_progress` before invoking the agent, then to `completed` or `failed` after the invocation. This aligns behaviour with the PRD and improves observability when a run is interrupted mid-item.",
+      "rationale": "Quick win: low effort, clear alignment with FR-4, and no behavioural break (resume and reporting already work). Prioritised first. ---"
+    },
+    {
+      "id": "RI-002",
+      "title": "Align FR-6 / skill prompt variable names",
+      "description": "FR-6 names the prompt variables `current_iteration`, `item_id`, `item_title`, `item_description`, `item_rationale`. The implementation and the `execute-refactor-item` skill use `iteration`, `refactor_item_id`, `refactor_item_title`, `refactor_item_description`, `refactor_item_rationale`. Either update the PRD/FR wording (or iteration artifact that records FR-6) to the actual variable names, or change the code and skill to use the FR names so that documentation and implementation match.",
+      "rationale": "Low-effort consistency fix; avoids future confusion when reading FR-6 or modifying the skill. Second in order after the schema change. ---"
+    }
+  ]
+}

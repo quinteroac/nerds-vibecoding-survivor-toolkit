@@ -6,6 +6,7 @@ import { StateSchema } from "../../scaffold/schemas/tmpl_state";
 import { ProgressSchema } from "../../scaffold/schemas/tmpl_progress";
 import { PrdSchema } from "../../scaffold/schemas/tmpl_prd";
 import { RefactorPrdSchema } from "../../scaffold/schemas/tmpl_refactor-prd";
+import { RefactorExecutionProgressSchema } from "../../scaffold/schemas/tmpl_refactor-execution-progress";
 import { TestPlanSchema } from "../../scaffold/schemas/tmpl_test-plan";
 import { IssuesSchema } from "../../scaffold/schemas/tmpl_issues";
 
@@ -17,6 +18,7 @@ const SCHEMA_REGISTRY: Record<string, ZodSchema> = {
   progress: ProgressSchema,
   prd: PrdSchema,
   "refactor-prd": RefactorPrdSchema,
+  "refactor-execution-progress": RefactorExecutionProgressSchema,
   "test-plan": TestPlanSchema,
   issues: IssuesSchema,
 };

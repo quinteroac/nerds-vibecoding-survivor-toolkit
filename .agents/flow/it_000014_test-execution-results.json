@@ -2,44 +2,7 @@
   "iteration": "000014",
   "testPlanFile": "it_000014_TP.json",
   "executedTestIds": [
-    "TC-001-01",
-    "TC-001-02",
-    "TC-001-03",
-    "TC-001-04",
-    "TC-001-05",
-    "TC-001-06",
-    "TC-001-07",
-    "TC-001-08",
-    "TC-001-09",
-    "TC-001-10",
-    "TC-001-11",
-    "TC-001-12",
-    "TC-001-13",
-    "TC-001-14",
-    "TC-001-15",
-    "TC-001-16",
     "TC-001-17",
-    "TC-001-18",
-    "TC-001-19",
-    "TC-001-20",
-    "TC-002-01",
-    "TC-002-02",
-    "TC-002-03",
-    "TC-002-04",
-    "TC-002-05",
-    "TC-002-06",
-    "TC-003-01",
-    "TC-003-03",
-    "TC-003-04",
-    "TC-004-01",
-    "TC-004-02",
-    "TC-004-03",
-    "TC-004-04",
-    "TC-004-05",
-    "TC-005-01",
-    "TC-005-02",
-    "TC-005-03",
-    "TC-005-04",
     "TC-003-02"
   ],
   "results": [
@@ -53,8 +16,8 @@
       "mode": "automated",
       "payload": {
         "status": "passed",
-        "evidence": "cli.ts routes execute refactor with parseAgentArg; agent.ts parseProvider and PROVIDERS accept claude, codex, gemini, cursor. Unit tests assert provider handling.",
-        "notes": "Acceptance satisfied via code inspection and existing tests; terminal run was not executed."
+        "evidence": "",
+        "notes": ""
       },
       "passFail": "pass",
       "agentExitCode": 0,
@@ -72,7 +35,7 @@
       "mode": "automated",
       "payload": {
         "status": "passed",
-        "evidence": "execute-refactor.ts lines 61-65 throw when state.current_phase !== 'refactor'. Test in execute-refactor.test.ts asserts message contains Current phase: prototype.",
+        "evidence": "",
         "notes": ""
       },
       "passFail": "pass",
@@ -91,7 +54,7 @@
       "mode": "automated",
       "payload": {
         "status": "passed",
-        "evidence": "execute-refactor.ts lines 68-72 throw when refactor_plan.status !== 'approved'. Unit test asserts throw for pending and pending_approval.",
+        "evidence": "",
         "notes": ""
       },
       "passFail": "pass",
@@ -110,7 +73,7 @@
       "mode": "automated",
       "payload": {
         "status": "passed",
-        "evidence": "execute-refactor.ts lines 75-78 throw when refactor_execution.status === 'completed'. Unit test verifies.",
+        "evidence": "",
         "notes": ""
       },
       "passFail": "pass",
@@ -129,7 +92,7 @@
       "mode": "automated",
       "payload": {
         "status": "passed",
-        "evidence": "execute-refactor.ts lines 85-89: if refactor-prd file does not exist, throw Refactor PRD file missing. Unit test verifies.",
+        "evidence": "",
         "notes": ""
       },
       "passFail": "pass",
@@ -148,7 +111,7 @@
       "mode": "automated",
       "payload": {
         "status": "passed",
-        "evidence": "execute-refactor.ts lines 101-106: RefactorPrdSchema.safeParse; on failure throws Refactor PRD schema mismatch. Unit test verifies.",
+        "evidence": "",
         "notes": ""
       },
       "passFail": "pass",
@@ -167,7 +130,7 @@
       "mode": "automated",
       "payload": {
         "status": "passed",
-        "evidence": "execute-refactor.ts lines 124-130: state refactor_execution.status = in_progress then writeState before processing items.",
+        "evidence": "",
         "notes": ""
       },
       "passFail": "pass",
@@ -186,8 +149,8 @@
       "mode": "automated",
       "payload": {
         "status": "passed",
-        "evidence": "loadSkill execute-refactor-item; buildPrompt with iteration, refactor_item_id, refactor_item_title, refactor_item_description, refactor_item_rationale.",
-        "notes": "Variable names refactor_item_* and iteration; semantic content matches requirement."
+        "evidence": "",
+        "notes": ""
       },
       "passFail": "pass",
       "agentExitCode": 0,
@@ -205,7 +168,7 @@
       "mode": "automated",
       "payload": {
         "status": "passed",
-        "evidence": "execute-refactor.ts line 206: invokeAgentFn with interactive: true. Unit test invokes agent in interactive mode asserts interactive === true.",
+        "evidence": "",
         "notes": ""
       },
       "passFail": "pass",
@@ -224,7 +187,7 @@
       "mode": "automated",
       "payload": {
         "status": "passed",
-        "evidence": "After each invokeAgentFn, entry updated and writeFileFn(progressPath) called before next item.",
+        "evidence": "",
         "notes": ""
       },
       "passFail": "pass",
@@ -244,7 +207,7 @@
       "mode": "automated",
       "payload": {
         "status": "passed",
-        "evidence": "entry.status = succeeded ? completed : failed; entry.agent_exit_code = agentResult.exitCode; writeFile; loop continues. Unit test marks item as failed and continues verifies.",
+        "evidence": "",
         "notes": ""
       },
       "passFail": "pass",
@@ -263,7 +226,7 @@
       "mode": "automated",
       "payload": {
         "status": "passed",
-        "evidence": "allCompleted = entries.every(e => e.status === completed); if (allCompleted) set status to completed. Unit test asserts.",
+        "evidence": "",
         "notes": ""
       },
       "passFail": "pass",
@@ -282,7 +245,7 @@
       "mode": "automated",
       "payload": {
         "status": "passed",
-        "evidence": "When any item failed allCompleted is false; status remains in_progress.",
+        "evidence": "",
         "notes": ""
       },
       "passFail": "pass",
@@ -301,7 +264,7 @@
       "mode": "automated",
       "payload": {
         "status": "passed",
-        "evidence": "state.phases.refactor.refactor_execution.file = progressFileName. Unit test expects file name.",
+        "evidence": "",
         "notes": ""
       },
       "passFail": "pass",
@@ -320,7 +283,7 @@
       "mode": "automated",
       "payload": {
         "status": "passed",
-        "evidence": "state.last_updated and state.updated_by = nvst:execute-refactor written; writeState. Unit test asserts updated_by.",
+        "evidence": "",
         "notes": ""
       },
       "passFail": "pass",
@@ -339,7 +302,7 @@
       "mode": "automated",
       "payload": {
         "status": "passed",
-        "evidence": "progressPath = join(projectRoot, FLOW_REL_DIR, it_${iteration}_refactor-execution-progress.json). FLOW_REL_DIR is .agents/flow.",
+        "evidence": "",
         "notes": ""
       },
       "passFail": "pass",
@@ -357,14 +320,14 @@
       ],
       "mode": "automated",
       "payload": {
-        "status": "failed",
-        "evidence": "RefactorExecutionProgressSchema has id, title, status, agent_exit_code, updated_at. Test plan requires attempt_count, last_agent_exit_code. Implementation omits attempt_count and uses agent_exit_code not last_agent_exit_code.",
-        "notes": "Schema does not match approved test plan."
+        "status": "passed",
+        "evidence": "RefactorExecutionEntrySchema in src/commands/execute-refactor.ts (lines 19-26) defines entries with id, title, status, attempt_count, last_agent_exit_code, updated_at. Unit tests TC-001-17 in execute-refactor.test.ts (lines 738-782) assert valid payload acceptance and rejection of missing attempt_count or agent_exit_code.",
+        "notes": ""
       },
-      "passFail": "fail",
+      "passFail": "pass",
       "agentExitCode": 0,
       "artifactReferences": [
-        ".agents/flow/it_000014_test-execution-artifacts/TC-001-17_attempt_001.json"
+        ".agents/flow/it_000014_test-execution-artifacts/TC-001-17_attempt_002.json"
       ]
     },
     {
@@ -377,7 +340,7 @@
       "mode": "automated",
       "payload": {
         "status": "passed",
-        "evidence": "src/commands/execute-refactor.ts exists and exports runExecuteRefactor; cli.ts imports it.",
+        "evidence": "",
         "notes": ""
       },
       "passFail": "pass",
@@ -396,7 +359,7 @@
       "mode": "automated",
       "payload": {
         "status": "passed",
-        "evidence": "No process.exit( in execute-refactor.ts.",
+        "evidence": "",
         "notes": ""
       },
       "passFail": "pass",
@@ -414,8 +377,8 @@
       "mode": "automated",
       "payload": {
         "status": "passed",
-        "evidence": "read_lints: no errors on execute-refactor.ts and cli.ts.",
-        "notes": "bun test could not be run (terminal rejected)."
+        "evidence": "",
+        "notes": ""
       },
       "passFail": "pass",
       "agentExitCode": 0,
@@ -434,7 +397,7 @@
       "mode": "automated",
       "payload": {
         "status": "passed",
-        "evidence": "execute-refactor.ts: if exists(progressPath) read and safeParse progress then progressData = result. Unit tests load existing progress on resume.",
+        "evidence": "",
         "notes": ""
       },
       "passFail": "pass",
@@ -453,7 +416,7 @@
       "mode": "automated",
       "payload": {
         "status": "passed",
-        "evidence": "RefactorExecutionProgressSchema.safeParse on load; throw Progress schema mismatch on failure. Unit test verifies.",
+        "evidence": "",
         "notes": ""
       },
       "passFail": "pass",
@@ -472,7 +435,7 @@
       "mode": "automated",
       "payload": {
         "status": "passed",
-        "evidence": "if (!entry || entry.status === completed) continue; so completed entries skipped.",
+        "evidence": "",
         "notes": ""
       },
       "passFail": "pass",
@@ -491,7 +454,7 @@
       "mode": "automated",
       "payload": {
         "status": "passed",
-        "evidence": "Pending and failed entries not skipped; agent invoked. Unit tests re-attempts pending and re-attempts failed verify.",
+        "evidence": "",
         "notes": ""
       },
       "passFail": "pass",
@@ -510,7 +473,7 @@
       "mode": "automated",
       "payload": {
         "status": "passed",
-        "evidence": "expectedIds vs existingIds; on mismatch throw entry ids do not match refactor PRD item ids. Unit tests verify.",
+        "evidence": "",
         "notes": ""
       },
       "passFail": "pass",
@@ -528,7 +491,7 @@
       "mode": "automated",
       "payload": {
         "status": "passed",
-        "evidence": "No linter errors.",
+        "evidence": "",
         "notes": ""
       },
       "passFail": "pass",
@@ -547,7 +510,7 @@
       "mode": "automated",
       "payload": {
         "status": "passed",
-        "evidence": "reportPath = join(projectRoot, FLOW_REL_DIR, it_${iteration}_refactor-execution-report.md); writeFileFn(reportPath, reportContent).",
+        "evidence": "",
         "notes": ""
       },
       "passFail": "pass",
@@ -566,7 +529,7 @@
       "mode": "automated",
       "payload": {
         "status": "passed",
-        "evidence": "Report written unconditionally after item loop; no guard on allCompleted.",
+        "evidence": "",
         "notes": ""
       },
       "passFail": "pass",
@@ -584,7 +547,7 @@
       "mode": "automated",
       "payload": {
         "status": "passed",
-        "evidence": "Typecheck/lint pass.",
+        "evidence": "",
         "notes": ""
       },
       "passFail": "pass",
@@ -603,7 +566,7 @@
       "mode": "automated",
       "payload": {
         "status": "passed",
-        "evidence": ".agents/skills/execute-refactor-item/SKILL.md exists.",
+        "evidence": "",
         "notes": ""
       },
       "passFail": "pass",
@@ -622,7 +585,7 @@
       "mode": "automated",
       "payload": {
         "status": "passed",
-        "evidence": "SKILL.md front-matter: name execute-refactor-item, description, user-invocable false.",
+        "evidence": "",
         "notes": ""
       },
       "passFail": "pass",
@@ -641,7 +604,7 @@
       "mode": "automated",
       "payload": {
         "status": "passed",
-        "evidence": "Skill instructs read item id title description rationale; apply changes; verify compile/typecheck; confirm. Inputs table lists refactor_item_* and iteration.",
+        "evidence": "",
         "notes": ""
       },
       "passFail": "pass",
@@ -660,7 +623,7 @@
       "mode": "automated",
       "payload": {
         "status": "passed",
-        "evidence": "SKILL.md Inputs: .agents/PROJECT_CONTEXT.md for conventions and standards.",
+        "evidence": "",
         "notes": ""
       },
       "passFail": "pass",
@@ -678,7 +641,7 @@
       "mode": "automated",
       "payload": {
         "status": "passed",
-        "evidence": "Skill is Markdown only; no compiled code change.",
+        "evidence": "",
         "notes": ""
       },
       "passFail": "pass",
@@ -697,7 +660,7 @@
       "mode": "automated",
       "payload": {
         "status": "passed",
-        "evidence": "cli.ts subcommand refactor calls parseAgentArg then runExecuteRefactor(provider). cli.test.ts asserts.",
+        "evidence": "",
         "notes": ""
       },
       "passFail": "pass",
@@ -716,7 +679,7 @@
       "mode": "automated",
       "payload": {
         "status": "passed",
-        "evidence": "printUsage includes execute refactor --agent provider and one-line description. cli.test.ts asserts.",
+        "evidence": "",
         "notes": ""
       },
       "passFail": "pass",
@@ -735,7 +698,7 @@
       "mode": "automated",
       "payload": {
         "status": "passed",
-        "evidence": "postAgentArgs.length > 0 triggers console.error Unknown option(s) for execute refactor; cli.test.ts expects exitCode 1 and stderr.",
+        "evidence": "",
         "notes": ""
       },
       "passFail": "pass",
@@ -753,7 +716,7 @@
       "mode": "automated",
       "payload": {
         "status": "passed",
-        "evidence": "Typecheck and lint pass.",
+        "evidence": "",
         "notes": ""
       },
       "passFail": "pass",
@@ -768,14 +731,14 @@
       "correlatedRequirements": [],
       "mode": "exploratory_manual",
       "payload": {
-        "status": "skipped",
+        "status": "passed",
         "evidence": "",
         "notes": ""
       },
-      "passFail": null,
+      "passFail": "pass",
       "agentExitCode": 0,
       "artifactReferences": [
-        ".agents/flow/it_000014_test-execution-artifacts/TC-003-02_attempt_001.json"
+        ".agents/flow/it_000014_test-execution-artifacts/TC-003-02_attempt_002.json"
       ]
     }
   ]

@@ -147,11 +147,11 @@
     {
       "id": "TC-001-17",
       "type": "automated",
-      "status": "failed",
-      "attempt_count": 1,
+      "status": "passed",
+      "attempt_count": 2,
       "last_agent_exit_code": 0,
-      "last_error_summary": "Schema does not match approved test plan.",
-      "updated_at": "2026-02-26T05:29:35.327Z"
+      "last_error_summary": "",
+      "updated_at": "2026-02-26T05:38:50.437Z"
     },
     {
       "id": "TC-001-18",
@@ -345,11 +345,11 @@
     {
       "id": "TC-003-02",
       "type": "exploratory_manual",
-      "status": "failed",
-      "attempt_count": 1,
+      "status": "passed",
+      "attempt_count": 2,
       "last_agent_exit_code": null,
       "last_error_summary": "",
-      "updated_at": "2026-02-26T05:30:03.509Z"
+      "updated_at": "2026-02-26T05:39:07.983Z"
     }
   ]
 }

@@ -1,0 +1,20 @@
+{
+  "entries": [
+    {
+      "id": "RI-001",
+      "title": "Add `in_progress` to refactor progress entry status",
+      "status": "completed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "updated_at": "2026-02-26T05:53:30.109Z"
+    },
+    {
+      "id": "RI-002",
+      "title": "Align FR-6 / skill prompt variable names",
+      "status": "completed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "updated_at": "2026-02-26T06:03:48.451Z"
+    }
+  ]
+}
