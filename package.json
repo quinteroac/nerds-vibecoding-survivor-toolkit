@@ -4,7 +4,7 @@
     "registry": "https://registry.npmjs.org",
     "access": "public"
   },
-  "version": "0.1.0-preview",
+  "version": "0.1.1-preview",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/quinteroac/nerds-vibecoding-survivor-toolkit.git"
@@ -23,6 +23,11 @@
   "scripts": {
     "test": "bun test src tests schemas",
     "package": "npm pack",
+    "bump": "npm version",
+    "bump:patch": "npm version patch",
+    "bump:minor": "npm version minor",
+    "bump:major": "npm version major",
+    "bump:preview": "npm version prerelease",
     "validate:state": "bun run scaffold/schemas/tmpl_validate-state.ts",
     "validate:progress": "bun run scaffold/schemas/tmpl_validate-progress.ts",
     "sync-check": "bun run scripts/sync-check.ts"
