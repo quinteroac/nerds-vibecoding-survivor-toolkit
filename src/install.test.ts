@@ -5,9 +5,11 @@ import { join } from "node:path";
 import { spawnSync } from "node:child_process";
 
 const PROJECT_ROOT = join(import.meta.dir, "..");
-const PACKAGE_VERSION = "0.1.0";
+const PACKAGE_VERSION =
+  (await Bun.file(join(PROJECT_ROOT, "package.json")).json()) as { version?: string };
+const PACKAGE_VERSION_STR = PACKAGE_VERSION?.version ?? "0.1.0";
 // Scoped packages: npm pack produces scope-package-version.tgz
-const TARBALL_BASENAME = `quinteroac-agents-coding-toolkit-${PACKAGE_VERSION}.tgz`;
+const TARBALL_BASENAME = `quinteroac-agents-coding-toolkit-${PACKAGE_VERSION_STR}.tgz`;
 const TARBALL_PATH = join(PROJECT_ROOT, TARBALL_BASENAME);
 
 const tempProjectRoots: string[] = [];
@@ -70,7 +72,7 @@ describe("install package", () => {
       encoding: "utf-8",
     });
     expect(result.status).toBe(0);
-    expect(result.stdout?.trim()).toBe(PACKAGE_VERSION);
+    expect(result.stdout?.trim()).toBe(PACKAGE_VERSION_STR);
   });
 
   test("US-002-AC01: user can install the package from the local file system or registry", async () => {
@@ -86,7 +88,7 @@ describe("install package", () => {
 
     const pkgJsonPath = join(nodeModules, "package.json");
     const pkg = (await Bun.file(pkgJsonPath).json()) as { version?: string; bin?: Record<string, string> };
-    expect(pkg.version).toBe(PACKAGE_VERSION);
+    expect(pkg.version).toBe(PACKAGE_VERSION_STR);
     expect(pkg.bin).toBeDefined();
     expect(pkg.bin?.nvst).toBeDefined();
   });
@@ -119,6 +121,6 @@ describe("install package", () => {
 
     const { exitCode, stdout } = runNvst(tempRoot, ["--version"]);
     expect(exitCode).toBe(0);
-    expect(stdout.trim()).toBe(PACKAGE_VERSION);
+    expect(stdout.trim()).toBe(PACKAGE_VERSION_STR);
   });
 });

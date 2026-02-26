@@ -4,7 +4,8 @@ import { join } from "node:path";
 import { spawnSync } from "node:child_process";
 
 const PROJECT_ROOT = join(import.meta.dir, "..");
-const PACKAGE_VERSION = "0.1.0";
+const pkg = (await Bun.file(join(PROJECT_ROOT, "package.json")).json()) as { version?: string };
+const PACKAGE_VERSION = pkg?.version ?? "0.1.0";
 // Scoped packages: npm pack produces scope-package-version.tgz
 const TARBALL_BASENAME = `quinteroac-agents-coding-toolkit-${PACKAGE_VERSION}.tgz`;
 

@@ -28,7 +28,7 @@ describe("US-003: CI workflow", () => {
     const ciPath = join(workflowsDir, "ci.yml");
     const content = await readFile(ciPath, "utf8");
     expect(content).toMatch(/bun install/);
-    expect(content).toMatch(/bun test/);
+    expect(content).toMatch(/bun (run )?test/);
     expect(content).toMatch(/tsc --noEmit/);
   });
 
