@@ -1,5 +1,6 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
+import { createInterface } from "node:readline";
 import { $ as dollar } from "bun";
 import { z } from "zod";
 
@@ -53,6 +54,7 @@ interface CreatePrototypeDeps {
   ) => Promise<{ exitCode: number; stderr: string }>;
   logFn: (message: string) => void;
   warnFn: (message: string) => void;
+  confirmDirtyTreeCommitFn: (question: string) => Promise<boolean>;
 }
 
 const defaultDeps: CreatePrototypeDeps = {
@@ -78,7 +80,54 @@ const defaultDeps: CreatePrototypeDeps = {
   },
   logFn: console.log,
   warnFn: console.warn,
+  confirmDirtyTreeCommitFn: promptForDirtyTreeCommit,
 };
+
+type ReadLineFn = () => Promise<string | null>;
+type WriteFn = (message: string) => void;
+
+async function defaultReadLine(): Promise<string | null> {
+  return new Promise((resolve) => {
+    const rl = createInterface({
+      input: process.stdin,
+      terminal: false,
+    });
+
+    let settled = false;
+
+    const settle = (value: string | null): void => {
+      if (!settled) {
+        settled = true;
+        rl.close();
+        resolve(value);
+      }
+    };
+
+    rl.once("line", settle);
+    rl.once("close", () => settle(null));
+  });
+}
+
+function defaultWrite(message: string): void {
+  process.stdout.write(`${message}\n`);
+}
+
+export async function promptForDirtyTreeCommit(
+  question: string,
+  readLineFn: ReadLineFn = defaultReadLine,
+  writeFn: WriteFn = defaultWrite,
+): Promise<boolean> {
+  writeFn(question);
+
+  let line: string | null;
+  try {
+    line = await readLineFn();
+  } catch {
+    line = null;
+  }
+
+  return line !== null && (line.trim() === "y" || line.trim() === "Y");
+}
 
 function sortedValues(values: string[]): string[] {
   return [...values].sort((a, b) => a.localeCompare(b));
@@ -207,9 +256,12 @@ export async function runCreatePrototype(
         );
       }
       if (workingTreeBeforeTransition.stdout.toString().trim().length > 0) {
-        throw new Error(
-          "Git working tree is dirty. Commit your changes or discard them before running `bun nvst create prototype` again.",
+        const shouldProceed = await mergedDeps.confirmDirtyTreeCommitFn(
+          "Working tree has uncommitted changes. Stage and commit them now to proceed? [y/N]",
         );
+        if (!shouldProceed) {
+          return;
+        }
       }
       state.current_phase = "prototype";
       await writeState(projectRoot, state);
@@ -244,9 +296,12 @@ export async function runCreatePrototype(
     );
   }
   if (workingTreeAfterPhase.stdout.toString().trim().length > 0) {
-    throw new Error(
-      "Git working tree is dirty. Commit your changes or discard them before running `bun nvst create prototype` again.",
+    const shouldProceed = await mergedDeps.confirmDirtyTreeCommitFn(
+      "Working tree has uncommitted changes. Stage and commit them now to proceed? [y/N]",
     );
+    if (!shouldProceed) {
+      return;
+    }
   }
 
   const branchName = `feature/it_${iteration}`;

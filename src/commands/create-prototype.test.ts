@@ -7,7 +7,7 @@ import { mkdtemp } from "node:fs/promises";
 import type { AgentResult } from "../agent";
 import { readState, writeState } from "../state";
 import type { State } from "../../scaffold/schemas/tmpl_state";
-import { runCreatePrototype } from "./create-prototype";
+import { promptForDirtyTreeCommit, runCreatePrototype } from "./create-prototype";
 
 async function createProjectRoot(): Promise<string> {
   return mkdtemp(join(tmpdir(), "nvst-create-prototype-"));
@@ -129,7 +129,7 @@ describe("create prototype phase validation", () => {
     });
   });
 
-  test("auto-transitions from define to prototype and starts build in same run when PRD and git are ready", async () => {
+  test("prompts and returns when dirty during define-to-prototype transition and confirmation is denied", async () => {
     const root = await createProjectRoot();
     createdRoots.push(root);
     const iteration = "000009";
@@ -147,16 +147,29 @@ describe("create prototype phase validation", () => {
     await $`git init`.cwd(root).nothrow().quiet();
     await $`git config user.email "test@test" && git config user.name "Test"`.cwd(root).nothrow().quiet();
     await $`git add -A && git commit -m init`.cwd(root).nothrow().quiet();
+    await writeFile(join(root, "dirty.txt"), "dirty\n", "utf8");
+
+    const prompts: string[] = [];
 
     await withCwd(root, async () => {
-      await expect(runCreatePrototype({ provider: "claude" })).rejects.toThrow(
-        "Git working tree is dirty",
-      );
+      await expect(runCreatePrototype(
+        { provider: "claude" },
+        {
+          confirmDirtyTreeCommitFn: async (question) => {
+            prompts.push(question);
+            return false;
+          },
+        },
+      )).resolves.toBeUndefined();
     });
 
-    // Transition writes state before the git check; phase is prototype
+    expect(prompts).toEqual([
+      "Working tree has uncommitted changes. Stage and commit them now to proceed? [y/N]",
+    ]);
+
+    // No transition happens when confirmation is denied.
     const updatedState = await readState(root);
-    expect(updatedState.current_phase).toBe("prototype");
+    expect(updatedState.current_phase).toBe("define");
   });
 
   test("throws when current_phase is refactor", async () => {
@@ -184,6 +197,81 @@ describe("create prototype phase validation", () => {
         "PRD source of truth missing",
       );
     });
+  });
+
+  test("prompts at the post-transition dirty-tree check when phase is already prototype", async () => {
+    const root = await createProjectRoot();
+    createdRoots.push(root);
+    const iteration = "000009";
+    await seedState(root, makeState({ currentPhase: "prototype", prdStatus: "completed", projectContextStatus: "created", iteration }));
+    await seedPrd(root, iteration);
+    await seedProjectContext(root);
+    await initGitRepo(root);
+    await writeFile(join(root, "dirty.txt"), "dirty\n", "utf8");
+
+    const prompts: string[] = [];
+
+    await withCwd(root, async () => {
+      await expect(runCreatePrototype(
+        { provider: "claude" },
+        {
+          confirmDirtyTreeCommitFn: async (question) => {
+            prompts.push(question);
+            return false;
+          },
+        },
+      )).resolves.toBeUndefined();
+    });
+
+    expect(prompts).toEqual([
+      "Working tree has uncommitted changes. Stage and commit them now to proceed? [y/N]",
+    ]);
+  });
+});
+
+describe("promptForDirtyTreeCommit", () => {
+  test("returns true for lowercase y and uppercase Y", async () => {
+    expect(
+      await promptForDirtyTreeCommit(
+        "Working tree has uncommitted changes. Stage and commit them now to proceed? [y/N]",
+        async () => "y",
+        () => {},
+      ),
+    ).toBe(true);
+
+    expect(
+      await promptForDirtyTreeCommit(
+        "Working tree has uncommitted changes. Stage and commit them now to proceed? [y/N]",
+        async () => "Y",
+        () => {},
+      ),
+    ).toBe(true);
+  });
+
+  test("treats other input, empty input, and no input as no", async () => {
+    expect(
+      await promptForDirtyTreeCommit(
+        "Working tree has uncommitted changes. Stage and commit them now to proceed? [y/N]",
+        async () => "n",
+        () => {},
+      ),
+    ).toBe(false);
+
+    expect(
+      await promptForDirtyTreeCommit(
+        "Working tree has uncommitted changes. Stage and commit them now to proceed? [y/N]",
+        async () => "",
+        () => {},
+      ),
+    ).toBe(false);
+
+    expect(
+      await promptForDirtyTreeCommit(
+        "Working tree has uncommitted changes. Stage and commit them now to proceed? [y/N]",
+        async () => null,
+        () => {},
+      ),
+    ).toBe(false);
   });
 });
 
