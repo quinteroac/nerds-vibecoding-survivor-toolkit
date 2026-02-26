@@ -3,7 +3,7 @@ import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { TestPlanSchema } from "../../schemas/test-plan";
+import { TestPlanSchema } from "../../scaffold/schemas/tmpl_test-plan";
 import { readState, writeState } from "../state";
 import { parseTestPlan, runApproveTestPlan } from "./approve-test-plan";
 

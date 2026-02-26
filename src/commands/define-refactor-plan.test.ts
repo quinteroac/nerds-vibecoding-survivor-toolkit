@@ -52,7 +52,7 @@ async function seedState(
         prototype_approved: prototypeApproved,
       },
       refactor: {
-        evaluation_report: { status: "created", file: "it_000013_evaluation-report.md" },
+        evaluation_report: { status: "pending", file: null },
         refactor_plan: { status: refactorPlanStatus, file: null },
         refactor_execution: { status: "pending", file: null },
         changelog: { status: "pending", file: null },

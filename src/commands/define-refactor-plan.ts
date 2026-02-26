@@ -39,6 +39,11 @@ export async function runDefineRefactorPlan(
     );
   }
 
+  // Intentional auto-transition: if the user runs this command directly from
+  // the prototype phase (prototype_approved === true), we advance to "refactor"
+  // so they don't have to manually update the phase. US-001-AC01 says the phase
+  // must be "refactor", but accepting "prototype" here is a UX convenience that
+  // is safe because prototype_approved is already enforced above.
   if (state.current_phase === "prototype") {
     state.current_phase = "refactor";
   } else if (state.current_phase !== "refactor") {

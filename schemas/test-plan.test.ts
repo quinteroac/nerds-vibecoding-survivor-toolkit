@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { TestPlanSchema } from "./test-plan";
+import { TestPlanSchema } from "../scaffold/schemas/tmpl_test-plan";
 
 describe("TestPlanSchema", () => {
   test("accepts enhanced test plan metadata structure", () => {
