@@ -1,0 +1,156 @@
+{
+  "goals": [
+    "Allow a developer to run `bun nvst define refactor-plan` to invoke an agent (using the `plan-refactor` skill, which incorporates evaluation) and produce a structured refactor plan document.",
+    "Allow iterative refinement of the plan via `bun nvst refine refactor-plan` with `--edit` (default) and `--challenge` modes, matching the UX of `refine requirement`.",
+    "Allow the developer to approve the plan via `bun nvst approve refactor-plan`, which transitions state to `approved` and generates a validated `it_000013_refactor-prd.json`."
+  ],
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Define Refactor Plan",
+      "description": "As a developer, I want to run `bun nvst define refactor-plan` so that an agent evaluates the prototype codebase and interactively produces a refactor plan document for the current iteration.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-001-AC01",
+          "text": "Command is rejected with a descriptive error if `current_phase !== \"refactor\"`."
+        },
+        {
+          "id": "US-001-AC02",
+          "text": "Command is rejected with a descriptive error if `refactor.refactor_plan.status !== \"pending\"`."
+        },
+        {
+          "id": "US-001-AC03",
+          "text": "The `plan-refactor` skill is loaded from `.agents/skills/plan-refactor/SKILL.md` and its body is passed to `buildPrompt` with `{ current_iteration }`."
+        },
+        {
+          "id": "US-001-AC04",
+          "text": "Agent is invoked interactively (`interactive: true`) via `invokeAgent`."
+        },
+        {
+          "id": "US-001-AC05",
+          "text": "On agent success (`exitCode === 0`), `state.phases.refactor.refactor_plan.status` is set to `\"pending_approval\"` and `state.phases.refactor.refactor_plan.file` is set to `it_000013_refactor-plan.md`."
+        },
+        {
+          "id": "US-001-AC06",
+          "text": "`state.last_updated` and `state.updated_by` (`\"nvst:define-refactor-plan\"`) are updated and persisted via `writeState`."
+        },
+        {
+          "id": "US-001-AC07",
+          "text": "Typecheck / lint passes."
+        }
+      ]
+    },
+    {
+      "id": "US-002",
+      "title": "Refine Refactor Plan",
+      "description": "As a developer, I want to run `bun nvst refine refactor-plan [--challenge]` so that I can iteratively improve the plan either by editing it freely or by having the agent critically challenge it.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-002-AC01",
+          "text": "Command is rejected with a descriptive error if `refactor.refactor_plan.status !== \"pending_approval\"`."
+        },
+        {
+          "id": "US-002-AC02",
+          "text": "Command is rejected with a descriptive error if `refactor.refactor_plan.file` is missing or the file does not exist on disk."
+        },
+        {
+          "id": "US-002-AC03",
+          "text": "A `refine-refactor-plan` skill is loaded from `.agents/skills/refine-refactor-plan/SKILL.md`."
+        },
+        {
+          "id": "US-002-AC04",
+          "text": "The current refactor plan file content is read and included in the prompt context (`{ current_iteration, refactor_plan_file, refactor_plan_content }`)."
+        },
+        {
+          "id": "US-002-AC05",
+          "text": "When `--challenge` flag is passed, `context.mode = \"challenger\"` is added to the prompt context (matching the `refine requirement` pattern)."
+        },
+        {
+          "id": "US-002-AC06",
+          "text": "Agent is invoked interactively. State is NOT mutated (status remains `pending_approval`)."
+        },
+        {
+          "id": "US-002-AC07",
+          "text": "Typecheck / lint passes."
+        }
+      ]
+    },
+    {
+      "id": "US-003",
+      "title": "Approve Refactor Plan",
+      "description": "As a developer, I want to run `bun nvst approve refactor-plan` so that the refactor plan is locked and a validated `it_000013_refactor-prd.json` is generated for downstream use.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-003-AC01",
+          "text": "Command is rejected with a descriptive error if `refactor.refactor_plan.status !== \"pending_approval\"`."
+        },
+        {
+          "id": "US-003-AC02",
+          "text": "Command is rejected with a descriptive error if `refactor.refactor_plan.file` is missing or the file does not exist on disk."
+        },
+        {
+          "id": "US-003-AC03",
+          "text": "The refactor plan markdown is read and parsed into a structured object matching a new `RefactorPrd` Zod schema."
+        },
+        {
+          "id": "US-003-AC04",
+          "text": "`nvst write-json --schema refactor-prd` is invoked to validate and write `it_000013_refactor-prd.json` into `.agents/flow/`."
+        },
+        {
+          "id": "US-003-AC05",
+          "text": "If `write-json` fails, the command prints an error and exits without mutating state (plan remains `pending_approval`)."
+        },
+        {
+          "id": "US-003-AC06",
+          "text": "On success, `state.phases.refactor.refactor_plan.status` is set to `\"approved\"` and state is persisted."
+        },
+        {
+          "id": "US-003-AC07",
+          "text": "`state.last_updated` and `state.updated_by` (`\"nvst:approve-refactor-plan\"`) are updated."
+        },
+        {
+          "id": "US-003-AC08",
+          "text": "Typecheck / lint passes."
+        }
+      ]
+    }
+  ],
+  "functionalRequirements": [
+    {
+      "id": "FR-1",
+      "description": "Add `define refactor-plan` routing to `src/cli.ts`, dispatching to a new `src/commands/define-refactor-plan.ts` handler. The handler accepts a `provider` option (same as `define requirement`)."
+    },
+    {
+      "id": "FR-2",
+      "description": "Add `refine refactor-plan` routing to `src/cli.ts`, dispatching to a new `src/commands/refine-refactor-plan.ts` handler. The handler accepts `provider` and `challenge: boolean` options."
+    },
+    {
+      "id": "FR-3",
+      "description": "Add `approve refactor-plan` routing to `src/cli.ts`, dispatching to a new `src/commands/approve-refactor-plan.ts` handler."
+    },
+    {
+      "id": "FR-4",
+      "description": "Create `.agents/skills/refine-refactor-plan/SKILL.md` with edit and challenge mode instructions for refining a refactor plan document."
+    },
+    {
+      "id": "FR-5",
+      "description": "Create `scaffold/schemas/tmpl_refactor-prd.ts` with a `RefactorPrdSchema` Zod schema. The schema must capture at minimum: a list of refactor items each with `id` (format `RI-NNN`), `title`, `description`, and `rationale` fields. Mirror the structure of `tmpl_prd.ts`."
+    },
+    {
+      "id": "FR-6",
+      "description": "Register the `refactor-prd` schema in `src/commands/write-json.ts` (or wherever schemas are mapped) so `nvst write-json --schema refactor-prd` resolves correctly."
+    },
+    {
+      "id": "FR-7",
+      "description": "`define-refactor-plan.ts` must guard that `current_phase === \"refactor\"` before proceeding."
+    },
+    {
+      "id": "FR-8",
+      "description": "All three commands must follow the no-`process.exit()` rule; use `process.exitCode = 1` on error and return."
+    },
+    {
+      "id": "FR-9",
+      "description": "Update `.agents/skills/plan-refactor/SKILL.md` with concrete objectives, inputs (`it_<iteration>_PRD.json`, `PROJECT_CONTEXT.md`, codebase), and output (`it_<iteration>_refactor-plan.md`). The skill must instruct the agent to both evaluate the prototype and produce the ordered plan in a single interactive session. The output document must use the following structure: a `## Refactor Items` section containing one `### RI-NNN: <Title>` subsection per item, each with a `**Description:**` field and a `**Rationale:**` field. This structure must align with `RefactorPrdSchema` (FR-5)."
+    }
+  ]
+}
