@@ -477,6 +477,7 @@ describe("create prototype gh PR creation", () => {
       await runCreatePrototype(
         { provider: "claude" },
         {
+          confirmDirtyTreeCommitFn: async () => true,
           loadSkillFn: async () => "Implement story",
           invokeAgentFn: async ({ cwd }) => {
             if (!cwd) {
@@ -515,6 +516,7 @@ describe("create prototype gh PR creation", () => {
       await runCreatePrototype(
         { provider: "claude" },
         {
+          confirmDirtyTreeCommitFn: async () => true,
           loadSkillFn: async () => "Implement story",
           invokeAgentFn: async ({ cwd }) => {
             if (!cwd) {
@@ -554,6 +556,7 @@ describe("create prototype gh PR creation", () => {
       await runCreatePrototype(
         { provider: "claude" },
         {
+          confirmDirtyTreeCommitFn: async () => true,
           loadSkillFn: async () => "Implement story",
           invokeAgentFn: async ({ cwd }) => {
             if (!cwd) {
