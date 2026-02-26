@@ -1,6 +1,6 @@
 ##New Features
 
-
+- Add new command "bun nvst approve prototype" this will complete the process, it will create the last commit, it will push the branch to the repo and it will create the PR if gh tool is available.
 
 
 
@@ -8,3 +8,4 @@
 
 - Auto commit with confirmation in create prototype step.
 - When open questions in define requirement instruct the agent to ask to the client before create the PRD, create a paremeter --resolve-open-questions if parameter exists agent must resolve the open questions by itself.
+- Descriptive branch naming feature/it_ - [Descriptive functionalinty]

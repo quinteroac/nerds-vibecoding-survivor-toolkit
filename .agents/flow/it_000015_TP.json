@@ -1,0 +1,207 @@
+{
+  "overallStatus": "pending",
+  "scope": [
+    "Flow guardrail behavior: schema field `flow_guardrail` (optional `\"strict\"` | `\"relaxed\"`), default `\"strict\"`, and its effect on phase/status violations.",
+    "Shared utility `assertGuardrail` in `src/guardrail.ts`: throw (strict, no force), warn+prompt (relaxed, no force), warn+skip (force).",
+    "Relaxed mode: warning and confirmation prompt on stderr; only `y`/`Y` continues; otherwise exit code 1 and \"Aborted.\" with no state/file changes; non-TTY/closed stdin treated as no confirmation.",
+    "`--force` flag: accepted by all phase-guarded commands; bypasses confirmation and (in strict mode) the check; warning still printed to stderr.",
+    "All phase-guarded commands (`define-requirement`, `create-prototype`, `execute-refactor`, `define-refactor-plan`, and any other with phase guard) use `assertGuardrail` only; no inline phase-guard throws.",
+    "Schema parity: `schemas/` copy mirrors `scaffold/schemas/tmpl_state.ts` for `flow_guardrail`."
+  ],
+  "environmentData": [
+    "Bun runtime (v1+); TypeScript strict mode; no build step (Bun runs `.ts` directly).",
+    "Valid `.agents/state.json` (with/without `flow_guardrail`; with `\"strict\"` or `\"relaxed\"` as needed).",
+    "Isolated state fixtures or temp dirs for phase/status violation scenarios (e.g. wrong `current_phase` / `current_status` for the command under test).",
+    "Stdin controllable (e.g. piped input or mock) for confirmation flows; non-TTY simulation for \"Aborted.\" behavior.",
+    "## User Story: US-001 - Warning and confirmation instead of error"
+  ],
+  "automatedTests": [
+    {
+      "id": "TC-001",
+      "description": "When phase/status violation is detected and `flow_guardrail` is `\"relaxed\"` (no `--force`), the command prints a warning to stderr describing the violation.",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-3",
+        "FR-6"
+      ]
+    },
+    {
+      "id": "TC-002",
+      "description": "After the warning in relaxed mode, the command prints exactly `Proceed anyway? [y/N]` to stderr.",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-4",
+        "FR-6"
+      ]
+    },
+    {
+      "id": "TC-003",
+      "description": "In relaxed mode, when user enters `y` or `Y` and Enter, the command continues (no exit, no \"Aborted.\").",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-4"
+      ]
+    },
+    {
+      "id": "TC-004",
+      "description": "In relaxed mode, when user enters `n`, empty line, or other input and Enter, the command exits with `process.exitCode = 1`, prints `Aborted.` to stderr, and makes no changes to state or files.",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-4"
+      ]
+    },
+    {
+      "id": "TC-005",
+      "description": "In relaxed mode without `--force`, when stdin is closed or not a TTY, the command exits with code 1, prints `Aborted.` to stderr, and does not modify state or files.",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-4"
+      ]
+    },
+    {
+      "id": "TC-006",
+      "description": "Warning and confirmation prompt are written to stderr only; normal command output remains on stdout.",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-6"
+      ]
+    },
+    {
+      "id": "TC-007",
+      "description": "With `--force` and a phase/status violation, the command prints the warning to stderr but does not show the confirmation prompt and proceeds.",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-002",
+        "FR-3",
+        "FR-5"
+      ]
+    },
+    {
+      "id": "TC-008",
+      "description": "With `--force` and `flow_guardrail` `\"strict\"`, a phase violation does not throw; command proceeds after warning.",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-002",
+        "FR-5"
+      ]
+    },
+    {
+      "id": "TC-009",
+      "description": "Commands that perform phase/status validation accept `--force` in argv and forward it to `assertGuardrail`; commands without guardrail ignore unknown flags and do not exit with parse error.",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-002",
+        "FR-5",
+        "FR-7"
+      ]
+    },
+    {
+      "id": "TC-010",
+      "description": "`StateSchema` in `scaffold/schemas/tmpl_state.ts` accepts optional top-level `flow_guardrail: z.enum([\"strict\", \"relaxed\"]).optional()`; existing fields unchanged.",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-003",
+        "FR-1"
+      ]
+    },
+    {
+      "id": "TC-011",
+      "description": "The schema copy in `schemas/` matches the `flow_guardrail` definition in `scaffold/schemas/tmpl_state.ts`.",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-003",
+        "FR-8"
+      ]
+    },
+    {
+      "id": "TC-012",
+      "description": "When `flow_guardrail` is `\"strict\"` and a violation is detected (no `--force`), the command throws an `Error` with the same message as before (no prompt).",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-003",
+        "FR-2",
+        "FR-3"
+      ]
+    },
+    {
+      "id": "TC-013",
+      "description": "When `flow_guardrail` is absent, behavior defaults to `\"strict\"` (hard error, no prompt).",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-003",
+        "FR-2"
+      ]
+    },
+    {
+      "id": "TC-014",
+      "description": "Existing `state.json` without `flow_guardrail` parses successfully.",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-003",
+        "FR-1"
+      ]
+    },
+    {
+      "id": "TC-015",
+      "description": "A new exported function (e.g. `assertGuardrail(state, condition, message, options: { force: boolean })`) exists in `src/guardrail.ts`.",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-004",
+        "FR-3"
+      ]
+    },
+    {
+      "id": "TC-016",
+      "description": "`assertGuardrail`: when effective mode is strict and `force` is false, it throws.",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-004",
+        "FR-3"
+      ]
+    },
+    {
+      "id": "TC-017",
+      "description": "`assertGuardrail`: when effective mode is relaxed and `force` is false, it writes warning and prompt to stderr and (when stdin confirms) does not throw; when stdin denies, caller exits with code 1.",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-004",
+        "FR-3",
+        "FR-4"
+      ]
+    },
+    {
+      "id": "TC-018",
+      "description": "`assertGuardrail`: when `force` is true, it writes warning to stderr and does not prompt; does not throw.",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-004",
+        "FR-3"
+      ]
+    },
+    {
+      "id": "TC-019",
+      "description": "Commands `define-requirement`, `create-prototype`, `execute-refactor`, `define-refactor-plan` (and any other with phase guard) call `assertGuardrail` for phase/status checks and do not inline `throw new Error(...)` for phase guards.",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-004",
+        "FR-7"
+      ]
+    },
+    {
+      "id": "TC-020",
+      "description": "No command retains an inline phase-guard `throw`; all phase violations route through `assertGuardrail`.",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-004",
+        "FR-7"
+      ]
+    }
+  ],
+  "exploratoryManualTests": []
+}

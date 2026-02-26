@@ -39,6 +39,7 @@
 - `src/cli.ts`: CLI router — parses argv and dispatches to command handlers
 - `src/agent.ts`: agent invocation — provider config, skill loading, prompt building, subprocess spawning
 - `src/state.ts`: state I/O — read/write/validate `.agents/state.json`
+- `src/guardrail.ts`: centralized flow guardrail — exports `assertGuardrail` (warn/prompt/throw behaviour based on `flow_guardrail` mode and `--force` flag) and `GuardrailAbortError`
 - `src/commands/*.ts`: one handler per command (`create-project-context`, `approve-requirement`, etc.)
 - `scaffold/schemas/`: Zod schemas used by `state.ts` and `write-json` for runtime validation
 - `schemas/`: validation scripts/copies of scaffold schemas

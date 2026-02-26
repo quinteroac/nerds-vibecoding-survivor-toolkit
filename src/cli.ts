@@ -2,6 +2,7 @@
 
 import { join } from "node:path";
 import { parseAgentArg } from "./agent";
+import { GuardrailAbortError } from "./guardrail";
 import { runApproveProjectContext } from "./commands/approve-project-context";
 import { runApproveRefactorPlan } from "./commands/approve-refactor-plan";
 import { runApproveRequirement } from "./commands/approve-requirement";
@@ -692,6 +693,10 @@ Providers: claude, codex, gemini, cursor`);
 }
 
 main().catch((error) => {
+  if (error instanceof GuardrailAbortError) {
+    // exitCode already set and "Aborted." already written by assertGuardrail
+    return;
+  }
   console.error("nvst failed:", error);
   process.exitCode = 1;
 });
