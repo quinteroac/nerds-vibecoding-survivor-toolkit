@@ -1,0 +1,166 @@
+{
+  "entries": [
+    {
+      "id": "TC-US001-01",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-26T19:26:46.373Z"
+    },
+    {
+      "id": "TC-US001-02",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-26T19:26:46.373Z"
+    },
+    {
+      "id": "TC-US001-03",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-26T19:26:46.373Z"
+    },
+    {
+      "id": "TC-US001-04",
+      "type": "automated",
+      "status": "failed",
+      "attempt_count": 2,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "The 6 existing tests in approve-prototype.test.ts all pass (bun test exit code 0), but none exercise the pre-commit hook failure message format.",
+      "updated_at": "2026-02-26T19:29:58.093Z"
+    },
+    {
+      "id": "TC-US001-05",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 2,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-26T19:29:58.093Z"
+    },
+    {
+      "id": "TC-US002-01",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-26T19:26:46.374Z"
+    },
+    {
+      "id": "TC-US002-02",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-26T19:26:46.374Z"
+    },
+    {
+      "id": "TC-US002-03",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 2,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-26T19:29:58.093Z"
+    },
+    {
+      "id": "TC-US003-01",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-26T19:26:46.374Z"
+    },
+    {
+      "id": "TC-US003-02",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-26T19:26:46.374Z"
+    },
+    {
+      "id": "TC-US003-03",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-26T19:26:46.374Z"
+    },
+    {
+      "id": "TC-US003-04",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 2,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-26T19:29:58.093Z"
+    },
+    {
+      "id": "TC-US004-01",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-26T19:26:46.375Z"
+    },
+    {
+      "id": "TC-US004-02",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-26T19:26:46.376Z"
+    },
+    {
+      "id": "TC-US004-03",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-26T19:26:46.377Z"
+    },
+    {
+      "id": "TC-US004-04",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-26T19:26:46.378Z"
+    },
+    {
+      "id": "TC-US004-05",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-26T19:26:46.378Z"
+    },
+    {
+      "id": "TC-US004-06",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 2,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-02-26T19:29:58.093Z"
+    }
+  ]
+}

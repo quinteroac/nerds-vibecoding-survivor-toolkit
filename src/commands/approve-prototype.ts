@@ -16,6 +16,7 @@ interface ApprovePrototypeDeps {
   nowFn: () => Date;
   runGitStatusFn: (projectRoot: string) => Promise<CommandResult>;
   runStageAndCommitFn: (projectRoot: string, message: string) => Promise<CommandResult>;
+  runCheckPreCommitHookFn: (projectRoot: string) => Promise<boolean>;
   runCurrentBranchFn: (projectRoot: string) => Promise<CommandResult>;
   runPushFn: (projectRoot: string, branch: string) => Promise<CommandResult>;
 }
@@ -46,6 +47,9 @@ const defaultDeps: ApprovePrototypeDeps = {
       stdout: result.stdout.toString().trim(),
       stderr: result.stderr.toString().trim(),
     };
+  },
+  runCheckPreCommitHookFn: async (projectRoot: string): Promise<boolean> => {
+    return Bun.file(`${projectRoot}/.git/hooks/pre-commit`).exists();
   },
   runCurrentBranchFn: async (projectRoot: string): Promise<CommandResult> => {
     const result = await dollar`git branch --show-current`
@@ -113,6 +117,13 @@ export async function runApprovePrototype(
 
   const commitResult = await mergedDeps.runStageAndCommitFn(projectRoot, commitMessage);
   if (commitResult.exitCode !== 0) {
+    const hasPreCommitHook = await mergedDeps.runCheckPreCommitHookFn(projectRoot);
+    if (hasPreCommitHook) {
+      process.exitCode = 1;
+      throw new Error(
+        `Pre-commit hook failed:\n${commitResult.stderr || commitResult.stdout || "hook exited non-zero."}`,
+      );
+    }
     throw new Error(
       `Failed to create prototype approval commit: ${commitResult.stderr || "git commit command failed."}`,
     );

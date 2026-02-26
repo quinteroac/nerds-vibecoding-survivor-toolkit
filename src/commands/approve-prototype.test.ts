@@ -165,6 +165,48 @@ describe("approve prototype command", () => {
     expect(logs).toContain("No pending changes to commit; working tree is clean.");
   });
 
+  test("throws Pre-commit hook failed error when commit fails due to pre-commit hook", async () => {
+    const projectRoot = await createProjectRoot();
+    createdRoots.push(projectRoot);
+
+    await seedState(projectRoot, { iteration: "000016" });
+    await runGit(projectRoot, "git init");
+    await runGit(projectRoot, "git config user.email 'nvst@example.com'");
+    await runGit(projectRoot, "git config user.name 'NVST Test'");
+    await runGit(projectRoot, "git branch -M main");
+
+    // Seed an initial commit before installing the hook
+    await writeFile(join(projectRoot, "file.txt"), "initial\n", "utf8");
+    await runGit(projectRoot, "git add -A && git commit -m 'chore: seed'");
+
+    // Install a failing pre-commit hook
+    const hookPath = join(projectRoot, ".git", "hooks", "pre-commit");
+    await writeFile(hookPath, "#!/bin/sh\necho 'blocked by pre-commit hook'\nexit 1\n", { mode: 0o755 });
+
+    // Make a change that the command will attempt to stage and commit
+    await writeFile(join(projectRoot, "file.txt"), "modified\n", "utf8");
+
+    const statePath = join(projectRoot, ".agents", "state.json");
+    const beforeState = await Bun.file(statePath).text();
+    process.exitCode = 0;
+
+    let caught: unknown = null;
+    await withCwd(projectRoot, async () => {
+      try {
+        await runApprovePrototype();
+      } catch (error) {
+        caught = error;
+      }
+    });
+
+    expect(caught).toBeInstanceOf(Error);
+    expect((caught as Error).message).toMatch(/^Pre-commit hook failed:\n/);
+    expect(process.exitCode).toBe(1);
+
+    const afterState = await Bun.file(statePath).text();
+    expect(afterState).toBe(beforeState);
+  });
+
   test("throws descriptive error on push failure, sets process.exitCode, and does not update state.json", async () => {
     const projectRoot = await createProjectRoot();
     createdRoots.push(projectRoot);
