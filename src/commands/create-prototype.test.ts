@@ -216,6 +216,7 @@ describe("create prototype phase validation", () => {
 
     const prompts: string[] = [];
     const logs: string[] = [];
+    let gitAddAndCommitCalled = false;
     const statePath = join(root, ".agents", "state.json");
     const stateBefore = await readFile(statePath, "utf8");
     process.exitCode = 0;
@@ -231,6 +232,9 @@ describe("create prototype phase validation", () => {
           logFn: (message) => {
             logs.push(message);
           },
+          gitAddAndCommitFn: async () => {
+            gitAddAndCommitCalled = true;
+          },
         },
       )).resolves.toBeUndefined();
     });
@@ -239,9 +243,53 @@ describe("create prototype phase validation", () => {
       "Working tree has uncommitted changes. Stage and commit them now to proceed? [y/N]",
     ]);
     expect(logs).toContain("Aborted. Commit or discard your changes and re-run `bun nvst create prototype`.");
+    expect(gitAddAndCommitCalled).toBe(false);
     expect(process.exitCode).not.toBe(1);
     const stateAfter = await readFile(statePath, "utf8");
     expect(stateAfter).toBe(stateBefore);
+  });
+
+  test("continues build when dirty-tree prompt is confirmed and calls gitAddAndCommitFn with commit message", async () => {
+    const root = await createProjectRoot();
+    createdRoots.push(root);
+    const iteration = "000018";
+    await seedState(root, makeState({ currentPhase: "prototype", prdStatus: "completed", projectContextStatus: "created", iteration }));
+    await seedPrd(root, iteration);
+    await seedProjectContext(root);
+    await initGitRepo(root);
+    await writeFile(join(root, "dirty.txt"), "dirty\n", "utf8");
+
+    const prompts: string[] = [];
+    const commitMessages: string[] = [];
+
+    await withCwd(root, async () => {
+      await expect(runCreatePrototype(
+        { provider: "claude" },
+        {
+          confirmDirtyTreeCommitFn: async (question) => {
+            prompts.push(question);
+            return true;
+          },
+          gitAddAndCommitFn: async (_projectRoot, commitMessage) => {
+            commitMessages.push(commitMessage);
+          },
+          loadSkillFn: async () => "Implement story",
+          invokeAgentFn: async ({ cwd }) => {
+            if (!cwd) {
+              throw new Error("Expected cwd");
+            }
+            await writeFile(join(cwd, "story.txt"), "implemented\n", "utf8");
+            return makeAgentResult(0);
+          },
+          checkGhAvailableFn: async () => false,
+        },
+      )).resolves.toBeUndefined();
+    });
+
+    expect(prompts).toEqual([
+      "Working tree has uncommitted changes. Stage and commit them now to proceed? [y/N]",
+    ]);
+    expect(commitMessages).toEqual(["chore: pre-prototype commit it_000018"]);
   });
 
   test("commits dirty tree on confirmation and proceeds with prototype build", async () => {
@@ -305,8 +353,8 @@ describe("create prototype phase validation", () => {
         { provider: "claude" },
         {
           confirmDirtyTreeCommitFn: async () => true,
-          runPrePrototypeCommitFn: async () => {
-            throw new Error("Pre-prototype commit failed:\nhook rejected");
+          gitAddAndCommitFn: async () => {
+            throw new Error("hook rejected");
           },
           invokeAgentFn: async () => {
             agentCalled = true;

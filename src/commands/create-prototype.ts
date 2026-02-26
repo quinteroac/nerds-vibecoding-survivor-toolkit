@@ -25,6 +25,7 @@ export interface CreatePrototypeOptions {
 }
 
 const DECLINE_DIRTY_TREE_ABORT_MESSAGE = "Aborted. Commit or discard your changes and re-run `bun nvst create prototype`.";
+const DIRTY_TREE_COMMIT_PROMPT = "Working tree has uncommitted changes. Stage and commit them now to proceed? [y/N]";
 
 const ProgressEntrySchema = z.object({
   use_case_id: z.string(),
@@ -57,7 +58,7 @@ interface CreatePrototypeDeps {
   logFn: (message: string) => void;
   warnFn: (message: string) => void;
   confirmDirtyTreeCommitFn: (question: string) => Promise<boolean>;
-  runPrePrototypeCommitFn: (projectRoot: string, iteration: string) => Promise<void>;
+  gitAddAndCommitFn: (projectRoot: string, commitMessage: string) => Promise<void>;
 }
 
 const defaultDeps: CreatePrototypeDeps = {
@@ -84,7 +85,7 @@ const defaultDeps: CreatePrototypeDeps = {
   logFn: console.log,
   warnFn: console.warn,
   confirmDirtyTreeCommitFn: promptForDirtyTreeCommit,
-  runPrePrototypeCommitFn: runPrePrototypeCommit,
+  gitAddAndCommitFn: runGitAddAndCommit,
 };
 
 type ReadLineFn = () => Promise<string | null>;
@@ -133,19 +134,32 @@ export async function promptForDirtyTreeCommit(
   return line !== null && (line.trim() === "y" || line.trim() === "Y");
 }
 
-export async function runPrePrototypeCommit(
-  projectRoot: string,
-  iteration: string,
-): Promise<void> {
+async function runGitAddAndCommit(projectRoot: string, commitMessage: string): Promise<void> {
   const addResult = await dollar`git add -A`.cwd(projectRoot).nothrow().quiet();
   if (addResult.exitCode !== 0) {
     throw new Error(`Pre-prototype commit failed:\n${addResult.stderr.toString().trim()}`);
   }
 
-  const commitMessage = `chore: pre-prototype commit it_${iteration}`;
   const commitResult = await dollar`git commit -m ${commitMessage}`.cwd(projectRoot).nothrow().quiet();
   if (commitResult.exitCode !== 0) {
     throw new Error(`Pre-prototype commit failed:\n${commitResult.stderr.toString().trim()}`);
+  }
+}
+
+export async function runPrePrototypeCommit(
+  projectRoot: string,
+  iteration: string,
+  gitAddAndCommitFn: (projectRoot: string, commitMessage: string) => Promise<void> = runGitAddAndCommit,
+): Promise<void> {
+  const commitMessage = `chore: pre-prototype commit it_${iteration}`;
+  try {
+    await gitAddAndCommitFn(projectRoot, commitMessage);
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : String(error);
+    if (reason.startsWith("Pre-prototype commit failed:\n")) {
+      throw error;
+    }
+    throw new Error(`Pre-prototype commit failed:\n${reason}`);
   }
 }
 
@@ -277,13 +291,13 @@ export async function runCreatePrototype(
       }
       if (workingTreeBeforeTransition.stdout.toString().trim().length > 0) {
         const shouldProceed = await mergedDeps.confirmDirtyTreeCommitFn(
-          "Working tree has uncommitted changes. Stage and commit them now to proceed? [y/N]",
+          DIRTY_TREE_COMMIT_PROMPT,
         );
         if (!shouldProceed) {
           mergedDeps.logFn(DECLINE_DIRTY_TREE_ABORT_MESSAGE);
           return;
         }
-        await mergedDeps.runPrePrototypeCommitFn(projectRoot, iteration);
+        await runPrePrototypeCommit(projectRoot, iteration, mergedDeps.gitAddAndCommitFn);
       }
       state.current_phase = "prototype";
       await writeState(projectRoot, state);
@@ -319,13 +333,13 @@ export async function runCreatePrototype(
   }
   if (workingTreeAfterPhase.stdout.toString().trim().length > 0) {
     const shouldProceed = await mergedDeps.confirmDirtyTreeCommitFn(
-      "Working tree has uncommitted changes. Stage and commit them now to proceed? [y/N]",
+      DIRTY_TREE_COMMIT_PROMPT,
     );
     if (!shouldProceed) {
       mergedDeps.logFn(DECLINE_DIRTY_TREE_ABORT_MESSAGE);
       return;
     }
-    await mergedDeps.runPrePrototypeCommitFn(projectRoot, iteration);
+    await runPrePrototypeCommit(projectRoot, iteration, mergedDeps.gitAddAndCommitFn);
   }
 
   const branchName = `feature/it_${iteration}`;
