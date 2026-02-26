@@ -1,8 +1,1 @@
-[
-  {
-    "id": "ISSUE-000016-001",
-    "title": "Cannot approve prototype when prototype_approved is already true",
-    "description": "When running the flow until tests (all tests pass) and then trying to approve the prototype, the command fails with: error: Cannot approve prototype: phases.prototype.prototype_approved is already true.\n\nThe phase state already has prototype_approved set to true, so the explicit approve action is rejected.\n\nReproduction steps:\n1. Run flow till tests.\n2. Ensure all tests pass.\n3. Try to approve the prototype.\n\nResult: Error. Expected: Either the prototype can be approved without error when already approved, or the state should not be set to approved until the user explicitly approves.",
-    "status": "fixed"
-  }
-]
+[]

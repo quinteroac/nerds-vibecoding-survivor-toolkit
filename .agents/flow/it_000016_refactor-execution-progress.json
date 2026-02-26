@@ -1,0 +1,28 @@
+{
+  "entries": [
+    {
+      "id": "RI-001",
+      "title": "Implement `gh` detection and PR creation in `approve prototype`",
+      "status": "completed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "updated_at": "2026-02-26T20:02:22.448Z"
+    },
+    {
+      "id": "RI-002",
+      "title": "Add unit tests for `gh` behaviour in `approve prototype`",
+      "status": "completed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "updated_at": "2026-02-26T20:05:05.948Z"
+    },
+    {
+      "id": "RI-003",
+      "title": "Set `process.exitCode = 1` on generic commit failure in `approve prototype`",
+      "status": "completed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "updated_at": "2026-02-26T20:11:47.466Z"
+    }
+  ]
+}

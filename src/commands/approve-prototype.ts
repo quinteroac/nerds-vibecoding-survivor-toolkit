@@ -19,6 +19,8 @@ interface ApprovePrototypeDeps {
   runCheckPreCommitHookFn: (projectRoot: string) => Promise<boolean>;
   runCurrentBranchFn: (projectRoot: string) => Promise<CommandResult>;
   runPushFn: (projectRoot: string, branch: string) => Promise<CommandResult>;
+  checkGhAvailableFn: () => Promise<boolean>;
+  runGhPrCreateFn: (projectRoot: string, title: string, body: string) => Promise<CommandResult>;
 }
 
 const defaultDeps: ApprovePrototypeDeps = {
@@ -64,6 +66,21 @@ const defaultDeps: ApprovePrototypeDeps = {
   },
   runPushFn: async (projectRoot: string, branch: string): Promise<CommandResult> => {
     const result = await dollar`git push -u origin ${branch}`
+      .cwd(projectRoot)
+      .nothrow()
+      .quiet();
+    return {
+      exitCode: result.exitCode,
+      stdout: result.stdout.toString().trim(),
+      stderr: result.stderr.toString().trim(),
+    };
+  },
+  checkGhAvailableFn: async (): Promise<boolean> => {
+    const result = await dollar`gh --version`.nothrow().quiet();
+    return result.exitCode === 0;
+  },
+  runGhPrCreateFn: async (projectRoot: string, title: string, body: string): Promise<CommandResult> => {
+    const result = await dollar`gh pr create --title ${title} --body ${body}`
       .cwd(projectRoot)
       .nothrow()
       .quiet();
@@ -124,6 +141,7 @@ export async function runApprovePrototype(
         `Pre-commit hook failed:\n${commitResult.stderr || commitResult.stdout || "hook exited non-zero."}`,
       );
     }
+    process.exitCode = 1;
     throw new Error(
       `Failed to create prototype approval commit: ${commitResult.stderr || "git commit command failed."}`,
     );
@@ -142,6 +160,20 @@ export async function runApprovePrototype(
     throw new Error(
       `Failed to push prototype approval commit to origin/${branchResult.stdout}: ${pushResult.stderr || "git push command failed."}`,
     );
+  }
+
+  const ghAvailable = await mergedDeps.checkGhAvailableFn();
+  if (ghAvailable) {
+    const prTitle = `feat: prototype it_${state.current_iteration}`;
+    const prBody = `Prototype for iteration it_${state.current_iteration}`;
+    const prResult = await mergedDeps.runGhPrCreateFn(projectRoot, prTitle, prBody);
+    if (prResult.exitCode !== 0) {
+      mergedDeps.logFn(
+        `Warning: gh pr create failed: ${prResult.stderr || prResult.stdout || "unknown error"}`,
+      );
+    }
+  } else {
+    mergedDeps.logFn("gh CLI not available; skipping PR creation.");
   }
 
   state.phases.prototype.prototype_approved = true;

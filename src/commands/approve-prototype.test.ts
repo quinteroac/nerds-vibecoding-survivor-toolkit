@@ -4,7 +4,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { $ } from "bun";
 
-import { writeState } from "../state";
+import type { State } from "../../scaffold/schemas/tmpl_state";
+import { readState, writeState } from "../state";
 import { runApprovePrototype } from "./approve-prototype";
 
 async function createProjectRoot(): Promise<string> {
@@ -279,5 +280,148 @@ describe("approve prototype command", () => {
     expect((caught as Error).message).toContain(
       "Cannot approve prototype: current_phase must be 'prototype'. Current: 'define'.",
     );
+  });
+
+  describe("gh PR creation behaviour", () => {
+    const ITERATION = "000016";
+
+    test("when gh is available and gh pr create succeeds, runs it with correct title and body and updates state", async () => {
+      const projectRoot = await createProjectRoot();
+      createdRoots.push(projectRoot);
+      await seedState(projectRoot, { iteration: ITERATION });
+      await runGit(projectRoot, "git init");
+      await runGit(projectRoot, "git config user.email 'nvst@example.com'");
+      await runGit(projectRoot, "git config user.name 'NVST Test'");
+      await runGit(projectRoot, "git branch -M main");
+      const remoteRoot = await createBareRemoteRoot();
+      createdRoots.push(remoteRoot);
+      await runGit(remoteRoot, "git init --bare");
+      await runGit(projectRoot, `git remote add origin ${remoteRoot}`);
+      await writeFile(join(projectRoot, "file.txt"), "initial\n", "utf8");
+      await runGit(projectRoot, "git add -A && git commit -m 'chore: seed'");
+      await writeFile(join(projectRoot, "file.txt"), "modified\n", "utf8");
+
+      const logs: string[] = [];
+      const prCreateCalls: Array<{ projectRoot: string; title: string; body: string }> = [];
+      let writtenState: State | null = null;
+
+      await withCwd(projectRoot, async () => {
+        await runApprovePrototype(
+          {},
+          {
+            logFn: (msg) => logs.push(msg),
+            readStateFn: () => readState(projectRoot),
+            writeStateFn: async (_root, state) => {
+              writtenState = state;
+              await writeState(projectRoot, state);
+            },
+            checkGhAvailableFn: async () => true,
+            runGhPrCreateFn: async (root, title, body) => {
+              prCreateCalls.push({ projectRoot: root, title, body });
+              return { exitCode: 0, stdout: "https://github.com/owner/repo/pull/1", stderr: "" };
+            },
+          },
+        );
+      });
+
+      expect(prCreateCalls).toHaveLength(1);
+      expect(prCreateCalls[0].title).toBe(`feat: prototype it_${ITERATION}`);
+      expect(prCreateCalls[0].body).toBe(`Prototype for iteration it_${ITERATION}`);
+      expect(writtenState).not.toBeNull();
+      expect(writtenState!.phases.prototype.prototype_approved).toBe(true);
+      expect(writtenState!.updated_by).toBe("nvst:approve-prototype");
+    });
+
+    test("when gh is not available, prints skip message, exits with code 0, and still updates state", async () => {
+      const projectRoot = await createProjectRoot();
+      createdRoots.push(projectRoot);
+      await seedState(projectRoot, { iteration: ITERATION });
+      await runGit(projectRoot, "git init");
+      await runGit(projectRoot, "git config user.email 'nvst@example.com'");
+      await runGit(projectRoot, "git config user.name 'NVST Test'");
+      await runGit(projectRoot, "git branch -M main");
+      const remoteRoot = await createBareRemoteRoot();
+      createdRoots.push(remoteRoot);
+      await runGit(remoteRoot, "git init --bare");
+      await runGit(projectRoot, `git remote add origin ${remoteRoot}`);
+      await writeFile(join(projectRoot, "file.txt"), "initial\n", "utf8");
+      await runGit(projectRoot, "git add -A && git commit -m 'chore: seed'");
+      await writeFile(join(projectRoot, "file.txt"), "modified\n", "utf8");
+
+      const logs: string[] = [];
+      const prCreateCalls: Array<{ projectRoot: string; title: string; body: string }> = [];
+      let writtenState: State | null = null;
+      process.exitCode = 0;
+
+      await withCwd(projectRoot, async () => {
+        await runApprovePrototype(
+          {},
+          {
+            logFn: (msg) => logs.push(msg),
+            readStateFn: () => readState(projectRoot),
+            writeStateFn: async (_root, state) => {
+              writtenState = state;
+              await writeState(projectRoot, state);
+            },
+            checkGhAvailableFn: async () => false,
+            runGhPrCreateFn: async (root, title, body) => {
+              prCreateCalls.push({ projectRoot: root, title, body });
+              return { exitCode: 0, stdout: "", stderr: "" };
+            },
+          },
+        );
+      });
+
+      expect(logs).toContain("gh CLI not available; skipping PR creation.");
+      expect(prCreateCalls).toHaveLength(0);
+      expect(process.exitCode).toBe(0);
+      expect(writtenState).not.toBeNull();
+      expect(writtenState!.phases.prototype.prototype_approved).toBe(true);
+    });
+
+    test("when gh pr create fails, logs non-fatal warning and still updates state", async () => {
+      const projectRoot = await createProjectRoot();
+      createdRoots.push(projectRoot);
+      await seedState(projectRoot, { iteration: ITERATION });
+      await runGit(projectRoot, "git init");
+      await runGit(projectRoot, "git config user.email 'nvst@example.com'");
+      await runGit(projectRoot, "git config user.name 'NVST Test'");
+      await runGit(projectRoot, "git branch -M main");
+      const remoteRoot = await createBareRemoteRoot();
+      createdRoots.push(remoteRoot);
+      await runGit(remoteRoot, "git init --bare");
+      await runGit(projectRoot, `git remote add origin ${remoteRoot}`);
+      await writeFile(join(projectRoot, "file.txt"), "initial\n", "utf8");
+      await runGit(projectRoot, "git add -A && git commit -m 'chore: seed'");
+      await writeFile(join(projectRoot, "file.txt"), "modified\n", "utf8");
+
+      const logs: string[] = [];
+      let writtenState: State | null = null;
+
+      await withCwd(projectRoot, async () => {
+        await runApprovePrototype(
+          {},
+          {
+            logFn: (msg) => logs.push(msg),
+            readStateFn: () => readState(projectRoot),
+            writeStateFn: async (_root, state) => {
+              writtenState = state;
+              await writeState(projectRoot, state);
+            },
+            checkGhAvailableFn: async () => true,
+            runGhPrCreateFn: async () => ({
+              exitCode: 1,
+              stdout: "",
+              stderr: "a pull request for branch 'main' already exists",
+            }),
+          },
+        );
+      });
+
+      expect(logs.some((m) => m.includes("Warning: gh pr create failed"))).toBe(true);
+      expect(logs.some((m) => m.includes("already exists"))).toBe(true);
+      expect(writtenState).not.toBeNull();
+      expect(writtenState!.phases.prototype.prototype_approved).toBe(true);
+    });
   });
 });
