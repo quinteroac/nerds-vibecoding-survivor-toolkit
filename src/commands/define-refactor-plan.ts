@@ -35,11 +35,12 @@ export async function runDefineRefactorPlan(
   const state = await readState(projectRoot);
   const mergedDeps: DefineRefactorPlanDeps = { ...defaultDeps, ...deps };
 
-  if (!state.phases.prototype.prototype_approved) {
-    throw new Error(
-      "Cannot define refactor plan: phases.prototype.prototype_approved must be true. Complete prototype (all tests passing) first.",
-    );
-  }
+  await assertGuardrail(
+    state,
+    !state.phases.prototype.prototype_approved,
+    "Cannot define refactor plan: phases.prototype.prototype_approved must be true. Complete prototype (all tests passing) first.",
+    { force },
+  );
 
   // Intentional auto-transition: if the user runs this command directly from
   // the prototype phase (prototype_approved === true), we advance to "refactor"
