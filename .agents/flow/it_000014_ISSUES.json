@@ -9,6 +9,6 @@
     "id": "ISSUE-000014-002",
     "title": "[skipped] TC-003-02: Report includes iteration number, total items, count completed, count failed, and table with columns `RI ID \\",
     "description": "Test case TC-003-02 resulted in status: skipped.",
-    "status": "open"
+    "status": "skipped"
   }
 ]
