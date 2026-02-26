@@ -556,6 +556,185 @@ describe("execute refactor command", () => {
     expect(logs).toContain("Refactor execution completed for all items.");
   });
 
+  // AC02: Progress schema mismatch on resume rejects with clear error
+  test("rejects with error when progress file schema is invalid on resume", async () => {
+    const projectRoot = await createProjectRoot();
+    createdRoots.push(projectRoot);
+    await seedState(projectRoot, { refactorExecutionStatus: "in_progress" });
+    await writeRefactorPrd(projectRoot, "000013", [
+      { id: "RI-001", title: "T1", description: "D1", rationale: "R1" },
+    ]);
+
+    // Write a progress file with invalid schema (missing required fields)
+    const progressPath = join(projectRoot, ".agents", "flow", "it_000013_refactor-execution-progress.json");
+    await writeFile(
+      progressPath,
+      JSON.stringify({ entries: [{ id: "RI-001", bad_field: "value" }] }, null, 2) + "\n",
+      "utf8",
+    );
+
+    await withCwd(projectRoot, async () => {
+      await expect(
+        runExecuteRefactor(
+          { provider: "claude" },
+          { loadSkillFn: makeSkillFn() },
+        ),
+      ).rejects.toThrow("Progress schema mismatch in .agents/flow/it_000013_refactor-execution-progress.json.");
+    });
+  });
+
+  // AC04: Re-attempts items with "pending" status when resuming
+  test("re-attempts pending items when resuming execution", async () => {
+    const projectRoot = await createProjectRoot();
+    createdRoots.push(projectRoot);
+    await seedState(projectRoot, { refactorExecutionStatus: "in_progress" });
+    await writeRefactorPrd(projectRoot, "000013", [
+      { id: "RI-001", title: "T1", description: "D1", rationale: "R1" },
+      { id: "RI-002", title: "T2", description: "D2", rationale: "R2" },
+    ]);
+
+    // Write a progress file with both items pending
+    const progressPath = join(projectRoot, ".agents", "flow", "it_000013_refactor-execution-progress.json");
+    await writeFile(
+      progressPath,
+      JSON.stringify({
+        entries: [
+          { id: "RI-001", title: "T1", status: "pending", agent_exit_code: null, updated_at: "2026-02-26T00:00:00.000Z" },
+          { id: "RI-002", title: "T2", status: "pending", agent_exit_code: null, updated_at: "2026-02-26T00:00:00.000Z" },
+        ],
+      }, null, 2) + "\n",
+      "utf8",
+    );
+
+    const invokedItems: string[] = [];
+
+    await withCwd(projectRoot, async () => {
+      await runExecuteRefactor(
+        { provider: "claude" },
+        {
+          loadSkillFn: makeSkillFn(),
+          invokeAgentFn: async (opts) => {
+            invokedItems.push(opts.prompt.includes("RI-001") ? "RI-001" : "RI-002");
+            return makeAgentResult(0);
+          },
+        },
+      );
+    });
+
+    expect(invokedItems).toEqual(["RI-001", "RI-002"]);
+  });
+
+  // AC04: Re-attempts items with "failed" status when resuming
+  test("re-attempts failed items when resuming execution", async () => {
+    const projectRoot = await createProjectRoot();
+    createdRoots.push(projectRoot);
+    await seedState(projectRoot, { refactorExecutionStatus: "in_progress" });
+    await writeRefactorPrd(projectRoot, "000013", [
+      { id: "RI-001", title: "T1", description: "D1", rationale: "R1" },
+      { id: "RI-002", title: "T2", description: "D2", rationale: "R2" },
+    ]);
+
+    // Write a progress file with RI-001 completed, RI-002 failed
+    const progressPath = join(projectRoot, ".agents", "flow", "it_000013_refactor-execution-progress.json");
+    await writeFile(
+      progressPath,
+      JSON.stringify({
+        entries: [
+          { id: "RI-001", title: "T1", status: "completed", agent_exit_code: 0, updated_at: "2026-02-26T00:00:00.000Z" },
+          { id: "RI-002", title: "T2", status: "failed", agent_exit_code: 1, updated_at: "2026-02-26T00:00:00.000Z" },
+        ],
+      }, null, 2) + "\n",
+      "utf8",
+    );
+
+    const invokedItems: string[] = [];
+
+    await withCwd(projectRoot, async () => {
+      await runExecuteRefactor(
+        { provider: "claude" },
+        {
+          loadSkillFn: makeSkillFn(),
+          invokeAgentFn: async (opts) => {
+            invokedItems.push(opts.prompt.includes("RI-001") ? "RI-001" : "RI-002");
+            return makeAgentResult(0);
+          },
+        },
+      );
+    });
+
+    // Only RI-002 (failed) should be re-attempted; RI-001 (completed) is skipped
+    expect(invokedItems).toEqual(["RI-002"]);
+  });
+
+  // AC05: Rejects when progress item IDs do not match refactor PRD item IDs
+  test("rejects with error when progress item IDs do not match refactor PRD item IDs", async () => {
+    const projectRoot = await createProjectRoot();
+    createdRoots.push(projectRoot);
+    await seedState(projectRoot, { refactorExecutionStatus: "in_progress" });
+    await writeRefactorPrd(projectRoot, "000013", [
+      { id: "RI-001", title: "T1", description: "D1", rationale: "R1" },
+      { id: "RI-002", title: "T2", description: "D2", rationale: "R2" },
+    ]);
+
+    // Write a progress file with different IDs (stale/mismatched)
+    const progressPath = join(projectRoot, ".agents", "flow", "it_000013_refactor-execution-progress.json");
+    await writeFile(
+      progressPath,
+      JSON.stringify({
+        entries: [
+          { id: "RI-001", title: "T1", status: "completed", agent_exit_code: 0, updated_at: "2026-02-26T00:00:00.000Z" },
+          { id: "RI-999", title: "STALE", status: "pending", agent_exit_code: null, updated_at: "2026-02-26T00:00:00.000Z" },
+        ],
+      }, null, 2) + "\n",
+      "utf8",
+    );
+
+    await withCwd(projectRoot, async () => {
+      await expect(
+        runExecuteRefactor(
+          { provider: "claude" },
+          { loadSkillFn: makeSkillFn() },
+        ),
+      ).rejects.toThrow(
+        "Refactor execution progress file out of sync: entry ids do not match refactor PRD item ids.",
+      );
+    });
+  });
+
+  // AC05: Rejects when progress has different number of items than PRD
+  test("rejects with error when progress has different number of items than refactor PRD", async () => {
+    const projectRoot = await createProjectRoot();
+    createdRoots.push(projectRoot);
+    await seedState(projectRoot, { refactorExecutionStatus: "in_progress" });
+    await writeRefactorPrd(projectRoot, "000013", [
+      { id: "RI-001", title: "T1", description: "D1", rationale: "R1" },
+      { id: "RI-002", title: "T2", description: "D2", rationale: "R2" },
+    ]);
+
+    // Write a progress file with only one entry (missing RI-002)
+    const progressPath = join(projectRoot, ".agents", "flow", "it_000013_refactor-execution-progress.json");
+    await writeFile(
+      progressPath,
+      JSON.stringify({
+        entries: [
+          { id: "RI-001", title: "T1", status: "completed", agent_exit_code: 0, updated_at: "2026-02-26T00:00:00.000Z" },
+        ],
+      }, null, 2) + "\n",
+      "utf8",
+    );
+
+    await withCwd(projectRoot, async () => {
+      await expect(
+        runExecuteRefactor(
+          { provider: "claude" },
+          { loadSkillFn: makeSkillFn() },
+        ),
+      ).rejects.toThrow(
+        "Refactor execution progress file out of sync: entry ids do not match refactor PRD item ids.",
+      );
+    });
+  });
+
   // Skips already-completed entries on re-run
   test("skips completed entries when resuming execution", async () => {
     const projectRoot = await createProjectRoot();

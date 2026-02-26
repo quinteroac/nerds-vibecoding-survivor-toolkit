@@ -150,6 +150,19 @@ export async function runExecuteRefactor(
         `Progress schema mismatch in ${join(FLOW_REL_DIR, progressFileName)}.`,
       );
     }
+
+    // AC05: Verify progress item IDs match refactor PRD item IDs
+    const expectedIds = [...refactorItems.map((item) => item.id)].sort((a, b) => a.localeCompare(b));
+    const existingIds = [...progressValidation.data.entries.map((entry) => entry.id)].sort((a, b) => a.localeCompare(b));
+    if (
+      expectedIds.length !== existingIds.length ||
+      expectedIds.some((id, i) => id !== existingIds[i])
+    ) {
+      throw new Error(
+        "Refactor execution progress file out of sync: entry ids do not match refactor PRD item ids.",
+      );
+    }
+
     progressData = progressValidation.data;
   } else {
     const now = mergedDeps.nowFn().toISOString();
