@@ -7,9 +7,11 @@
   "version": "0.1.0-preview",
   "repository": {
     "type": "git",
-    "url": "https://github.com/quinteroac/nerds-vibecoding-survivor-toolkit.git"
+    "url": "git+https://github.com/quinteroac/nerds-vibecoding-survivor-toolkit.git"
   },
-  "bin": { "nvst": "src/cli.ts" },
+  "bin": {
+    "nvst": "src/cli.ts"
+  },
   "files": [
     "src",
     "scaffold",
