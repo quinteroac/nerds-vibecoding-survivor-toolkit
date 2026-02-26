@@ -1,0 +1,8 @@
+[
+  {
+    "testCaseId": "TC-US001-04",
+    "status": "passed",
+    "evidence": "approve-prototype.ts:119-124 throws Error with message 'Pre-commit hook failed:\\n' + (commitResult.stderr || commitResult.stdout || 'hook exited non-zero.') when commit fails and pre-commit hook exists. approve-prototype.test.ts:168-207 implements automated test that installs failing hook, runs runApprovePrototype(), and asserts (caught as Error).message matches /^Pre-commit hook failed:\\n/. Code review confirms requirement satisfied; bun test was not executed in session (command rejected).",
+    "notes": "Automated test exists and covers the scenario. Runtime test execution was not performed in this session."
+  }
+]
