@@ -7,28 +7,21 @@ import { runDefineRefactorPlan } from "./define-refactor-plan";
 import { runDefineRequirement } from "./define-requirement";
 import { runExecuteRefactor } from "./execute-refactor";
 import { runExecuteTestPlan } from "./execute-test-plan";
+import { GuardrailAbortError } from "../guardrail";
 import { defaultReadLine } from "../readline";
 import { readState } from "../state";
 import type { State } from "../../scaffold/schemas/tmpl_state";
+import {
+  buildApprovalGateMessage,
+  FLOW_APPROVAL_TARGETS,
+  type FlowStep,
+  FLOW_STEPS,
+  type FlowHandlerKey,
+} from "./flow-config";
 
 export interface FlowOptions {
   provider?: AgentProvider;
   force?: boolean;
-}
-
-type FlowStepId =
-  | "define-requirement"
-  | "create-project-context"
-  | "create-prototype"
-  | "create-test-plan"
-  | "execute-test-plan"
-  | "define-refactor-plan"
-  | "execute-refactor";
-
-interface FlowStep {
-  id: FlowStepId;
-  label: string;
-  requiresAgent: boolean;
 }
 
 type FlowDecision =
@@ -36,10 +29,6 @@ type FlowDecision =
   | { kind: "approval_gate"; message: string }
   | { kind: "complete"; message: string }
   | { kind: "blocked"; message: string };
-
-function approvalGateMessage(step: string): string {
-  return `Waiting for approval. Run: nvst approve ${step} to continue, then re-run nvst flow.`;
-}
 
 interface FlowDeps {
   readLineFn: () => Promise<string | null>;
@@ -69,155 +58,272 @@ const defaultDeps: FlowDeps = {
   stdoutWriteFn: (message: string) => process.stdout.write(`${message}\n`),
 };
 
-const FLOW_STEPS: Record<FlowStepId, FlowStep> = {
-  "define-requirement": {
-    id: "define-requirement",
-    label: "define requirement",
-    requiresAgent: true,
-  },
-  "create-project-context": {
-    id: "create-project-context",
-    label: "create project-context",
-    requiresAgent: true,
-  },
-  "create-prototype": {
-    id: "create-prototype",
-    label: "create prototype",
-    requiresAgent: true,
-  },
-  "create-test-plan": {
-    id: "create-test-plan",
-    label: "create test-plan",
-    requiresAgent: true,
-  },
-  "execute-test-plan": {
-    id: "execute-test-plan",
-    label: "execute test-plan",
-    requiresAgent: true,
-  },
-  "define-refactor-plan": {
-    id: "define-refactor-plan",
-    label: "define refactor-plan",
-    requiresAgent: true,
-  },
-  "execute-refactor": {
-    id: "execute-refactor",
-    label: "execute refactor",
-    requiresAgent: true,
-  },
-};
+// Status semantics in flow orchestration:
+// - "in_progress" may represent either a resumable execution step or an approval wait state.
+// - For requirement_definition, "in_progress" means content exists and approval is required.
+// - For build/execution steps, "in_progress" means work was interrupted/partial and should be resumed.
+function isResumableInProgressStatus(status: string): boolean {
+  return status === "in_progress";
+}
 
-function isPendingOrInProgress(status: string): boolean {
-  return status === "pending" || status === "in_progress";
+function isApprovalGateInProgressStatus(status: string): boolean {
+  return status === "in_progress";
+}
+
+function isRunnablePendingOrResumable(status: string): boolean {
+  return status === "pending" || isResumableInProgressStatus(status);
 }
 
 function buildIterationCompleteMessage(iteration: string): string {
   return `Iteration ${iteration} complete. All phases finished.`;
 }
 
-export function detectNextFlowDecision(state: State): FlowDecision {
+function buildUnsupportedStatusMessage(path: string, status: string): string {
+  return `Unsupported status '${status}' at phases.${path}.`;
+}
+
+function buildNoRunnableStepMessage(path: string): string {
+  return `No runnable flow step found for phases.${path}.`;
+}
+
+function resolveDefinePhaseDecision(state: State): FlowDecision | null {
   const define = state.phases.define;
+
+  for (const key of Object.keys(define) as Array<keyof typeof define>) {
+    if (key === "requirement_definition") {
+      const status = define.requirement_definition.status;
+      if (status === "pending") {
+        return { kind: "step", step: FLOW_STEPS["define-requirement"] };
+      }
+      if (isApprovalGateInProgressStatus(status)) {
+        return {
+          kind: "approval_gate",
+          message: buildApprovalGateMessage(FLOW_APPROVAL_TARGETS.requirement),
+        };
+      }
+      if (status !== "approved") {
+        return {
+          kind: "blocked",
+          message: buildUnsupportedStatusMessage("define.requirement_definition", status),
+        };
+      }
+      continue;
+    }
+
+    const status = define.prd_generation.status;
+    if (status === "completed") {
+      continue;
+    }
+    if (status === "pending") {
+      return {
+        kind: "blocked",
+        message: buildNoRunnableStepMessage("define.prd_generation"),
+      };
+    }
+    return {
+      kind: "blocked",
+      message: buildUnsupportedStatusMessage("define.prd_generation", status),
+    };
+  }
+
+  return null;
+}
+
+function resolvePrototypePhaseDecision(state: State): FlowDecision | null {
   const prototype = state.phases.prototype;
+
+  for (const key of Object.keys(prototype) as Array<keyof typeof prototype>) {
+    if (key === "project_context") {
+      const status = prototype.project_context.status;
+      if (status === "pending") {
+        return { kind: "step", step: FLOW_STEPS["create-project-context"] };
+      }
+      if (status === "pending_approval") {
+        return {
+          kind: "approval_gate",
+          message: buildApprovalGateMessage(FLOW_APPROVAL_TARGETS.projectContext),
+        };
+      }
+      if (status !== "created") {
+        return {
+          kind: "blocked",
+          message: buildUnsupportedStatusMessage("prototype.project_context", status),
+        };
+      }
+      continue;
+    }
+
+    if (key === "test_plan") {
+      const status = prototype.test_plan.status;
+      if (status === "pending") {
+        return { kind: "step", step: FLOW_STEPS["create-test-plan"] };
+      }
+      if (status === "pending_approval") {
+        return {
+          kind: "approval_gate",
+          message: buildApprovalGateMessage(FLOW_APPROVAL_TARGETS.testPlan),
+        };
+      }
+      if (status !== "created") {
+        return {
+          kind: "blocked",
+          message: buildUnsupportedStatusMessage("prototype.test_plan", status),
+        };
+      }
+      continue;
+    }
+
+    if (key === "tp_generation") {
+      const status = prototype.tp_generation.status;
+      if (status === "created") {
+        continue;
+      }
+      if (status === "pending") {
+        return {
+          kind: "blocked",
+          message: buildNoRunnableStepMessage("prototype.tp_generation"),
+        };
+      }
+      return {
+        kind: "blocked",
+        message: buildUnsupportedStatusMessage("prototype.tp_generation", status),
+      };
+    }
+
+    if (key === "prototype_build") {
+      const status = prototype.prototype_build.status;
+      if (isRunnablePendingOrResumable(status)) {
+        return { kind: "step", step: FLOW_STEPS["create-prototype"] };
+      }
+      if (status !== "created") {
+        return {
+          kind: "blocked",
+          message: buildUnsupportedStatusMessage("prototype.prototype_build", status),
+        };
+      }
+      continue;
+    }
+
+    if (key === "test_execution") {
+      const status = prototype.test_execution.status;
+      if (status === "pending" || status === "in_progress" || status === "failed") {
+        return { kind: "step", step: FLOW_STEPS["execute-test-plan"] };
+      }
+      if (status !== "completed") {
+        return {
+          kind: "blocked",
+          message: buildUnsupportedStatusMessage("prototype.test_execution", status),
+        };
+      }
+      continue;
+    }
+
+    if (key === "prototype_approved") {
+      if (!prototype.prototype_approved) {
+        return {
+          kind: "approval_gate",
+          message: buildApprovalGateMessage(FLOW_APPROVAL_TARGETS.prototype),
+        };
+      }
+    }
+  }
+
+  return null;
+}
+
+function resolveRefactorPhaseDecision(state: State): FlowDecision | null {
   const refactor = state.phases.refactor;
 
-  if (state.current_phase === "refactor" && refactor.refactor_execution.status === "completed") {
-    return { kind: "complete", message: buildIterationCompleteMessage(state.current_iteration) };
+  for (const key of Object.keys(refactor) as Array<keyof typeof refactor>) {
+    if (key === "evaluation_report") {
+      const status = refactor.evaluation_report.status;
+      if (status === "created") {
+        continue;
+      }
+      if (status === "pending") {
+        if (refactor.refactor_plan.status === "pending") {
+          return { kind: "step", step: FLOW_STEPS["define-refactor-plan"] };
+        }
+        if (refactor.refactor_plan.status === "pending_approval") {
+          return {
+            kind: "approval_gate",
+            message: buildApprovalGateMessage(FLOW_APPROVAL_TARGETS.refactorPlan),
+          };
+        }
+        return {
+          kind: "blocked",
+          message: buildNoRunnableStepMessage("refactor.evaluation_report"),
+        };
+      }
+      return {
+        kind: "blocked",
+        message: buildUnsupportedStatusMessage("refactor.evaluation_report", status),
+      };
+    }
+
+    if (key === "refactor_plan") {
+      const status = refactor.refactor_plan.status;
+      if (status === "pending") {
+        return { kind: "step", step: FLOW_STEPS["define-refactor-plan"] };
+      }
+      if (status === "pending_approval") {
+        return {
+          kind: "approval_gate",
+          message: buildApprovalGateMessage(FLOW_APPROVAL_TARGETS.refactorPlan),
+        };
+      }
+      if (status !== "approved") {
+        return {
+          kind: "blocked",
+          message: buildUnsupportedStatusMessage("refactor.refactor_plan", status),
+        };
+      }
+      continue;
+    }
+
+    if (key === "refactor_execution") {
+      const status = refactor.refactor_execution.status;
+      if (isRunnablePendingOrResumable(status)) {
+        return { kind: "step", step: FLOW_STEPS["execute-refactor"] };
+      }
+      if (status !== "completed") {
+        return {
+          kind: "blocked",
+          message: buildUnsupportedStatusMessage("refactor.refactor_execution", status),
+        };
+      }
+      continue;
+    }
+
+    if (key === "changelog") {
+      const status = refactor.changelog.status;
+      if (status === "pending" || status === "created") {
+        continue;
+      }
+      return {
+        kind: "blocked",
+        message: buildUnsupportedStatusMessage("refactor.changelog", status),
+      };
+    }
   }
 
-  if (define.requirement_definition.status === "in_progress") {
-    return {
-      kind: "approval_gate",
-      message: approvalGateMessage("requirement"),
-    };
-  }
-  if (prototype.project_context.status === "pending_approval") {
-    return {
-      kind: "approval_gate",
-      message: approvalGateMessage("project-context"),
-    };
-  }
-  if (prototype.test_plan.status === "pending_approval") {
-    return {
-      kind: "approval_gate",
-      message: approvalGateMessage("test-plan"),
-    };
-  }
-  if (prototype.test_execution.status === "completed" && !prototype.prototype_approved) {
-    return {
-      kind: "approval_gate",
-      message: approvalGateMessage("prototype"),
-    };
-  }
-  if (refactor.refactor_plan.status === "pending_approval") {
-    return {
-      kind: "approval_gate",
-      message: approvalGateMessage("refactor-plan"),
-    };
+  return null;
+}
+
+export function detectNextFlowDecision(state: State): FlowDecision {
+  for (const phase of Object.keys(state.phases) as Array<keyof State["phases"]>) {
+    const decision = phase === "define"
+      ? resolveDefinePhaseDecision(state)
+      : phase === "prototype"
+        ? resolvePrototypePhaseDecision(state)
+        : resolveRefactorPhaseDecision(state);
+
+    if (decision !== null) {
+      return decision;
+    }
   }
 
-  if (state.current_phase === "define") {
-    if (define.requirement_definition.status === "pending") {
-      return { kind: "step", step: FLOW_STEPS["define-requirement"] };
-    }
-    if (define.prd_generation.status === "completed" && prototype.project_context.status === "pending") {
-      return { kind: "step", step: FLOW_STEPS["create-project-context"] };
-    }
-    return {
-      kind: "blocked",
-      message: "No runnable flow step found in define phase.",
-    };
-  }
-
-  if (state.current_phase === "prototype") {
-    if (prototype.project_context.status === "pending") {
-      return { kind: "step", step: FLOW_STEPS["create-project-context"] };
-    }
-    if (
-      prototype.project_context.status === "created"
-      && isPendingOrInProgress(prototype.prototype_build.status)
-    ) {
-      return { kind: "step", step: FLOW_STEPS["create-prototype"] };
-    }
-    if (prototype.prototype_build.status === "created" && prototype.test_plan.status === "pending") {
-      return { kind: "step", step: FLOW_STEPS["create-test-plan"] };
-    }
-    if (
-      prototype.tp_generation.status === "created"
-      && (prototype.test_execution.status === "pending"
-        || prototype.test_execution.status === "in_progress"
-        || prototype.test_execution.status === "failed")
-    ) {
-      return { kind: "step", step: FLOW_STEPS["execute-test-plan"] };
-    }
-    if (prototype.prototype_approved && refactor.refactor_plan.status === "pending") {
-      return { kind: "step", step: FLOW_STEPS["define-refactor-plan"] };
-    }
-    return {
-      kind: "blocked",
-      message: "No runnable flow step found in prototype phase.",
-    };
-  }
-
-  if (state.current_phase === "refactor") {
-    if (refactor.refactor_plan.status === "pending") {
-      return { kind: "step", step: FLOW_STEPS["define-refactor-plan"] };
-    }
-    if (refactor.refactor_plan.status === "approved" && isPendingOrInProgress(refactor.refactor_execution.status)) {
-      return { kind: "step", step: FLOW_STEPS["execute-refactor"] };
-    }
-    if (refactor.refactor_execution.status === "completed") {
-      return { kind: "complete", message: buildIterationCompleteMessage(state.current_iteration) };
-    }
-    return {
-      kind: "blocked",
-      message: "No runnable flow step found in refactor phase.",
-    };
-  }
-
-  return {
-    kind: "blocked",
-    message: `Unsupported current_phase '${state.current_phase}'.`,
-  };
+  return { kind: "complete", message: buildIterationCompleteMessage(state.current_iteration) };
 }
 
 async function ensureProvider(
@@ -274,39 +380,22 @@ export async function runFlow(
       }
 
       mergedDeps.stdoutWriteFn(`Running: bun nvst ${step.label}`);
+      const handlers: Record<FlowHandlerKey, () => Promise<void>> = {
+        runDefineRequirementFn: () => mergedDeps.runDefineRequirementFn({ provider: provider!, force }),
+        runCreateProjectContextFn: () => mergedDeps.runCreateProjectContextFn({ provider: provider!, mode: "strict", force }),
+        runCreatePrototypeFn: () => mergedDeps.runCreatePrototypeFn({ provider: provider!, force }),
+        runCreateTestPlanFn: () => mergedDeps.runCreateTestPlanFn({ provider: provider!, force }),
+        runExecuteTestPlanFn: () => mergedDeps.runExecuteTestPlanFn({ provider: provider!, force }),
+        runDefineRefactorPlanFn: () => mergedDeps.runDefineRefactorPlanFn({ provider: provider!, force }),
+        runExecuteRefactorFn: () => mergedDeps.runExecuteRefactorFn({ provider: provider!, force }),
+      };
 
-      if (step.id === "define-requirement") {
-        await mergedDeps.runDefineRequirementFn({ provider: provider!, force });
-        continue;
-      }
-
-      if (step.id === "create-project-context") {
-        await mergedDeps.runCreateProjectContextFn({ provider: provider!, mode: "strict", force });
-        continue;
-      }
-
-      if (step.id === "create-prototype") {
-        await mergedDeps.runCreatePrototypeFn({ provider: provider!, force });
-        continue;
-      }
-
-      if (step.id === "create-test-plan") {
-        await mergedDeps.runCreateTestPlanFn({ provider: provider!, force });
-        continue;
-      }
-
-      if (step.id === "execute-test-plan") {
-        await mergedDeps.runExecuteTestPlanFn({ provider: provider!, force });
-        continue;
-      }
-
-      if (step.id === "define-refactor-plan") {
-        await mergedDeps.runDefineRefactorPlanFn({ provider: provider!, force });
-        continue;
-      }
-
-      await mergedDeps.runExecuteRefactorFn({ provider: provider!, force });
+      await handlers[step.handlerKey]();
+      continue;
     } catch (error) {
+      if (error instanceof GuardrailAbortError) {
+        throw error;
+      }
       const message = error instanceof Error ? error.message : String(error);
       mergedDeps.stderrWriteFn(message);
       process.exitCode = 1;

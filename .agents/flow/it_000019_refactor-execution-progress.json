@@ -1,0 +1,44 @@
+{
+  "entries": [
+    {
+      "id": "RI-001",
+      "title": "Align `nvst flow` decision logic with canonical state order",
+      "status": "completed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "updated_at": "2026-02-27T03:50:16.932Z"
+    },
+    {
+      "id": "RI-002",
+      "title": "Unify error and guardrail handling between `runFlow` and `cli.ts`",
+      "status": "completed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "updated_at": "2026-02-27T03:52:34.479Z"
+    },
+    {
+      "id": "RI-003",
+      "title": "Clarify and codify semantics for in-progress steps and approval gates",
+      "status": "completed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "updated_at": "2026-02-27T03:54:57.271Z"
+    },
+    {
+      "id": "RI-004",
+      "title": "Centralize flow configuration and user-facing messages",
+      "status": "completed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "updated_at": "2026-02-27T03:59:00.752Z"
+    },
+    {
+      "id": "RI-005",
+      "title": "Strengthen tests for schema alignment and edge cases",
+      "status": "in_progress",
+      "attempt_count": 0,
+      "last_agent_exit_code": null,
+      "updated_at": "2026-02-27T03:59:00.806Z"
+    }
+  ]
+}
