@@ -1,0 +1,128 @@
+{
+  "goals": [
+    "Allow a developer to run an entire iteration workflow with a single repeated command (or in one shot if no approvals are needed).",
+    "Eliminate the need to remember which command comes next after each step.",
+    "Pause gracefully when human input is required (approval gates or missing `--agent`), and guide the user on what to do."
+  ],
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Auto-detect and execute the next step",
+      "description": "As a developer using the NVST CLI, I want to run `nvst flow` and have it automatically detect the current iteration state and invoke the correct next command so that I don't have to remember or manually trigger each step.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-001-AC01",
+          "text": "Running `nvst flow` reads `.agents/state.json` and identifies the next pending step based on phase and status fields."
+        },
+        {
+          "id": "US-001-AC02",
+          "text": "The command delegates to the appropriate existing handler (e.g. `define requirement`, `create prototype`, `execute test-plan`, etc.)."
+        },
+        {
+          "id": "US-001-AC03",
+          "text": "After each delegated step completes successfully, `nvst flow` re-reads state and automatically proceeds to the next step."
+        },
+        {
+          "id": "US-001-AC04",
+          "text": "The command continues chaining steps until it reaches an approval gate or the iteration is complete."
+        },
+        {
+          "id": "US-001-AC05",
+          "text": "If `--agent` is not provided and the next step requires it, the command prints `\"Enter agent provider:\"` and waits for stdin input before proceeding."
+        },
+        {
+          "id": "US-001-AC06",
+          "text": "The `flow_guardrail` setting from `state.json` is respected (same behaviour as other commands)."
+        },
+        {
+          "id": "US-001-AC07",
+          "text": "If a delegated sub-command throws an error, `nvst flow` stops immediately, prints the error to stderr, and exits with a non-zero code. No subsequent steps are attempted."
+        },
+        {
+          "id": "US-001-AC08",
+          "text": "If a step is found with status `in_progress` on startup, `nvst flow` treats it as the next pending step and re-executes it (same as `pending`)."
+        },
+        {
+          "id": "US-001-AC09",
+          "text": "No delegated handler calls `process.exit()` directly; verified by code review before merge."
+        },
+        {
+          "id": "US-001-AC10",
+          "text": "Typecheck / lint passes."
+        }
+      ]
+    },
+    {
+      "id": "US-002",
+      "title": "Pause at approval gates with a clear message",
+      "description": "As a developer, I want `nvst flow` to stop and print a descriptive message whenever the next step is an approval that requires my decision so that I know exactly what action to take before re-running `nvst flow`.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-002-AC01",
+          "text": "When the next step is an approval (`approve requirement`, `approve test-plan`, `approve prototype`, `approve refactor-plan`), the command prints a message such as: `\"Waiting for approval. Run: nvst approve <step> to continue, then re-run nvst flow.\"` and exits with code 0."
+        },
+        {
+          "id": "US-002-AC02",
+          "text": "The message identifies the exact `nvst` command the user must run."
+        },
+        {
+          "id": "US-002-AC03",
+          "text": "After the user performs the approval and re-runs `nvst flow`, execution resumes from the correct next step."
+        },
+        {
+          "id": "US-002-AC04",
+          "text": "Typecheck / lint passes."
+        }
+      ]
+    },
+    {
+      "id": "US-003",
+      "title": "Completion message when the iteration is finished",
+      "description": "As a developer, I want `nvst flow` to print a clear \"iteration complete\" message when there are no more steps to execute so that I know the entire workflow is done.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-003-AC01",
+          "text": "When all phases and steps are in a terminal state (completed / approved), the command prints a summary such as: `\"Iteration 000019 complete. All phases finished.\"` and exits with code 0."
+        },
+        {
+          "id": "US-003-AC02",
+          "text": "No further steps are attempted."
+        },
+        {
+          "id": "US-003-AC03",
+          "text": "Typecheck / lint passes."
+        }
+      ]
+    }
+  ],
+  "functionalRequirements": [
+    {
+      "id": "FR-1",
+      "description": "`nvst flow` is a new top-level CLI command registered in `src/cli.ts` and implemented in `src/commands/flow.ts`."
+    },
+    {
+      "id": "FR-2",
+      "description": "The step resolution order must match the order of keys as they appear in `state.json`. The implementation must not maintain a separate hard-coded list independent of the state structure; FR-3 and FR-4 below are the authoritative definition of that order."
+    },
+    {
+      "id": "FR-3",
+      "description": "The step-resolution logic must follow the canonical phase order: `define` phase fully complete → `prototype` phase → `refactor` phase."
+    },
+    {
+      "id": "FR-4",
+      "description": "Within each phase, steps are resolved in the order they appear in `state.json`: `requirement_definition` → `prd_generation` in define; `test_plan` → `tp_generation` → `prototype_build` → `test_execution` → `prototype_approved` in prototype; `evaluation_report` → `refactor_plan` → `refactor_execution` → `changelog` in refactor. Note: `prototype_approved` is a boolean field, not a status object. The resolver must treat `false` as \"pending approval\" and `true` as \"approved\", distinct from the status-object pattern used by all other steps."
+    },
+    {
+      "id": "FR-5",
+      "description": "If `--agent <provider>` is required by a sub-command and not supplied, the command must prompt the user interactively (stdin readline) and then pass the value through."
+    },
+    {
+      "id": "FR-6",
+      "description": "Existing command handlers must be called programmatically (function call), not via `Bun.spawn` / shell, to avoid double-parsing overhead and preserve the process exit-code contract."
+    },
+    {
+      "id": "FR-7",
+      "description": "Errors thrown by sub-commands must propagate and be caught by the top-level `cli.ts` error handler (consistent with all other commands)."
+    }
+  ]
+}
