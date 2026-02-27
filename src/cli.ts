@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 
 import { join } from "node:path";
-import { parseAgentArg } from "./agent";
+import { parseAgentArg, parseProvider, type AgentProvider } from "./agent";
 import { GuardrailAbortError } from "./guardrail";
 import { runApproveProjectContext } from "./commands/approve-project-context";
 import { runApprovePrototype } from "./commands/approve-prototype";
@@ -19,6 +19,7 @@ import { runExecuteAutomatedFix } from "./commands/execute-automated-fix";
 import { runExecuteManualFix } from "./commands/execute-manual-fix";
 import { runExecuteRefactor } from "./commands/execute-refactor";
 import { runExecuteTestPlan } from "./commands/execute-test-plan";
+import { runFlow } from "./commands/flow";
 import { runInit } from "./commands/init";
 import { runRefineProjectContext } from "./commands/refine-project-context";
 import { runRefineRefactorPlan } from "./commands/refine-refactor-plan";
@@ -90,6 +91,21 @@ function parseForce(args: string[]): { force: boolean; remainingArgs: string[] }
   };
 }
 
+function parseOptionalAgentArg(args: string[]): {
+  provider: AgentProvider | undefined;
+  remainingArgs: string[];
+} {
+  const { value, remainingArgs } = extractFlagValue(args, "--agent");
+  if (value === null) {
+    return { provider: undefined, remainingArgs };
+  }
+
+  return {
+    provider: parseProvider(value),
+    remainingArgs,
+  };
+}
+
 function printUsage() {
   console.log(`Usage: nvst <command> [options]
 
@@ -102,6 +118,8 @@ Commands:
                      Generate test plan document for current iteration
   create prototype --agent <provider> [--iterations <N>] [--retry-on-fail <N>] [--stop-on-critical]
                      Initialize prototype build for current iteration
+  flow [--agent <provider>] [--force]
+                     Run the next pending flow step(s) until an approval gate or completion
   create issue --agent <provider>
                      Create issues interactively via agent
   create issue --test-execution-report
@@ -212,6 +230,26 @@ async function main() {
     }
     await runStartIteration();
     return;
+  }
+
+  if (command === "flow") {
+    try {
+      const { provider, remainingArgs: postAgentArgs } = parseOptionalAgentArg(args);
+      const { force, remainingArgs: postForceArgs } = parseForce(postAgentArgs);
+      if (postForceArgs.length > 0) {
+        console.error(`Unknown option(s) for flow: ${postForceArgs.join(" ")}`);
+        printUsage();
+        process.exitCode = 1;
+        return;
+      }
+      await runFlow({ provider, force });
+      return;
+    } catch (error) {
+      console.error(error instanceof Error ? error.message : String(error));
+      printUsage();
+      process.exitCode = 1;
+      return;
+    }
   }
 
   if (command === "create") {
