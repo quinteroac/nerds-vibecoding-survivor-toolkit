@@ -8,6 +8,3 @@
 - Approve prototype must go till the end of refactor phase.
 
 ##Issues
-
-- Automated fix solves only one issue instead of solving one by one till finish.
-- Execute refactor is executing in interactive mode, that is incorrect, must be run as create prototype

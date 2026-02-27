@@ -1,4 +1,4 @@
-import { ProgressSchema } from "./tmpl_progress.ts";
+import { ProgressSchema } from "./tmpl_progress";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 

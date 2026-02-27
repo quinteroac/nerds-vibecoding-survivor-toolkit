@@ -1,4 +1,4 @@
-import { StateSchema } from "./tmpl_state.ts";
+import { StateSchema } from "./tmpl_state";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 
