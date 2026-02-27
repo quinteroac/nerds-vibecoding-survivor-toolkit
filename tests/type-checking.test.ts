@@ -57,12 +57,12 @@ describe("project-wide type checking", () => {
     expect(tsconfig.include).toContain("src/**/*.ts");
   });
 
-  it("runs bun x tsc --noEmit successfully without emitting build artifacts", async () => {
+  it("TC-007: runs bun tsc --noEmit successfully without emitting build artifacts", async () => {
     const cwd = process.cwd();
     const distPath = join(cwd, "dist");
     const before = await snapshotDist(distPath);
 
-    const proc = Bun.spawn(["bun", "x", "tsc", "--noEmit"], {
+    const proc = Bun.spawn(["bun", "tsc", "--noEmit"], {
       cwd,
       stdout: "pipe",
       stderr: "pipe",
@@ -74,5 +74,47 @@ describe("project-wide type checking", () => {
 
     expect(exitCode, stderr).toBe(0);
     expect(after).toEqual(before);
+  });
+
+  it("TC-011: Typecheck passes.", async () => {
+    const cwd = process.cwd();
+    const proc = Bun.spawn(["bun", "tsc", "--noEmit"], {
+      cwd,
+      stdout: "pipe",
+      stderr: "pipe",
+    });
+
+    const exitCode = await proc.exited;
+    const stderr = await new Response(proc.stderr).text();
+
+    expect(exitCode, stderr).toBe(0);
+  });
+
+  it("TC-015: Typecheck passes.", async () => {
+    const cwd = process.cwd();
+    const proc = Bun.spawn(["bun", "tsc", "--noEmit"], {
+      cwd,
+      stdout: "pipe",
+      stderr: "pipe",
+    });
+
+    const exitCode = await proc.exited;
+    const stderr = await new Response(proc.stderr).text();
+
+    expect(exitCode, stderr).toBe(0);
+  });
+
+  it("TC-020: Typecheck passes.", async () => {
+    const cwd = process.cwd();
+    const proc = Bun.spawn(["bun", "tsc", "--noEmit"], {
+      cwd,
+      stdout: "pipe",
+      stderr: "pipe",
+    });
+
+    const exitCode = await proc.exited;
+    const stderr = await new Response(proc.stderr).text();
+
+    expect(exitCode, stderr).toBe(0);
   });
 });

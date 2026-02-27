@@ -13,6 +13,7 @@ import {
   type AgentResult,
 } from "../agent";
 import { assertGuardrail } from "../guardrail";
+import { defaultReadLine } from "../readline";
 import { exists, FLOW_REL_DIR, readState, writeState } from "../state";
 
 export interface CreatePrototypeOptions {
@@ -22,6 +23,9 @@ export interface CreatePrototypeOptions {
   stopOnCritical?: boolean;
   force?: boolean;
 }
+
+const DECLINE_DIRTY_TREE_ABORT_MESSAGE = "Aborted. Commit or discard your changes and re-run `bun nvst create prototype`.";
+const DIRTY_TREE_COMMIT_PROMPT = "Working tree has uncommitted changes. Stage and commit them now to proceed? [y/N]";
 
 const ProgressEntrySchema = z.object({
   use_case_id: z.string(),
@@ -53,6 +57,8 @@ interface CreatePrototypeDeps {
   ) => Promise<{ exitCode: number; stderr: string }>;
   logFn: (message: string) => void;
   warnFn: (message: string) => void;
+  promptDirtyTreeCommitFn: (question: string) => Promise<boolean>;
+  gitAddAndCommitFn: (projectRoot: string, commitMessage: string) => Promise<void>;
 }
 
 const defaultDeps: CreatePrototypeDeps = {
@@ -78,7 +84,72 @@ const defaultDeps: CreatePrototypeDeps = {
   },
   logFn: console.log,
   warnFn: console.warn,
+  promptDirtyTreeCommitFn: promptForDirtyTreeCommit,
+  gitAddAndCommitFn: runGitAddAndCommit,
 };
+
+type ReadLineFn = () => Promise<string | null>;
+type WriteFn = (message: string) => void;
+type IsTTYFn = () => boolean;
+
+function defaultWrite(message: string): void {
+  process.stdout.write(`${message}\n`);
+}
+
+function defaultIsTTY(): boolean {
+  return process.stdin.isTTY === true;
+}
+
+export async function promptForDirtyTreeCommit(
+  question: string,
+  readLineFn: ReadLineFn = defaultReadLine,
+  writeFn: WriteFn = defaultWrite,
+  isTTYFn: IsTTYFn = defaultIsTTY,
+): Promise<boolean> {
+  if (!isTTYFn()) {
+    return false;
+  }
+
+  writeFn(question);
+
+  let line: string | null;
+  try {
+    line = await readLineFn();
+  } catch {
+    line = null;
+  }
+
+  return line !== null && (line.trim() === "y" || line.trim() === "Y");
+}
+
+async function runGitAddAndCommit(projectRoot: string, commitMessage: string): Promise<void> {
+  const addResult = await dollar`git add -A`.cwd(projectRoot).nothrow().quiet();
+  if (addResult.exitCode !== 0) {
+    throw new Error(`Pre-prototype commit failed:\n${addResult.stderr.toString().trim()}`);
+  }
+
+  const commitResult = await dollar`git commit -m ${commitMessage}`.cwd(projectRoot).nothrow().quiet();
+  if (commitResult.exitCode !== 0) {
+    throw new Error(`Pre-prototype commit failed:\n${commitResult.stderr.toString().trim()}`);
+  }
+}
+
+export async function runPrePrototypeCommit(
+  projectRoot: string,
+  iteration: string,
+  gitAddAndCommitFn: (projectRoot: string, commitMessage: string) => Promise<void> = runGitAddAndCommit,
+): Promise<void> {
+  const commitMessage = `chore: pre-prototype commit it_${iteration}`;
+  try {
+    await gitAddAndCommitFn(projectRoot, commitMessage);
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : String(error);
+    if (reason.startsWith("Pre-prototype commit failed:\n")) {
+      throw error;
+    }
+    throw new Error(`Pre-prototype commit failed:\n${reason}`);
+  }
+}
 
 function sortedValues(values: string[]): string[] {
   return [...values].sort((a, b) => a.localeCompare(b));
@@ -195,6 +266,8 @@ export async function runCreatePrototype(
     );
   }
 
+  let prePrototypeCommitDone = false;
+
   if (state.current_phase === "define") {
     if (
       state.phases.define.prd_generation.status === "completed" &&
@@ -207,9 +280,15 @@ export async function runCreatePrototype(
         );
       }
       if (workingTreeBeforeTransition.stdout.toString().trim().length > 0) {
-        throw new Error(
-          "Git working tree is dirty. Commit your changes or discard them before running `bun nvst create prototype` again.",
+        const shouldProceed = await mergedDeps.promptDirtyTreeCommitFn(
+          DIRTY_TREE_COMMIT_PROMPT,
         );
+        if (!shouldProceed) {
+          mergedDeps.logFn(DECLINE_DIRTY_TREE_ABORT_MESSAGE);
+          return;
+        }
+        await runPrePrototypeCommit(projectRoot, iteration, mergedDeps.gitAddAndCommitFn);
+        prePrototypeCommitDone = true;
       }
       state.current_phase = "prototype";
       await writeState(projectRoot, state);
@@ -237,16 +316,23 @@ export async function runCreatePrototype(
     { force },
   );
 
-  const workingTreeAfterPhase = await dollar`git status --porcelain`.cwd(projectRoot).nothrow().quiet();
-  if (workingTreeAfterPhase.exitCode !== 0) {
-    throw new Error(
-      "Unable to verify git working tree status. Ensure this directory is a git repository and git is installed.",
-    );
-  }
-  if (workingTreeAfterPhase.stdout.toString().trim().length > 0) {
-    throw new Error(
-      "Git working tree is dirty. Commit your changes or discard them before running `bun nvst create prototype` again.",
-    );
+  if (!prePrototypeCommitDone) {
+    const workingTreeAfterPhase = await dollar`git status --porcelain`.cwd(projectRoot).nothrow().quiet();
+    if (workingTreeAfterPhase.exitCode !== 0) {
+      throw new Error(
+        "Unable to verify git working tree status. Ensure this directory is a git repository and git is installed.",
+      );
+    }
+    if (workingTreeAfterPhase.stdout.toString().trim().length > 0) {
+      const shouldProceed = await mergedDeps.promptDirtyTreeCommitFn(
+        DIRTY_TREE_COMMIT_PROMPT,
+      );
+      if (!shouldProceed) {
+        mergedDeps.logFn(DECLINE_DIRTY_TREE_ABORT_MESSAGE);
+        return;
+      }
+      await runPrePrototypeCommit(projectRoot, iteration, mergedDeps.gitAddAndCommitFn);
+    }
   }
 
   const branchName = `feature/it_${iteration}`;
