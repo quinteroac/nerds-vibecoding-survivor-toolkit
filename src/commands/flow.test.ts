@@ -141,7 +141,7 @@ describe("US-001: flow command", () => {
         stderrWriteFn: () => {},
       },
     );
-    expect(logs.some((line) => line.includes("Approval required"))).toBe(true);
+    expect(logs.some((line) => line.includes("Waiting for approval"))).toBe(true);
 
     logs.length = 0;
     await runFlow(
@@ -305,5 +305,158 @@ describe("US-001: flow command", () => {
       const source = await readFile(join(import.meta.dir, fileName), "utf8");
       expect(source).not.toContain("process.exit(");
     }
+  });
+});
+
+describe("US-002: approval gate messaging", () => {
+  const WAITING_PREFIX = "Waiting for approval. Run: nvst approve";
+
+  test("US-002-AC01 + US-002-AC02: requirement approval gate prints exact next command", () => {
+    const state = withState(createBaseState(), (s) => {
+      s.current_phase = "define";
+      s.phases.define.requirement_definition.status = "in_progress";
+    });
+
+    const decision = detectNextFlowDecision(state);
+    expect(decision.kind).toBe("approval_gate");
+    if (decision.kind === "approval_gate") {
+      expect(decision.message).toBe(
+        "Waiting for approval. Run: nvst approve requirement to continue, then re-run nvst flow.",
+      );
+      expect(decision.message.startsWith(WAITING_PREFIX)).toBe(true);
+    }
+  });
+
+  test("US-002-AC01 + US-002-AC02: test-plan approval gate prints exact next command", () => {
+    const state = withState(createBaseState(), (s) => {
+      s.current_phase = "prototype";
+      s.phases.prototype.test_plan.status = "pending_approval";
+      s.phases.prototype.test_plan.file = "it_000019_test-plan.md";
+    });
+
+    const decision = detectNextFlowDecision(state);
+    expect(decision.kind).toBe("approval_gate");
+    if (decision.kind === "approval_gate") {
+      expect(decision.message).toBe(
+        "Waiting for approval. Run: nvst approve test-plan to continue, then re-run nvst flow.",
+      );
+      expect(decision.message.startsWith(WAITING_PREFIX)).toBe(true);
+    }
+  });
+
+  test("US-002-AC01 + US-002-AC02: prototype approval gate prints exact next command", () => {
+    const state = withState(createBaseState(), (s) => {
+      s.current_phase = "prototype";
+      s.phases.prototype.prototype_build.status = "created";
+      s.phases.prototype.test_plan.status = "created";
+      s.phases.prototype.tp_generation.status = "created";
+      s.phases.prototype.test_execution.status = "completed";
+      s.phases.prototype.prototype_approved = false;
+    });
+
+    const decision = detectNextFlowDecision(state);
+    expect(decision.kind).toBe("approval_gate");
+    if (decision.kind === "approval_gate") {
+      expect(decision.message).toBe(
+        "Waiting for approval. Run: nvst approve prototype to continue, then re-run nvst flow.",
+      );
+      expect(decision.message.startsWith(WAITING_PREFIX)).toBe(true);
+    }
+  });
+
+  test("US-002-AC01 + US-002-AC02: refactor-plan approval gate prints exact next command", () => {
+    const state = withState(createBaseState(), (s) => {
+      s.current_phase = "refactor";
+      s.phases.refactor.refactor_plan.status = "pending_approval";
+      s.phases.refactor.refactor_plan.file = "it_000019_refactor-plan.md";
+    });
+
+    const decision = detectNextFlowDecision(state);
+    expect(decision.kind).toBe("approval_gate");
+    if (decision.kind === "approval_gate") {
+      expect(decision.message).toBe(
+        "Waiting for approval. Run: nvst approve refactor-plan to continue, then re-run nvst flow.",
+      );
+      expect(decision.message.startsWith(WAITING_PREFIX)).toBe(true);
+    }
+  });
+
+  test("US-002-AC01: runFlow stops at approval gate with exit code 0", async () => {
+    const gateState = withState(createBaseState(), (s) => {
+      s.current_phase = "prototype";
+      s.phases.prototype.test_plan.status = "pending_approval";
+      s.phases.prototype.test_plan.file = "it_000019_test-plan.md";
+    });
+
+    const logs: string[] = [];
+    process.exitCode = undefined;
+    await runFlow(
+      { provider: "codex" },
+      {
+        readStateFn: async () => gateState,
+        stdoutWriteFn: (message) => logs.push(message),
+        stderrWriteFn: () => {},
+      },
+    );
+
+    expect(logs).toContain(
+      "Waiting for approval. Run: nvst approve test-plan to continue, then re-run nvst flow.",
+    );
+    expect(process.exitCode === undefined || process.exitCode === 0).toBe(true);
+  });
+
+  test("US-002-AC03: flow resumes on re-run after approval", async () => {
+    const gateState = withState(createBaseState(), (s) => {
+      s.current_phase = "prototype";
+      s.phases.prototype.test_plan.status = "pending_approval";
+      s.phases.prototype.test_plan.file = "it_000019_test-plan.md";
+    });
+    const resumedState = withState(createBaseState(), (s) => {
+      s.current_phase = "prototype";
+      s.phases.prototype.prototype_build.status = "created";
+      s.phases.prototype.test_plan.status = "created";
+      s.phases.prototype.tp_generation.status = "created";
+      s.phases.prototype.test_execution.status = "in_progress";
+      s.phases.prototype.test_execution.file = "it_000019_test-execution-results.json";
+      s.phases.prototype.prototype_approved = false;
+    });
+    const nextGateState = withState(createBaseState(), (s) => {
+      s.current_phase = "prototype";
+      s.phases.prototype.prototype_build.status = "created";
+      s.phases.prototype.test_plan.status = "created";
+      s.phases.prototype.tp_generation.status = "created";
+      s.phases.prototype.test_execution.status = "completed";
+      s.phases.prototype.prototype_approved = false;
+    });
+
+    const firstRunLogs: string[] = [];
+    await runFlow(
+      { provider: "codex" },
+      {
+        readStateFn: async () => gateState,
+        stdoutWriteFn: (message) => firstRunLogs.push(message),
+        stderrWriteFn: () => {},
+      },
+    );
+    expect(firstRunLogs).toContain(
+      "Waiting for approval. Run: nvst approve test-plan to continue, then re-run nvst flow.",
+    );
+
+    const reads: State[] = [resumedState, nextGateState];
+    let readCount = 0;
+    let executedTestPlan = 0;
+    await runFlow(
+      { provider: "codex" },
+      {
+        readStateFn: async () => reads[Math.min(readCount++, reads.length - 1)],
+        runExecuteTestPlanFn: async () => {
+          executedTestPlan += 1;
+        },
+        stdoutWriteFn: () => {},
+        stderrWriteFn: () => {},
+      },
+    );
+
+    expect(executedTestPlan).toBe(1);
   });
 });

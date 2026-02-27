@@ -37,6 +37,10 @@ type FlowDecision =
   | { kind: "complete"; message: string }
   | { kind: "blocked"; message: string };
 
+function approvalGateMessage(step: string): string {
+  return `Waiting for approval. Run: nvst approve ${step} to continue, then re-run nvst flow.`;
+}
+
 interface FlowDeps {
   readLineFn: () => Promise<string | null>;
   readStateFn: (projectRoot: string) => Promise<State>;
@@ -119,25 +123,31 @@ export function detectNextFlowDecision(state: State): FlowDecision {
   if (define.requirement_definition.status === "in_progress") {
     return {
       kind: "approval_gate",
-      message: "Approval required: run `bun nvst approve requirement`.",
+      message: approvalGateMessage("requirement"),
     };
   }
   if (prototype.project_context.status === "pending_approval") {
     return {
       kind: "approval_gate",
-      message: "Approval required: run `bun nvst approve project-context`.",
+      message: approvalGateMessage("project-context"),
     };
   }
   if (prototype.test_plan.status === "pending_approval") {
     return {
       kind: "approval_gate",
-      message: "Approval required: run `bun nvst approve test-plan`.",
+      message: approvalGateMessage("test-plan"),
+    };
+  }
+  if (prototype.test_execution.status === "completed" && !prototype.prototype_approved) {
+    return {
+      kind: "approval_gate",
+      message: approvalGateMessage("prototype"),
     };
   }
   if (refactor.refactor_plan.status === "pending_approval") {
     return {
       kind: "approval_gate",
-      message: "Approval required: run `bun nvst approve refactor-plan`.",
+      message: approvalGateMessage("refactor-plan"),
     };
   }
 
