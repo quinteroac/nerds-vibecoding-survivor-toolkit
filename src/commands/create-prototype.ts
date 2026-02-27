@@ -1,6 +1,5 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { createInterface } from "node:readline";
 import { $ as dollar } from "bun";
 import { z } from "zod";
 
@@ -14,6 +13,7 @@ import {
   type AgentResult,
 } from "../agent";
 import { assertGuardrail } from "../guardrail";
+import { defaultReadLine } from "../readline";
 import { exists, FLOW_REL_DIR, readState, writeState } from "../state";
 
 export interface CreatePrototypeOptions {
@@ -57,7 +57,7 @@ interface CreatePrototypeDeps {
   ) => Promise<{ exitCode: number; stderr: string }>;
   logFn: (message: string) => void;
   warnFn: (message: string) => void;
-  confirmDirtyTreeCommitFn: (question: string) => Promise<boolean>;
+  promptDirtyTreeCommitFn: (question: string) => Promise<boolean>;
   gitAddAndCommitFn: (projectRoot: string, commitMessage: string) => Promise<void>;
 }
 
@@ -84,35 +84,13 @@ const defaultDeps: CreatePrototypeDeps = {
   },
   logFn: console.log,
   warnFn: console.warn,
-  confirmDirtyTreeCommitFn: promptForDirtyTreeCommit,
+  promptDirtyTreeCommitFn: promptForDirtyTreeCommit,
   gitAddAndCommitFn: runGitAddAndCommit,
 };
 
 type ReadLineFn = () => Promise<string | null>;
 type WriteFn = (message: string) => void;
 type IsTTYFn = () => boolean;
-
-async function defaultReadLine(): Promise<string | null> {
-  return new Promise((resolve) => {
-    const rl = createInterface({
-      input: process.stdin,
-      terminal: false,
-    });
-
-    let settled = false;
-
-    const settle = (value: string | null): void => {
-      if (!settled) {
-        settled = true;
-        rl.close();
-        resolve(value);
-      }
-    };
-
-    rl.once("line", settle);
-    rl.once("close", () => settle(null));
-  });
-}
 
 function defaultWrite(message: string): void {
   process.stdout.write(`${message}\n`);
@@ -288,6 +266,8 @@ export async function runCreatePrototype(
     );
   }
 
+  let prePrototypeCommitDone = false;
+
   if (state.current_phase === "define") {
     if (
       state.phases.define.prd_generation.status === "completed" &&
@@ -300,7 +280,7 @@ export async function runCreatePrototype(
         );
       }
       if (workingTreeBeforeTransition.stdout.toString().trim().length > 0) {
-        const shouldProceed = await mergedDeps.confirmDirtyTreeCommitFn(
+        const shouldProceed = await mergedDeps.promptDirtyTreeCommitFn(
           DIRTY_TREE_COMMIT_PROMPT,
         );
         if (!shouldProceed) {
@@ -308,6 +288,7 @@ export async function runCreatePrototype(
           return;
         }
         await runPrePrototypeCommit(projectRoot, iteration, mergedDeps.gitAddAndCommitFn);
+        prePrototypeCommitDone = true;
       }
       state.current_phase = "prototype";
       await writeState(projectRoot, state);
@@ -335,21 +316,23 @@ export async function runCreatePrototype(
     { force },
   );
 
-  const workingTreeAfterPhase = await dollar`git status --porcelain`.cwd(projectRoot).nothrow().quiet();
-  if (workingTreeAfterPhase.exitCode !== 0) {
-    throw new Error(
-      "Unable to verify git working tree status. Ensure this directory is a git repository and git is installed.",
-    );
-  }
-  if (workingTreeAfterPhase.stdout.toString().trim().length > 0) {
-    const shouldProceed = await mergedDeps.confirmDirtyTreeCommitFn(
-      DIRTY_TREE_COMMIT_PROMPT,
-    );
-    if (!shouldProceed) {
-      mergedDeps.logFn(DECLINE_DIRTY_TREE_ABORT_MESSAGE);
-      return;
+  if (!prePrototypeCommitDone) {
+    const workingTreeAfterPhase = await dollar`git status --porcelain`.cwd(projectRoot).nothrow().quiet();
+    if (workingTreeAfterPhase.exitCode !== 0) {
+      throw new Error(
+        "Unable to verify git working tree status. Ensure this directory is a git repository and git is installed.",
+      );
     }
-    await runPrePrototypeCommit(projectRoot, iteration, mergedDeps.gitAddAndCommitFn);
+    if (workingTreeAfterPhase.stdout.toString().trim().length > 0) {
+      const shouldProceed = await mergedDeps.promptDirtyTreeCommitFn(
+        DIRTY_TREE_COMMIT_PROMPT,
+      );
+      if (!shouldProceed) {
+        mergedDeps.logFn(DECLINE_DIRTY_TREE_ABORT_MESSAGE);
+        return;
+      }
+      await runPrePrototypeCommit(projectRoot, iteration, mergedDeps.gitAddAndCommitFn);
+    }
   }
 
   const branchName = `feature/it_${iteration}`;

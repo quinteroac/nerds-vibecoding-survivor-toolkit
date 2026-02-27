@@ -1,8 +1,7 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { mkdtemp } from "node:fs/promises";
 
 import type { AgentResult } from "../agent";
 import { readState, writeState } from "../state";
@@ -156,7 +155,7 @@ describe("create prototype phase validation", () => {
       await expect(runCreatePrototype(
         { provider: "claude" },
         {
-          confirmDirtyTreeCommitFn: async (question) => {
+          promptDirtyTreeCommitFn: async (question) => {
             prompts.push(question);
             return false;
           },
@@ -175,6 +174,44 @@ describe("create prototype phase validation", () => {
     // No transition happens when confirmation is denied.
     const updatedState = await readState(root);
     expect(updatedState.current_phase).toBe("define");
+  });
+
+  test("commits dirty tree on confirmation during define-to-prototype transition and transitions state to prototype", async () => {
+    const root = await createProjectRoot();
+    createdRoots.push(root);
+    const iteration = "000009";
+    await seedState(root, makeState({ currentPhase: "define", prdStatus: "completed", projectContextStatus: "created", iteration }));
+    await seedPrd(root, iteration);
+    await seedProjectContext(root);
+    await initGitRepo(root);
+    await writeFile(join(root, "dirty.txt"), "dirty\n", "utf8");
+
+    const commitMessages: string[] = [];
+
+    await withCwd(root, async () => {
+      await runCreatePrototype(
+        { provider: "claude" },
+        {
+          promptDirtyTreeCommitFn: async (_question) => true,
+          gitAddAndCommitFn: async (projectRoot, commitMessage) => {
+            commitMessages.push(commitMessage);
+            const { $ } = await import("bun");
+            await $`git add -A && git commit -m ${commitMessage}`.cwd(projectRoot).nothrow().quiet();
+          },
+          loadSkillFn: async () => "Implement story",
+          invokeAgentFn: async ({ cwd }) => {
+            if (!cwd) throw new Error("Expected cwd");
+            await writeFile(join(cwd, "story.txt"), "implemented\n", "utf8");
+            return makeAgentResult(0);
+          },
+          checkGhAvailableFn: async () => false,
+        },
+      );
+    });
+
+    expect(commitMessages).toEqual(["chore: pre-prototype commit it_000009"]);
+    const updatedState = await readState(root);
+    expect(updatedState.current_phase).toBe("prototype");
   });
 
   test("throws when current_phase is refactor", async () => {
@@ -225,7 +262,7 @@ describe("create prototype phase validation", () => {
       await expect(runCreatePrototype(
         { provider: "claude" },
         {
-          confirmDirtyTreeCommitFn: async (question) => {
+          promptDirtyTreeCommitFn: async (question) => {
             prompts.push(question);
             return false;
           },
@@ -266,7 +303,7 @@ describe("create prototype phase validation", () => {
       await expect(runCreatePrototype(
         { provider: "claude" },
         {
-          confirmDirtyTreeCommitFn: async (question) => {
+          promptDirtyTreeCommitFn: async (question) => {
             prompts.push(question);
             return true;
           },
@@ -308,7 +345,7 @@ describe("create prototype phase validation", () => {
       await runCreatePrototype(
         { provider: "claude" },
         {
-          confirmDirtyTreeCommitFn: async () => {
+          promptDirtyTreeCommitFn: async () => {
             promptCount += 1;
             return true;
           },
@@ -352,7 +389,7 @@ describe("create prototype phase validation", () => {
       await expect(runCreatePrototype(
         { provider: "claude" },
         {
-          confirmDirtyTreeCommitFn: async () => true,
+          promptDirtyTreeCommitFn: async () => true,
           gitAddAndCommitFn: async () => {
             throw new Error("hook rejected");
           },
@@ -477,7 +514,7 @@ describe("create prototype gh PR creation", () => {
       await runCreatePrototype(
         { provider: "claude" },
         {
-          confirmDirtyTreeCommitFn: async () => true,
+          promptDirtyTreeCommitFn: async () => true,
           loadSkillFn: async () => "Implement story",
           invokeAgentFn: async ({ cwd }) => {
             if (!cwd) {
@@ -516,7 +553,7 @@ describe("create prototype gh PR creation", () => {
       await runCreatePrototype(
         { provider: "claude" },
         {
-          confirmDirtyTreeCommitFn: async () => true,
+          promptDirtyTreeCommitFn: async () => true,
           loadSkillFn: async () => "Implement story",
           invokeAgentFn: async ({ cwd }) => {
             if (!cwd) {
@@ -556,7 +593,7 @@ describe("create prototype gh PR creation", () => {
       await runCreatePrototype(
         { provider: "claude" },
         {
-          confirmDirtyTreeCommitFn: async () => true,
+          promptDirtyTreeCommitFn: async () => true,
           loadSkillFn: async () => "Implement story",
           invokeAgentFn: async ({ cwd }) => {
             if (!cwd) {

@@ -1,6 +1,6 @@
-import { createInterface } from "node:readline";
-
 import type { State } from "../scaffold/schemas/tmpl_state";
+
+import { defaultReadLine } from "./readline";
 
 export class GuardrailAbortError extends Error {
   constructor() {
@@ -16,28 +16,6 @@ export interface GuardrailOptions {
   force?: boolean;
   readLineFn?: ReadLineFn;
   stderrWriteFn?: StderrWriteFn;
-}
-
-async function defaultReadLine(): Promise<string | null> {
-  return new Promise((resolve) => {
-    const rl = createInterface({
-      input: process.stdin,
-      terminal: false,
-    });
-
-    let settled = false;
-
-    const settle = (value: string | null): void => {
-      if (!settled) {
-        settled = true;
-        rl.close();
-        resolve(value);
-      }
-    };
-
-    rl.once("line", settle);
-    rl.once("close", () => settle(null));
-  });
 }
 
 function defaultStderrWrite(message: string): void {
