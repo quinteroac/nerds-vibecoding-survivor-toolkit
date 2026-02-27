@@ -1,9 +1,12 @@
-import { readFile, writeFile } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { $ as dollar } from "bun";
-import { z } from "zod";
 
 import { PrdSchema } from "../../scaffold/schemas/tmpl_prd";
+import {
+  PrototypeProgressSchema,
+  type PrototypeProgress,
+} from "../../scaffold/schemas/tmpl_prototype-progress";
 import {
   buildPrompt,
   invokeAgent,
@@ -14,7 +17,9 @@ import {
 } from "../agent";
 import { assertGuardrail } from "../guardrail";
 import { defaultReadLine } from "../readline";
+import { idsMatchExactly, sortedValues } from "../progress-utils";
 import { exists, FLOW_REL_DIR, readState, writeState } from "../state";
+import { writeJsonArtifact, type WriteJsonArtifactFn } from "../write-json-artifact";
 
 export interface CreatePrototypeOptions {
   provider: AgentProvider;
@@ -26,25 +31,6 @@ export interface CreatePrototypeOptions {
 
 const DECLINE_DIRTY_TREE_ABORT_MESSAGE = "Aborted. Commit or discard your changes and re-run `bun nvst create prototype`.";
 const DIRTY_TREE_COMMIT_PROMPT = "Working tree has uncommitted changes. Stage and commit them now to proceed? [y/N]";
-
-const ProgressEntrySchema = z.object({
-  use_case_id: z.string(),
-  status: z.enum(["pending", "failed", "completed"]),
-  attempt_count: z.number().int().nonnegative(),
-  last_agent_exit_code: z.number().int().nullable(),
-  quality_checks: z.array(
-    z.object({
-      command: z.string(),
-      exit_code: z.number().int(),
-    }),
-  ),
-  last_error_summary: z.string(),
-  updated_at: z.string(),
-});
-
-export const PrototypeProgressSchema = z.object({
-  entries: z.array(ProgressEntrySchema),
-});
 
 interface CreatePrototypeDeps {
   invokeAgentFn: (options: AgentInvokeOptions) => Promise<AgentResult>;
@@ -59,6 +45,7 @@ interface CreatePrototypeDeps {
   warnFn: (message: string) => void;
   promptDirtyTreeCommitFn: (question: string) => Promise<boolean>;
   gitAddAndCommitFn: (projectRoot: string, commitMessage: string) => Promise<void>;
+  writeJsonArtifactFn: WriteJsonArtifactFn;
 }
 
 const defaultDeps: CreatePrototypeDeps = {
@@ -86,6 +73,7 @@ const defaultDeps: CreatePrototypeDeps = {
   warnFn: console.warn,
   promptDirtyTreeCommitFn: promptForDirtyTreeCommit,
   gitAddAndCommitFn: runGitAddAndCommit,
+  writeJsonArtifactFn: writeJsonArtifact,
 };
 
 type ReadLineFn = () => Promise<string | null>;
@@ -149,24 +137,6 @@ export async function runPrePrototypeCommit(
     }
     throw new Error(`Pre-prototype commit failed:\n${reason}`);
   }
-}
-
-function sortedValues(values: string[]): string[] {
-  return [...values].sort((a, b) => a.localeCompare(b));
-}
-
-function idsMatchExactly(left: string[], right: string[]): boolean {
-  if (left.length !== right.length) {
-    return false;
-  }
-
-  for (let i = 0; i < left.length; i += 1) {
-    if (left[i] !== right[i]) {
-      return false;
-    }
-  }
-
-  return true;
 }
 
 function parseQualityChecks(projectContextContent: string): string[] {
@@ -360,7 +330,7 @@ export async function runCreatePrototype(
   const progressFileName = `it_${iteration}_progress.json`;
   const progressPath = join(projectRoot, FLOW_REL_DIR, progressFileName);
   const storyIds = sortedValues(prdValidation.data.userStories.map((story) => story.id));
-  let progressData: z.infer<typeof PrototypeProgressSchema>;
+  let progressData: PrototypeProgress;
 
   if (await exists(progressPath)) {
     let parsedProgress: unknown;
@@ -403,7 +373,7 @@ export async function runCreatePrototype(
       })),
     };
 
-    await writeFile(progressPath, `${JSON.stringify(progress, null, 2)}\n`, "utf8");
+    await mergedDeps.writeJsonArtifactFn(progressPath, PrototypeProgressSchema, progress);
     progressData = progress;
   }
 
@@ -498,7 +468,7 @@ export async function runCreatePrototype(
         entry.last_error_summary = "Agent or quality check failed";
       }
 
-      await writeFile(progressPath, `${JSON.stringify(progressData, null, 2)}\n`, "utf8");
+      await mergedDeps.writeJsonArtifactFn(progressPath, PrototypeProgressSchema, progressData);
 
       if (allPassed) {
         const commitMessage = `feat: implement ${story.id} - ${story.title}`;
@@ -511,7 +481,7 @@ export async function runCreatePrototype(
           entry.status = "failed";
           entry.last_error_summary = "Git commit failed";
           entry.updated_at = new Date().toISOString();
-          await writeFile(progressPath, `${JSON.stringify(progressData, null, 2)}\n`, "utf8");
+          await mergedDeps.writeJsonArtifactFn(progressPath, PrototypeProgressSchema, progressData);
 
           mergedDeps.logFn(
             `iteration=it_${iteration} story=${story.id} attempt=${entry.attempt_count} outcome=commit_failed`,

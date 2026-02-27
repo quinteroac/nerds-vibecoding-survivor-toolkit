@@ -1,4 +1,4 @@
-import { readFile, writeFile } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { $ as dollar } from "bun";
 
@@ -11,7 +11,8 @@ import {
   type AgentResult,
 } from "../agent";
 import { exists, FLOW_REL_DIR, readState } from "../state";
-import { type Issue } from "../../scaffold/schemas/tmpl_issues";
+import { type Issue, IssuesSchema } from "../../scaffold/schemas/tmpl_issues";
+import { writeJsonArtifact, type WriteJsonArtifactFn } from "../write-json-artifact";
 
 export interface ExecuteAutomatedFixOptions {
   provider: AgentProvider;
@@ -27,7 +28,7 @@ interface ExecuteAutomatedFixDeps {
   nowFn: () => Date;
   readFileFn: typeof readFile;
   runCommitFn: (projectRoot: string, message: string) => Promise<number>;
-  writeFileFn: typeof writeFile;
+  writeJsonArtifactFn: WriteJsonArtifactFn;
 }
 
 const defaultDeps: ExecuteAutomatedFixDeps = {
@@ -44,7 +45,7 @@ const defaultDeps: ExecuteAutomatedFixDeps = {
       .quiet();
     return result.exitCode;
   },
-  writeFileFn: writeFile,
+  writeJsonArtifactFn: writeJsonArtifact,
 };
 
 function isNetworkErrorText(text: string): boolean {
@@ -72,106 +73,12 @@ function sortIssuesById(issues: Issue[]): Issue[] {
   return [...issues].sort((left, right) => left.id.localeCompare(right.id));
 }
 
-const ALLOWED_ISSUE_STATUSES: Set<Issue["status"]> = new Set([
-  "open",
-  "fixed",
-  "retry",
-  "manual-fix",
-]);
-
-function asRecord(value: unknown): Record<string, unknown> | null {
-  if (typeof value !== "object" || value === null || Array.isArray(value)) {
-    return null;
-  }
-  return value as Record<string, unknown>;
-}
-
-function parseIssuesForProcessing(
-  raw: unknown,
-  flowRelativePath: string,
-  logFn: (message: string) => void,
-): Issue[] {
-  if (!Array.isArray(raw)) {
-    throw new Error(
-      `Deterministic validation error: issues schema mismatch in ${flowRelativePath}.`,
-    );
-  }
-
-  const parsedIssues: Issue[] = [];
-  const seenIds = new Set<string>();
-
-  for (const [index, item] of raw.entries()) {
-    const issue = asRecord(item);
-    if (!issue) {
-      logFn(
-        `Warning: Skipping invalid issue at index ${index} in ${flowRelativePath}: expected an object.`,
-      );
-      continue;
-    }
-
-    const id = issue.id;
-    const title = issue.title;
-    const description = issue.description;
-    const status = issue.status;
-
-    const missingFields: string[] = [];
-    if (typeof id !== "string") {
-      missingFields.push("id");
-    }
-    if (typeof title !== "string") {
-      missingFields.push("title");
-    }
-    if (typeof description !== "string") {
-      missingFields.push("description");
-    }
-    if (typeof status !== "string") {
-      missingFields.push("status");
-    }
-
-    if (missingFields.length > 0) {
-      logFn(
-        `Warning: Skipping issue at index ${index} in ${flowRelativePath}: missing required field(s): ${missingFields.join(", ")}.`,
-      );
-      continue;
-    }
-
-    const validId = id as string;
-    const validTitle = title as string;
-    const validDescription = description as string;
-    const validStatus = status as Issue["status"];
-
-    if (!ALLOWED_ISSUE_STATUSES.has(validStatus)) {
-      logFn(
-        `Warning: Skipping issue ${validId} in ${flowRelativePath}: invalid status '${status}'.`,
-      );
-      continue;
-    }
-
-    if (seenIds.has(validId)) {
-      logFn(
-        `Warning: Skipping duplicate issue id '${validId}' in ${flowRelativePath}.`,
-      );
-      continue;
-    }
-
-    seenIds.add(validId);
-    parsedIssues.push({
-      id: validId,
-      title: validTitle,
-      description: validDescription,
-      status: validStatus,
-    });
-  }
-
-  return parsedIssues;
-}
-
 async function writeIssuesFile(
   issuesPath: string,
   issues: Issue[],
   deps: ExecuteAutomatedFixDeps,
 ): Promise<void> {
-  await deps.writeFileFn(issuesPath, `${JSON.stringify(issues, null, 2)}\n`, "utf8");
+  await deps.writeJsonArtifactFn(issuesPath, IssuesSchema, issues);
 }
 
 async function commitIssueUpdate(
@@ -185,6 +92,25 @@ async function commitIssueUpdate(
   return exitCode === 0;
 }
 
+/**
+ * Guardrail policy: `execute-automated-fix` is an explicit exception to the
+ * phase-based guardrail system used by `execute-test-plan` and
+ * `execute-refactor`. Those commands assert `current_phase` and prerequisite
+ * status fields via `assertGuardrail` before running, because they depend on
+ * phase-specific state transitions being in place.
+ *
+ * `execute-automated-fix` is deliberately phase-independent: issues can exist
+ * and require automated remediation at any point in the workflow (prototype or
+ * refactor phases, or during reruns after partial fixes). Its sole
+ * prerequisite is the existence of a valid issues file for the current
+ * iteration, which is already enforced by a hard error below. Adding a
+ * phase-based guardrail here would prevent legitimate use cases (e.g. fixing
+ * issues discovered late in a refactor pass) without adding safety value.
+ *
+ * `--force` is therefore not applicable to this command and is not accepted as
+ * a flag (any unrecognised option, including `--force`, is rejected by the CLI
+ * router before reaching this function).
+ */
 export async function runExecuteAutomatedFix(
   opts: ExecuteAutomatedFixOptions,
   deps: Partial<ExecuteAutomatedFixDeps> = {},
@@ -224,7 +150,14 @@ export async function runExecuteAutomatedFix(
     );
   }
 
-  const issues = sortIssuesById(parseIssuesForProcessing(parsedIssuesRaw, flowRelativePath, mergedDeps.logFn));
+  const issuesValidation = IssuesSchema.safeParse(parsedIssuesRaw);
+  if (!issuesValidation.success) {
+    throw new Error(
+      `Deterministic validation error: issues schema mismatch in ${flowRelativePath}.`,
+    );
+  }
+
+  const issues = sortIssuesById(issuesValidation.data);
   const openIssues = issues.filter((issue) => issue.status === "open");
 
   if (openIssues.length === 0) {

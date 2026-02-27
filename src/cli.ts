@@ -659,12 +659,11 @@ Providers: claude, codex, gemini, cursor`);
         } = parseOptionalIntegerFlag(postAgentArgs, "--iterations", 1);
         const {
           value: retryOnFail,
-          remainingArgs: postRetryArgs,
+          remainingArgs: unknownArgs,
         } = parseOptionalIntegerFlag(postIterationsArgs, "--retry-on-fail", 0);
 
-        const { remainingArgs: postForceArgs } = parseForce(postRetryArgs);
-        if (postForceArgs.length > 0) {
-          console.error(`Unknown option(s) for execute automated-fix: ${postForceArgs.join(" ")}`);
+        if (unknownArgs.length > 0) {
+          console.error(`Unknown option(s) for execute automated-fix: ${unknownArgs.join(" ")}`);
           printUsage();
           process.exitCode = 1;
           return;

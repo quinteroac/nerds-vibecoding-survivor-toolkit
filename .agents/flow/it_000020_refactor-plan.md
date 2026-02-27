@@ -1,0 +1,34 @@
+# Refactor Plan — Iteration 000020
+
+## Refactor Items
+
+### RI-001: Standardize JSON Artifact Writing via `nvst write-json` (or a Single Helper)
+
+**Description:** Consolidate the way iteration-scoped JSON artifacts are written so that commands like `create-prototype`, `execute-test-plan`, and `execute-automated-fix` delegate JSON output to `nvst write-json` (directly or via a thin shared helper), instead of hand-writing JSON with `writeFile`/`Bun.write`. This keeps long-lived artifacts in `.agents/flow/` consistently generated through the same schema-aware pipeline without changing their filenames or external structure.
+
+**Rationale:** This item addresses the highest-impact violation of `PROJECT_CONTEXT.md` (JSON generation via `nvst write-json`) and reduces the risk of divergence between commands as more workflows are added. Making JSON writes go through a single, schema-backed path improves maintainability and observability across the toolchain, and while it requires some re-plumbing in a few commands and tests, it does not need to alter any user-visible interfaces.
+
+### RI-002: Introduce Shared Utilities for ID Matching and Progress Entry Updates
+
+**Description:** Extract the repeated utility patterns for sorted ID comparison and progress entry state updates into a small shared module (e.g. a `progress-utils` helper), and update `create-prototype`, `execute-test-plan`, and `execute-refactor` to use it. The goal is to centralize logic such as `sortedValues`/`idsMatchExactly` and timestamped status transitions without changing existing behavior.
+
+**Rationale:** This is a low-effort, high-leverage quick win that reduces duplication in core workflow code and makes future changes to matching rules or timestamp semantics safer. By tackling it early, it lays a cleaner foundation for subsequent refactors (like schema alignment) and lowers the chance of subtle inconsistencies between commands that all rely on similar progress mechanics.
+
+### RI-003: Align Iteration Artifact Validation on Shared Scaffold Schemas
+
+**Description:** Ensure that all long-lived iteration artifacts (prototype progress, issues, execution progress files) are validated against centralized Zod schemas in `scaffold/schemas/` or `schemas/`, rather than relying on inline schemas or manual structural checks. Where necessary, add or extract schemas (for example, for prototype progress and issues) and update commands to validate parsed JSON via those shared definitions.
+
+**Rationale:** Centralizing validation on shared schemas tightens the contract between commands and validation scripts, and makes it clear what shape each artifact is expected to have over time. Prioritizing this after utility extraction allows common helpers to be reused by the schema-backed flows, and it meaningfully reduces the risk of one command silently drifting away from the canonical schema as features evolve.
+
+### RI-004: Harmonize Reporting Patterns Across Execution Commands
+
+**Description:** Review and, where useful, align how commands generate human-readable markdown reports from their JSON artifacts, using the `execute-refactor` report builder as the reference. The goal is to keep filenames and external interfaces intact while making the structure, summary fields, and table-style detail sections more consistent across refactor execution, test execution, and any future prototype reporting.
+
+**Rationale:** Consistent reporting improves the developer experience when reading iteration outputs and makes it easier to correlate JSON progress with markdown summaries. This refactor is less urgent than core JSON/scaffold alignment but builds on it, and can be implemented incrementally (per command) without breaking existing workflows or requiring product-level behavior changes.
+
+### RI-005: Clarify and Codify Guardrail Expectations for Execute-Style Commands
+
+**Description:** Define and document a clear policy for how execute-style commands (such as `execute-automated-fix`, `execute-test-plan`, and `execute-refactor`) should participate in the guardrail/phase system, and then, if agreed, adjust the relevant commands to match that policy without changing their documented external flags or outputs. This may result in additional `assertGuardrail` usage, updated error messages, or explicit exceptions for certain utility-like commands.
+
+**Rationale:** Today, `execute-refactor` and `execute-test-plan` use guardrails heavily while `execute-automated-fix` relies mainly on the presence of the issues file, which is acceptable per the current PRD but diverges from the broader flow mental model. Treating this as a later, design-driven refactor avoids disrupting the freshly implemented behavior while setting up a path to more predictable and documented execution semantics across the CLI.
+

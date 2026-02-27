@@ -17,6 +17,7 @@ import {
 } from "../agent";
 import { CLI_PATH } from "../cli-path";
 import { assertGuardrail } from "../guardrail";
+import { applyStatusUpdate, idsMatchExactly, sortedValues } from "../progress-utils";
 import { exists, FLOW_REL_DIR, readState, writeState } from "../state";
 
 export interface ExecuteRefactorOptions {
@@ -181,12 +182,9 @@ export async function runExecuteRefactor(
     }
 
     // AC05: Verify progress item IDs match refactor PRD item IDs
-    const expectedIds = [...refactorItems.map((item) => item.id)].sort((a, b) => a.localeCompare(b));
-    const existingIds = [...progressValidation.data.entries.map((entry) => entry.id)].sort((a, b) => a.localeCompare(b));
-    if (
-      expectedIds.length !== existingIds.length ||
-      expectedIds.some((id, i) => id !== existingIds[i])
-    ) {
+    const expectedIds = sortedValues(refactorItems.map((item) => item.id));
+    const existingIds = sortedValues(progressValidation.data.entries.map((entry) => entry.id));
+    if (!idsMatchExactly(existingIds, expectedIds)) {
       throw new Error(
         "Refactor execution progress file out of sync: entry ids do not match refactor PRD item ids.",
       );
@@ -226,8 +224,7 @@ export async function runExecuteRefactor(
     }
 
     // Set current item to in_progress before invoking agent (FR-4; observability on interrupt)
-    entry.status = "in_progress";
-    entry.updated_at = mergedDeps.nowFn().toISOString();
+    applyStatusUpdate(entry, "in_progress", mergedDeps.nowFn().toISOString());
     const writeInProgressResult = await mergedDeps.invokeWriteJsonFn(
       projectRoot,
       "refactor-execution-progress",
@@ -259,10 +256,9 @@ export async function runExecuteRefactor(
 
     // AC09 & AC10: Record result after each invocation, continue on failure
     const succeeded = agentResult.exitCode === 0;
-    entry.status = succeeded ? "completed" : "failed";
     entry.attempt_count = entry.attempt_count + 1;
     entry.last_agent_exit_code = agentResult.exitCode;
-    entry.updated_at = mergedDeps.nowFn().toISOString();
+    applyStatusUpdate(entry, succeeded ? "completed" : "failed", mergedDeps.nowFn().toISOString());
 
     const writeResult = await mergedDeps.invokeWriteJsonFn(
       projectRoot,
