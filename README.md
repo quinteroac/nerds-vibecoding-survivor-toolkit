@@ -26,15 +26,10 @@ nerds-vst is a package that provides:
 
   ```
   AGENTS.md
-  iteration_close_checklist.md
-  ralph_loop.md
-  providers.md
   .agents/
     PROJECT_CONTEXT.md
-    state.json
     state_rules.md
-    scripts/
-      ralph.ts
+    state.example.json
     skills/
       create-pr-document/SKILL.md
       refine-pr-document/SKILL.md
@@ -49,21 +44,40 @@ nerds-vst is a package that provides:
       evaluate/SKILL.md
       plan-refactor/SKILL.md
       refactor-prd/SKILL.md
+      refine-refactor-plan/SKILL.md
+      execute-refactor-item/SKILL.md
+      automated-fix/SKILL.md
       debug/SKILL.md
     flow/
-      README.md
+      it_000001_progress.example.json
       archived/
-  docs/templates/
-    CHANGELOG.md
-    TECHNICAL_DEBT.md
+  docs/
+    nvst-flow/
+      COMMANDS.md
+      QUICK_USE.md
+      templates/
+        CHANGELOG.md
+        TECHNICAL_DEBT.md
+        it_000001_product-requirement-document.md
+        it_000001_test-plan.md
+        it_000001_evaluation-report.md
+        it_000001_refactor_plan.md
+    PLACEHOLDER.md
   schemas/
     state.ts
+    prd.ts
     progress.ts
+    test-plan.ts
+    issues.ts
+    prototype-progress.ts
+    test-execution-progress.ts
+    refactor-prd.ts
+    refactor-execution-progress.ts
     validate-state.ts
     validate-progress.ts
   ```
 
-  Template files in this repository live under [`scaffold/`](scaffold/) with a `tmpl_` prefix (e.g. `tmpl_AGENTS.md`, `tmpl_ralph_loop.md`); `bun nvst init` copies them into the target project and writes them without the prefix to avoid naming conflicts when the toolkit is integrated elsewhere.
+  Template files in this repository live under [`scaffold/`](scaffold/) with a `tmpl_` prefix (e.g. `tmpl_AGENTS.md`, `tmpl_state.ts`); `bun nvst init` copies them into the target project and writes them without the prefix to avoid naming conflicts when the toolkit is integrated elsewhere. The `state.json` file is created and managed by the toolkit at runtime.
 
 - **Command-line tool** — Sends instructions to your chosen agent provider (Claude, Codex, Gemini, etc.) so it follows the framework. Commands drive the Define → Prototype → Refactor flow and keep state in sync, giving you a single way to run the process regardless of which agent you use.
 
@@ -73,8 +87,8 @@ nerds-vst is a package that provides:
   |-------|----------|
   | **Iteration** | `bun nvst start iteration` — Start or advance to the next iteration (archives current, resets state). |
   | **Define** | `bun nvst define requirement` → `bun nvst refine requirement` (optional) → `bun nvst approve requirement` → `bun nvst create prd` |
-  | **Prototype** | `bun nvst create project-context` → `bun nvst approve project-context` → `bun nvst create prototype` → `bun nvst define test-plan` → `bun nvst approve test-plan` → `bun nvst execute test-plan` → `bun nvst execute automated-fix` / `bun nvst execute manual-fix` → when all tests pass, prototype is done and Refactor can begin |
-  | **Refactor** | `bun nvst define refactor-plan` → `bun nvst approve refactor-plan` → `bun nvst create prd --refactor` → `bun nvst execute refactor` → update PROJECT_CONTEXT, CHANGELOG → then `bun nvst start iteration` for next iteration |
+  | **Prototype** | `bun nvst create project-context` → `bun nvst approve project-context` → `bun nvst create prototype` → `bun nvst define test-plan` → `bun nvst refine test-plan` (optional) → `bun nvst approve test-plan` → `bun nvst execute test-plan` → `bun nvst execute automated-fix` / `bun nvst execute manual-fix` → when all tests pass, prototype is done and Refactor can begin |
+  | **Refactor** | `bun nvst define refactor-plan` → `bun nvst refine refactor-plan` (optional) → `bun nvst approve refactor-plan` → `bun nvst create prd --refactor` → `bun nvst execute refactor` → update PROJECT_CONTEXT, CHANGELOG → then `bun nvst start iteration` for next iteration |
 
 
 ## Installation
@@ -92,7 +106,7 @@ Install from a local directory or a packed tarball:
 bun add /path/to/nerds-vibecoding-survivor-toolkit
 
 # Or from a packed .tgz (run `bun run package` first)
-bun add ./quinteroac-agents-coding-toolkit-0.1.0.tgz
+bun add ./quinteroac-agents-coding-toolkit-0.1.1-preview.0.tgz
 ```
 
 ### From npm
@@ -124,4 +138,4 @@ Acknowledgements and credits will be added after the initial release.
 ## References
 
 - [process_design.md](process_design.md) — Full process specification.
-- [scaffold/.agents/flow/tmpl_README.md](scaffold/.agents/flow/tmpl_README.md) — Flow directory and naming conventions (scaffold template).
+- [docs/nvst-flow/](docs/nvst-flow/) — Command reference and quick usage (scaffold provides `COMMANDS.md` and `QUICK_USE.md`).
