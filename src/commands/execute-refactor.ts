@@ -249,12 +249,12 @@ export async function runExecuteRefactor(
       item_rationale: item.rationale,
     });
 
-    // AC08: Invoke agent in interactive mode
+    // US-002-AC01: Invoke agent in non-interactive mode (autonomous execution)
     const agentResult = await mergedDeps.invokeAgentFn({
       provider: opts.provider,
       prompt,
       cwd: projectRoot,
-      interactive: true,
+      interactive: false,
     });
 
     // AC09 & AC10: Record result after each invocation, continue on failure
