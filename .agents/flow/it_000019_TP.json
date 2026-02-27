@@ -1,0 +1,270 @@
+{
+  "overallStatus": "pending",
+  "scope": [
+    "`nvst flow` new top-level CLI command: registration in `src/cli.ts` and implementation in `src/commands/flow.ts`.",
+    "Step-resolution logic: reading `state.json`, determining the next pending/in-progress step across all three phases (define → prototype → refactor) and within each phase following the canonical key order.",
+    "Approval-gate detection: halting execution with an actionable message when a human decision is required.",
+    "Iteration-completion detection: printing the completion summary and exiting cleanly when all phases are finished.",
+    "Interactive agent-provider prompt: soliciting provider via stdin when `--agent` is omitted and the next step requires one.",
+    "Error propagation: errors from delegated sub-commands surface to the top-level `cli.ts` handler with a non-zero exit code.",
+    "`prototype_approved` boolean field handling: treated as `false = pending approval` and `true = approved`, distinct from the status-object pattern.",
+    "Programmatic delegation: existing command handlers are invoked as function calls, not via `Bun.spawn`."
+  ],
+  "environmentData": [
+    "Runtime: Bun v1+ (tests executed via `bun test`).",
+    "Test runner: `bun:test` built-in.",
+    "No external services or databases required; all state is injected via dependency injection in unit tests.",
+    "TypeScript strict-mode type checking executed with `bun tsc --noEmit` against `tsconfig.json`.",
+    "Test files co-located with source: `src/commands/flow.test.ts`, `src/flow-cli.test.ts`; integration type-check in `tests/type-checking.test.ts`.",
+    "Fixtures: `State` objects constructed inline using `createBaseState()` + `withState()` helpers; no file-system reads required during unit tests.",
+    "---",
+    "## User Story: US-001 - Auto-detect and execute the next step"
+  ],
+  "automatedTests": [
+    {
+      "id": "TC-001",
+      "description": "`nvst flow` command is registered in `src/cli.ts` (import + routing branch + usage text) and `src/commands/flow.ts` exists",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-1"
+      ]
+    },
+    {
+      "id": "TC-002",
+      "description": "`detectNextFlowDecision` reads phase/status fields from state and returns the correct next step",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-1",
+        "FR-3"
+      ]
+    },
+    {
+      "id": "TC-003",
+      "description": "`runFlow` delegates to the correct existing handler and re-reads state after each step completes",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-6"
+      ]
+    },
+    {
+      "id": "TC-004",
+      "description": "`runFlow` chains multiple steps automatically without stopping until reaching an approval gate",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-3",
+        "FR-6"
+      ]
+    },
+    {
+      "id": "TC-005",
+      "description": "When `--agent` is not provided and the step requires one, `runFlow` prints `\"Enter agent provider:\"` and reads from stdin before proceeding",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-5"
+      ]
+    },
+    {
+      "id": "TC-006",
+      "description": "`--force` flag is passed through to all delegated handlers",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-6"
+      ]
+    },
+    {
+      "id": "TC-007",
+      "description": "When a delegated sub-command throws, `runFlow` stops immediately, writes the error message to stderr, and sets `process.exitCode = 1`; no subsequent steps are attempted",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-7"
+      ]
+    },
+    {
+      "id": "TC-008",
+      "description": "A step with status `in_progress` at startup is treated as the next pending step and re-executed",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-001"
+      ]
+    },
+    {
+      "id": "TC-009",
+      "description": "Delegated command handlers (`define-requirement`, `create-project-context`, `create-prototype`, `create-test-plan`, `execute-test-plan`, `define-refactor-plan`, `execute-refactor`) do not contain `process.exit()` calls",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-6"
+      ]
+    },
+    {
+      "id": "TC-010",
+      "description": "Phase order is respected: define phase steps are resolved before prototype phase steps",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-3"
+      ]
+    },
+    {
+      "id": "TC-011",
+      "description": "Within define phase, `requirement_definition` is resolved before `prd_generation` / `create-project-context`",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-4"
+      ]
+    },
+    {
+      "id": "TC-012",
+      "description": "Within prototype phase, canonical step order is respected: `project_context` → `prototype_build` → `test_plan` → `tp_generation` → `test_execution` → `prototype_approved`",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-4"
+      ]
+    },
+    {
+      "id": "TC-013",
+      "description": "Within refactor phase, canonical step order is respected: `refactor_plan` → `refactor_execution`",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-4"
+      ]
+    },
+    {
+      "id": "TC-014",
+      "description": "`prototype_approved` boolean field: `false` triggers an approval gate; `true` allows the next step (`define-refactor-plan`) to proceed",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-4"
+      ]
+    },
+    {
+      "id": "TC-015",
+      "description": "TypeScript strict-mode type-check passes with no errors after adding `src/commands/flow.ts` and its registration in `src/cli.ts`",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-001",
+        "FR-1"
+      ]
+    },
+    {
+      "id": "TC-016",
+      "description": "Requirement approval gate prints exact message: `\"Waiting for approval. Run: nvst approve requirement to continue, then re-run nvst flow.\"`",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-002",
+        "FR-3",
+        "FR-4"
+      ]
+    },
+    {
+      "id": "TC-017",
+      "description": "Project-context approval gate prints exact message referencing `approve project-context`",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-002",
+        "FR-3",
+        "FR-4"
+      ]
+    },
+    {
+      "id": "TC-018",
+      "description": "Test-plan approval gate prints exact message referencing `approve test-plan`",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-002",
+        "FR-3",
+        "FR-4"
+      ]
+    },
+    {
+      "id": "TC-019",
+      "description": "Prototype approval gate prints exact message referencing `approve prototype`",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-002",
+        "FR-4"
+      ]
+    },
+    {
+      "id": "TC-020",
+      "description": "Refactor-plan approval gate prints exact message referencing `approve refactor-plan`",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-002",
+        "FR-3",
+        "FR-4"
+      ]
+    },
+    {
+      "id": "TC-021",
+      "description": "`runFlow` stops and exits with code `0` when decision is `approval_gate`; approval message is written to stdout",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-002"
+      ]
+    },
+    {
+      "id": "TC-022",
+      "description": "After user performs approval and re-runs `nvst flow`, execution resumes from the correct next step (not re-triggering the gate)",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-002",
+        "FR-3"
+      ]
+    },
+    {
+      "id": "TC-023",
+      "description": "TypeScript strict-mode type-check passes after all approval gate logic is implemented",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-002",
+        "FR-1"
+      ]
+    },
+    {
+      "id": "TC-024",
+      "description": "When all phases are in terminal state (`refactor_execution.status = \"completed\"`), `runFlow` prints `\"Iteration 000019 complete. All phases finished.\"`",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-003"
+      ]
+    },
+    {
+      "id": "TC-025",
+      "description": "No delegated handler is called after the completion state is detected",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-003"
+      ]
+    },
+    {
+      "id": "TC-026",
+      "description": "`runFlow` exits with code `0` (or leaves `process.exitCode` undefined) after printing the completion message",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-003"
+      ]
+    },
+    {
+      "id": "TC-027",
+      "description": "TypeScript strict-mode type-check passes with iteration-complete logic in place",
+      "status": "pending",
+      "correlatedRequirements": [
+        "US-003",
+        "FR-1"
+      ]
+    }
+  ],
+  "exploratoryManualTests": []
+}
