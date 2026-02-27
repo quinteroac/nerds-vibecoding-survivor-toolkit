@@ -1,0 +1,85 @@
+{
+  "goals": [
+    "`nvst execute automated-fix` processes all open issues sequentially without requiring an explicit `--iterations` flag.",
+    "`nvst execute refactor` runs fully non-interactively, consistent with `nvst create prototype`.",
+    "Neither command's external interface (flags, state transitions, file outputs) is altered."
+  ],
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Automated-Fix Processes All Open Issues by Default",
+      "description": "As a developer running `nvst execute automated-fix`, I want the command to process every open issue in sequence so that I do not have to re-run the command multiple times or pass `--iterations` to fix all issues.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-001-AC01",
+          "text": "When `--iterations` is not provided, `runExecuteAutomatedFix` processes all open issues (equivalent to `--iterations <count of open issues>`)."
+        },
+        {
+          "id": "US-001-AC02",
+          "text": "When `--iterations N` is provided, only up to N open issues are processed (existing behavior preserved)."
+        },
+        {
+          "id": "US-001-AC03",
+          "text": "Issues are still processed in sorted order by ID."
+        },
+        {
+          "id": "US-001-AC04",
+          "text": "The summary log line (`Summary: Fixed=X Failed=Y`) correctly reflects the total across all processed issues."
+        },
+        {
+          "id": "US-001-AC05",
+          "text": "The command exits cleanly when there are no open issues (`\"No open issues to process. Exiting without changes.\"`)."
+        },
+        {
+          "id": "US-001-AC06",
+          "text": "Typecheck / lint passes."
+        }
+      ]
+    },
+    {
+      "id": "US-002",
+      "title": "Execute Refactor Runs Non-Interactively",
+      "description": "As a developer running `nvst execute refactor`, I want the agent to be invoked without interactive mode so that the command completes autonomously without waiting for user input, consistent with how `nvst create prototype` works.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-002-AC01",
+          "text": "The `invokeAgentFn` call inside `runExecuteRefactor` passes `interactive: false`."
+        },
+        {
+          "id": "US-002-AC02",
+          "text": "The command still processes each refactor item in order and records results in the progress file."
+        },
+        {
+          "id": "US-002-AC03",
+          "text": "State transitions (`in_progress` → `completed` on success, `in_progress` on partial failure) remain unchanged."
+        },
+        {
+          "id": "US-002-AC04",
+          "text": "The refactor execution report is still generated after all items are processed."
+        },
+        {
+          "id": "US-002-AC05",
+          "text": "Typecheck / lint passes."
+        }
+      ]
+    }
+  ],
+  "functionalRequirements": [
+    {
+      "id": "FR-1",
+      "description": "In `src/commands/execute-automated-fix.ts`, change `const maxIssuesToProcess = opts.iterations ?? 1` to `const maxIssuesToProcess = opts.iterations ?? openIssues.length`, so that by default all open issues are processed."
+    },
+    {
+      "id": "FR-2",
+      "description": "In `src/commands/execute-refactor.ts`, change `interactive: true` to `interactive: false` in the `invokeAgentFn` call (line ~257)."
+    },
+    {
+      "id": "FR-3",
+      "description": "No new flags, options, or dependencies are introduced by either fix."
+    },
+    {
+      "id": "FR-4",
+      "description": "Existing unit tests must continue to pass; new or updated tests must cover the changed default behavior of FR-1."
+    }
+  ]
+}
