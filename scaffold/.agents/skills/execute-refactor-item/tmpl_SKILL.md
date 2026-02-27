@@ -27,11 +27,11 @@ Apply the provided refactor item to the codebase, following the project's conven
 
 | Source | Used for |
 |--------|----------|
-| `refactor_item_id` (context variable) | The refactor item identifier (e.g. `RI-001`) |
-| `refactor_item_title` (context variable) | Short title of the refactor item |
-| `refactor_item_description` (context variable) | Detailed description of the change to apply |
-| `refactor_item_rationale` (context variable) | Why this refactor is needed |
-| `iteration` (context variable) | Current iteration number for context |
+| `current_iteration` (context variable) | Current iteration number for context |
+| `item_id` (context variable) | The refactor item identifier (e.g. `RI-001`) |
+| `item_title` (context variable) | Short title of the refactor item |
+| `item_description` (context variable) | Detailed description of the change to apply |
+| `item_rationale` (context variable) | Why this refactor is needed |
 | `.agents/PROJECT_CONTEXT.md` | Documented conventions, architecture, and standards to follow |
 
 ---
