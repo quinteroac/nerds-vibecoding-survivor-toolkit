@@ -233,7 +233,7 @@ export async function runExecuteAutomatedFix(
   }
 
   const skillTemplate = await mergedDeps.loadSkillFn(projectRoot, "automated-fix");
-  const maxIssuesToProcess = opts.iterations ?? 1;
+  const maxIssuesToProcess = opts.iterations ?? openIssues.length;
   const issuesToProcess = openIssues.slice(0, maxIssuesToProcess);
   const maxRetries = opts.retryOnFail ?? 0;
 
