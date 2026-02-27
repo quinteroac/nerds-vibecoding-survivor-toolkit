@@ -111,13 +111,17 @@ function isPendingOrInProgress(status: string): boolean {
   return status === "pending" || status === "in_progress";
 }
 
+function buildIterationCompleteMessage(iteration: string): string {
+  return `Iteration ${iteration} complete. All phases finished.`;
+}
+
 export function detectNextFlowDecision(state: State): FlowDecision {
   const define = state.phases.define;
   const prototype = state.phases.prototype;
   const refactor = state.phases.refactor;
 
   if (state.current_phase === "refactor" && refactor.refactor_execution.status === "completed") {
-    return { kind: "complete", message: "Iteration is complete." };
+    return { kind: "complete", message: buildIterationCompleteMessage(state.current_iteration) };
   }
 
   if (define.requirement_definition.status === "in_progress") {
@@ -202,7 +206,7 @@ export function detectNextFlowDecision(state: State): FlowDecision {
       return { kind: "step", step: FLOW_STEPS["execute-refactor"] };
     }
     if (refactor.refactor_execution.status === "completed") {
-      return { kind: "complete", message: "Iteration is complete." };
+      return { kind: "complete", message: buildIterationCompleteMessage(state.current_iteration) };
     }
     return {
       kind: "blocked",

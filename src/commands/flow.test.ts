@@ -152,7 +152,7 @@ describe("US-001: flow command", () => {
         stderrWriteFn: () => {},
       },
     );
-    expect(logs).toContain("Iteration is complete.");
+    expect(logs).toContain("Iteration 000019 complete. All phases finished.");
   });
 
   test("AC05: prompts for provider from stdin when --agent is not provided", async () => {
@@ -305,6 +305,65 @@ describe("US-001: flow command", () => {
       const source = await readFile(join(import.meta.dir, fileName), "utf8");
       expect(source).not.toContain("process.exit(");
     }
+  });
+});
+
+describe("US-003: completion message when iteration is finished", () => {
+  let previousExitCode: typeof process.exitCode;
+
+  beforeEach(() => {
+    previousExitCode = process.exitCode;
+    process.exitCode = undefined;
+  });
+
+  afterEach(() => {
+    process.exitCode = previousExitCode ?? 0;
+  });
+
+  test("US-003-AC01 + US-003-AC02: prints completion summary, exits 0, and does not attempt further steps", async () => {
+    const completeState = withState(createBaseState(), (s) => {
+      s.current_iteration = "000019";
+      s.current_phase = "refactor";
+      s.phases.refactor.refactor_plan.status = "approved";
+      s.phases.refactor.refactor_execution.status = "completed";
+    });
+
+    const logs: string[] = [];
+    let delegatedCalls = 0;
+
+    await runFlow(
+      { provider: "codex" },
+      {
+        readStateFn: async () => completeState,
+        runCreateProjectContextFn: async () => {
+          delegatedCalls += 1;
+        },
+        runCreatePrototypeFn: async () => {
+          delegatedCalls += 1;
+        },
+        runCreateTestPlanFn: async () => {
+          delegatedCalls += 1;
+        },
+        runDefineRefactorPlanFn: async () => {
+          delegatedCalls += 1;
+        },
+        runDefineRequirementFn: async () => {
+          delegatedCalls += 1;
+        },
+        runExecuteRefactorFn: async () => {
+          delegatedCalls += 1;
+        },
+        runExecuteTestPlanFn: async () => {
+          delegatedCalls += 1;
+        },
+        stdoutWriteFn: (message) => logs.push(message),
+        stderrWriteFn: () => {},
+      },
+    );
+
+    expect(logs).toContain("Iteration 000019 complete. All phases finished.");
+    expect(delegatedCalls).toBe(0);
+    expect(process.exitCode === undefined || process.exitCode === 0).toBe(true);
   });
 });
 
