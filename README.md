@@ -62,7 +62,6 @@ nerds-vst is a package that provides:
         it_000001_test-plan.md
         it_000001_evaluation-report.md
         it_000001_refactor_plan.md
-    PLACEHOLDER.md
   schemas/
     state.ts
     prd.ts
