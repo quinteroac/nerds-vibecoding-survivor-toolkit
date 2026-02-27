@@ -120,14 +120,25 @@ npm install @quinteroac/agents-coding-toolkit
 
 ### Verify installation
 
-After installation, the `nvst` command should be available:
+After installation, the `nvst` command should be available. Prefer `bun nvst` so Bun resolves the binary from the local package:
 
 ```bash
 # Check that the command works
-nvst --help
+bun nvst --help
 
 # Verify installed version matches the package
-nvst --version
+bun nvst --version
+```
+
+**If `nvst` is not found:** add your project’s `node_modules/.bin` to your `PATH`, or run it explicitly:
+
+```bash
+# Add to PATH for the current shell (adjust path if your project root differs)
+export PATH="$PATH:$(pwd)/node_modules/.bin"
+nvst --help
+
+# Or run the binary directly (from the project that has the toolkit as a dependency)
+./node_modules/.bin/nvst --help
 ```
 
 ## Acknowledgement
