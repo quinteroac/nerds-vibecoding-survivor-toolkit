@@ -148,4 +148,5 @@ Acknowledgements and credits will be added after the initial release.
 ## References
 
 - [process_design.md](process_design.md) — Full process specification.
-- [docs/nvst-flow/](docs/nvst-flow/) — Command reference and quick usage (scaffold provides `COMMANDS.md` and `QUICK_USE.md`).
+- [docs/nvst-flow/COMMANDS.md](docs/nvst-flow/COMMANDS.md) — Full CLI command reference.
+- [docs/nvst-flow/QUICK_USE.md](docs/nvst-flow/QUICK_USE.md) — Quick start and common workflows.
