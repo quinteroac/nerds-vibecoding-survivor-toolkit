@@ -1,0 +1,34 @@
+# Refactor Plan — Iteration 000019
+
+## Refactor Items
+
+### RI-001: Align `nvst flow` decision logic with canonical state order
+
+**Description:** Refactor the `detectNextFlowDecision` logic so that it derives the next step strictly from the canonical ordering defined in `StateSchema` and the PRD (define → prototype → refactor, with clearly defined step sequences in each phase), reducing reliance on `current_phase` and ad-hoc status checks.  
+
+**Rationale:** This directly addresses the highest-impact correctness risk identified in the evaluation report (R1 and partial R2), ensuring that `nvst flow` remains robust as the iteration workflow evolves and preventing “blocked” states when a valid next step exists.
+
+### RI-002: Unify error and guardrail handling between `runFlow` and `cli.ts`
+
+**Description:** Adjust `runFlow`’s error handling so that it either allows `GuardrailAbortError` to propagate to the top-level handler in `cli.ts` or mirrors the same special-casing logic, thereby eliminating duplicate “Aborted.” messages and centralizing responsibility for setting `process.exitCode`.  
+
+**Rationale:** This item has medium impact but very low implementation effort (R2 and related technical debt), making it a high-leverage quick win that restores the centralized error-handling model documented in `PROJECT_CONTEXT.md` and avoids regressions of previously-resolved guardrail issues.
+
+### RI-003: Clarify and codify semantics for in-progress steps and approval gates
+
+**Description:** Define and document consistent semantics for `in_progress` statuses across steps (e.g., requirement definition vs. prototype build), and update `detectNextFlowDecision` and tests so that it is explicit when an `in_progress` step should be re-run versus when it represents a pending approval gate.  
+
+**Rationale:** This refactor operationalizes recommendation R3 and reduces ambiguity around US‑001‑AC08 and US‑002 behavior, lowering the risk of surprising behavior when resuming partially-completed iterations while the flow orchestration is still being refined.
+
+### RI-004: Centralize flow configuration and user-facing messages
+
+**Description:** Introduce a small, declarative configuration layer for `nvst flow` (covering step identifiers, labels, mappings to command handlers, and approval messages) that is shared between the resolver implementation and its tests, instead of scattering these details across multiple branches and strings.  
+
+**Rationale:** This item targets the maintainability and duplication issues highlighted in R4 by making it easier to evolve or rename steps and messages in one place, reducing the chance of drift between implementation, tests, and usage help text.
+
+### RI-005: Strengthen tests for schema alignment and edge cases
+
+**Description:** Extend `flow` tests to assert that the resolver’s behavior stays aligned with `StateSchema` and the PRD (including refactor-phase steps such as evaluation report and changelog), and add coverage for edge cases like unexpected `current_phase` values or partially-updated states.  
+
+**Rationale:** While lower urgency than the logic and error-handling changes, this item (R5) provides long-term safety for the `nvst flow` feature by ensuring that future changes to the state schema or workflow cannot silently desynchronize the resolver and the underlying model.
+

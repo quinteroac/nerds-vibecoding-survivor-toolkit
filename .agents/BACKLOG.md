@@ -1,6 +1,6 @@
 ##New Features
 
-
+- New command 'nvst flow' will review the actual status and will execute the next step/stage.
 
 ##Improvements
 
