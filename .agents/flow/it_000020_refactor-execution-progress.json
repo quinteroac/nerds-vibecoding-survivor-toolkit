@@ -1,0 +1,44 @@
+{
+  "entries": [
+    {
+      "id": "RI-001",
+      "title": "Standardize JSON Artifact Writing via `nvst write-json` (or a Single Helper)",
+      "status": "completed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "updated_at": "2026-02-27T04:38:52.064Z"
+    },
+    {
+      "id": "RI-002",
+      "title": "Introduce Shared Utilities for ID Matching and Progress Entry Updates",
+      "status": "completed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "updated_at": "2026-02-27T04:44:57.619Z"
+    },
+    {
+      "id": "RI-003",
+      "title": "Align Iteration Artifact Validation on Shared Scaffold Schemas",
+      "status": "completed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "updated_at": "2026-02-27T04:51:19.289Z"
+    },
+    {
+      "id": "RI-004",
+      "title": "Harmonize Reporting Patterns Across Execution Commands",
+      "status": "completed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "updated_at": "2026-02-27T04:54:02.357Z"
+    },
+    {
+      "id": "RI-005",
+      "title": "Clarify and Codify Guardrail Expectations for Execute-Style Commands",
+      "status": "completed",
+      "attempt_count": 1,
+      "last_agent_exit_code": 0,
+      "updated_at": "2026-02-27T04:57:29.518Z"
+    }
+  ]
+}

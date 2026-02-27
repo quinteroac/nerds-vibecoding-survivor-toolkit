@@ -317,10 +317,11 @@ describe("execute test-plan command", () => {
       join(projectRoot, ".agents", "flow", "it_000005_test-execution-report.md"),
       "utf8",
     );
-    expect(markdownReportRaw).toContain("# Test Execution Report (Iteration 000005)");
-    expect(markdownReportRaw).toContain("- Total Tests: 3");
-    expect(markdownReportRaw).toContain("- Passed: 3");
-    expect(markdownReportRaw).toContain("- Failed: 0");
+    expect(markdownReportRaw).toContain("# Test Execution Report");
+    expect(markdownReportRaw).toContain("**Iteration:** it_000005");
+    expect(markdownReportRaw).toContain("**Total:** 3");
+    expect(markdownReportRaw).toContain("**Passed:** 3");
+    expect(markdownReportRaw).toContain("**Failed:** 0");
 
     const state = await readState(projectRoot);
     expect(state.phases.prototype.test_execution.status).toBe("completed");
@@ -676,13 +677,12 @@ describe("execute test-plan command", () => {
           promptManualTestFn: async () => {
             return { status: "passed", evidence: "ok", notes: "ok" };
           },
-          writeFileFn: async (path, data) => {
+          writeJsonArtifactFn: async (path, _schema, data) => {
             const pathAsString = path.toString();
             if (pathAsString.endsWith("it_000005_test-execution-progress.json")) {
-              progressSnapshots.push(data.toString());
+              progressSnapshots.push(JSON.stringify(data, null, 2));
             }
-            await writeFile(pathAsString, data.toString(), "utf8");
-            return 0;
+            await writeFile(pathAsString, `${JSON.stringify(data, null, 2)}\n`, "utf8");
           },
         },
       );
@@ -1678,13 +1678,14 @@ describe("US-004: preserve report and state tracking compatibility", () => {
       "utf8",
     );
 
-    expect(markdownRaw).toContain("# Test Execution Report (Iteration 000005)");
-    expect(markdownRaw).toContain("- Test Plan: `it_000005_TP.json`");
-    expect(markdownRaw).toContain("- Total Tests: 3");
-    expect(markdownRaw).toContain("- Passed: 1");
-    expect(markdownRaw).toContain("- Failed: 2");
+    expect(markdownRaw).toContain("# Test Execution Report");
+    expect(markdownRaw).toContain("**Iteration:** it_000005");
+    expect(markdownRaw).toContain("**Test Plan:** `it_000005_TP.json`");
+    expect(markdownRaw).toContain("**Total:** 3");
+    expect(markdownRaw).toContain("**Passed:** 1");
+    expect(markdownRaw).toContain("**Failed:** 2");
     expect(markdownRaw).toContain("| Test ID | Description | Status | Correlated Requirements | Artifacts |");
-    expect(markdownRaw).toContain("| --- | --- | --- | --- | --- |");
+    expect(markdownRaw).toContain("|---------|-------------|--------|------------------------|-----------|");
     // All three test cases appear in table
     expect(markdownRaw).toContain("TC-US001-01");
     expect(markdownRaw).toContain("TC-US001-02");

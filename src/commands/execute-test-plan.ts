@@ -12,8 +12,14 @@ import {
   type AgentResult,
 } from "../agent";
 import { assertGuardrail } from "../guardrail";
+import { applyStatusUpdate, idsMatchExactly, sortedValues } from "../progress-utils";
 import { exists, FLOW_REL_DIR, readState, writeState } from "../state";
+import { writeJsonArtifact, type WriteJsonArtifactFn } from "../write-json-artifact";
 import { TestPlanSchema, type TestPlan } from "../../scaffold/schemas/tmpl_test-plan";
+import {
+  TestExecutionProgressSchema,
+  type TestExecutionProgress,
+} from "../../scaffold/schemas/tmpl_test-execution-progress";
 import { extractJson } from "./create-issue";
 
 export interface ExecuteTestPlanOptions {
@@ -39,24 +45,6 @@ const BatchResultItemSchema = z.object({
 const BatchResultSchema = z.array(BatchResultItemSchema);
 
 type BatchResultItem = z.infer<typeof BatchResultItemSchema>;
-
-const TestExecutionProgressStatusSchema = z.enum(["pending", "in_progress", "passed", "failed"]);
-
-const TestExecutionProgressEntrySchema = z.object({
-  id: z.string(),
-  type: z.enum(["automated", "exploratory_manual"]),
-  status: TestExecutionProgressStatusSchema,
-  attempt_count: z.number().int().nonnegative(),
-  last_agent_exit_code: z.number().int().nullable(),
-  last_error_summary: z.string(),
-  updated_at: z.string(),
-});
-
-const TestExecutionProgressSchema = z.object({
-  entries: z.array(TestExecutionProgressEntrySchema),
-});
-
-type TestExecutionProgress = z.infer<typeof TestExecutionProgressSchema>;
 
 interface FlatTestCase {
   id: string;
@@ -133,6 +121,7 @@ interface ExecuteTestPlanDeps {
   promptManualTestFn: (testCase: FlatTestCase) => Promise<ManualTestUserInput>;
   readFileFn: typeof readFile;
   writeFileFn: typeof Bun.write;
+  writeJsonArtifactFn: WriteJsonArtifactFn;
 }
 
 const defaultDeps: ExecuteTestPlanDeps = {
@@ -144,6 +133,7 @@ const defaultDeps: ExecuteTestPlanDeps = {
   promptManualTestFn: promptManualTest,
   readFileFn: readFile,
   writeFileFn: Bun.write,
+  writeJsonArtifactFn: writeJsonArtifact,
 };
 
 function flattenTests(testPlan: TestPlan): FlatTestCase[] {
@@ -197,24 +187,6 @@ function derivePassFail(status: ExecutionPayload["status"]): "pass" | "fail" | n
   return null;
 }
 
-function sortedValues(values: string[]): string[] {
-  return [...values].sort((a, b) => a.localeCompare(b));
-}
-
-function idsMatchExactly(left: string[], right: string[]): boolean {
-  if (left.length !== right.length) {
-    return false;
-  }
-
-  for (let i = 0; i < left.length; i += 1) {
-    if (left[i] !== right[i]) {
-      return false;
-    }
-  }
-
-  return true;
-}
-
 function toArtifactSafeSegment(value: string): string {
   return value.replace(/[^a-zA-Z0-9_-]/g, "_");
 }
@@ -231,15 +203,16 @@ function buildMarkdownReport(report: TestExecutionReport): string {
   const failedCount = totalTests - passedCount;
 
   const lines = [
-    `# Test Execution Report (Iteration ${report.iteration})`,
+    "# Test Execution Report",
     "",
-    `- Test Plan: \`${report.testPlanFile}\``,
-    `- Total Tests: ${totalTests}`,
-    `- Passed: ${passedCount}`,
-    `- Failed: ${failedCount}`,
+    `**Iteration:** it_${report.iteration}`,
+    `**Test Plan:** \`${report.testPlanFile}\``,
+    `**Total:** ${totalTests}`,
+    `**Passed:** ${passedCount}`,
+    `**Failed:** ${failedCount}`,
     "",
     "| Test ID | Description | Status | Correlated Requirements | Artifacts |",
-    "| --- | --- | --- | --- | --- |",
+    "|---------|-------------|--------|------------------------|-----------|",
   ];
 
   for (const result of report.results) {
@@ -441,7 +414,7 @@ export async function runExecuteTestPlan(
   const executedTestIds: string[] = [];
 
   const writeProgress = async () => {
-    await mergedDeps.writeFileFn(progressPath, `${JSON.stringify(progress, null, 2)}\n`);
+    await mergedDeps.writeJsonArtifactFn(progressPath, TestExecutionProgressSchema, progress);
   };
 
   await mergedDeps.mkdirFn(join(projectRoot, FLOW_REL_DIR), { recursive: true });
@@ -460,8 +433,7 @@ export async function runExecuteTestPlan(
     for (const tc of pendingAutomatedTests) {
       const entry = progress.entries.find((e) => e.id === tc.id);
       if (entry) {
-        entry.status = "in_progress";
-        entry.updated_at = new Date().toISOString();
+        applyStatusUpdate(entry, "in_progress", new Date().toISOString());
       }
     }
     await writeProgress();
@@ -610,8 +582,7 @@ export async function runExecuteTestPlan(
       continue;
     }
 
-    progressEntry.status = "in_progress";
-    progressEntry.updated_at = new Date().toISOString();
+    applyStatusUpdate(progressEntry, "in_progress", new Date().toISOString());
     await writeProgress();
 
     const userInput = await mergedDeps.promptManualTestFn(testCase);
@@ -630,8 +601,7 @@ export async function runExecuteTestPlan(
     progressEntry.attempt_count += 1;
     progressEntry.last_agent_exit_code = null;
     progressEntry.last_error_summary = payload.status === "passed" ? "" : payload.notes;
-    progressEntry.status = payload.status === "passed" ? "passed" : "failed";
-    progressEntry.updated_at = new Date().toISOString();
+    applyStatusUpdate(progressEntry, payload.status === "passed" ? "passed" : "failed", new Date().toISOString());
     await writeProgress();
 
     await mergedDeps.writeFileFn(

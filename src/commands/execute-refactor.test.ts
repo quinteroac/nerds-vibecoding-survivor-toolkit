@@ -283,8 +283,8 @@ describe("execute refactor command", () => {
     expect(capturedPrompts[0]).toContain("My Rationale");
   });
 
-  // AC08: Agent invoked in interactive mode
-  test("invokes agent in interactive mode", async () => {
+  // US-002-AC01: Agent invoked in non-interactive mode
+  test("invokes agent with interactive: false (non-interactive mode)", async () => {
     const projectRoot = await createProjectRoot();
     createdRoots.push(projectRoot);
     await seedState(projectRoot);
@@ -308,7 +308,7 @@ describe("execute refactor command", () => {
     });
 
     expect(capturedOptions).toHaveLength(1);
-    expect(capturedOptions[0].interactive).toBe(true);
+    expect(capturedOptions[0].interactive).toBe(false);
     expect(capturedOptions[0].provider).toBe("codex");
   });
 

@@ -193,6 +193,66 @@ describe("execute automated-fix", () => {
     expect(providersUsed).toEqual(["cursor"]);
   });
 
+  // RI-005: execute-automated-fix is a phase-independent exception to the guardrail system.
+  // It must process issues regardless of current_phase because issues can arise and need
+  // fixing at any point in the workflow (prototype OR refactor phases).
+  test("RI-005: processes open issues regardless of current_phase (phase-independent guardrail exception)", async () => {
+    const projectRoot = await createProjectRoot();
+    createdRoots.push(projectRoot);
+
+    // Seed state with current_phase = "refactor", not the typical "prototype"
+    await mkdir(join(projectRoot, ".agents", "flow"), { recursive: true });
+    const { writeState } = await import("../state");
+    await writeState(projectRoot, {
+      current_iteration: "000009",
+      current_phase: "refactor",
+      phases: {
+        define: {
+          requirement_definition: { status: "approved", file: "it_000009_product-requirement-document.md" },
+          prd_generation: { status: "completed", file: "it_000009_PRD.json" },
+        },
+        prototype: {
+          project_context: { status: "created", file: ".agents/PROJECT_CONTEXT.md" },
+          test_plan: { status: "created", file: "it_000009_test-plan.md" },
+          tp_generation: { status: "created", file: "it_000009_test-plan.json" },
+          prototype_build: { status: "created", file: null },
+          test_execution: { status: "completed", file: null },
+          prototype_approved: true,
+        },
+        refactor: {
+          evaluation_report: { status: "created", file: null },
+          refactor_plan: { status: "approved", file: null },
+          refactor_execution: { status: "in_progress", file: null },
+          changelog: { status: "pending", file: null },
+        },
+      },
+      last_updated: "2026-02-22T00:00:00.000Z",
+      updated_by: "seed",
+      history: [],
+    });
+    await writeIssues(projectRoot, "000009", [
+      { id: "ISSUE-000009-001", title: "Refactor-phase issue", description: "fix me", status: "open" },
+    ]);
+
+    let invokeCount = 0;
+
+    await withCwd(projectRoot, async () => {
+      await runExecuteAutomatedFix(
+        { provider: "codex" },
+        {
+          loadSkillFn: async () => "debug workflow",
+          invokeAgentFn: async () => {
+            invokeCount += 1;
+            return { exitCode: 0, stdout: "ok", stderr: "" };
+          },
+          runCommitFn: async () => 0,
+        },
+      );
+    });
+
+    expect(invokeCount).toBe(1);
+  });
+
   test("logs informative message and exits without changes when zero open issues exist", async () => {
     const projectRoot = await createProjectRoot();
     createdRoots.push(projectRoot);
@@ -225,7 +285,8 @@ describe("execute automated-fix", () => {
     expect(logs).toContain("No open issues to process. Exiting without changes.");
   });
 
-  test("defaults --iterations to 1 and leaves remaining open issues untouched", async () => {
+  // US-001-AC01: When --iterations is not provided, all open issues are processed
+  test("US-001-AC01: processes all open issues when --iterations is not provided", async () => {
     const projectRoot = await createProjectRoot();
     createdRoots.push(projectRoot);
 
@@ -237,6 +298,7 @@ describe("execute automated-fix", () => {
     ]);
 
     let invokeCount = 0;
+    const logs: string[] = [];
 
     await withCwd(projectRoot, async () => {
       await runExecuteAutomatedFix(
@@ -248,6 +310,8 @@ describe("execute automated-fix", () => {
             return { exitCode: 0, stdout: "", stderr: "" };
           },
           runCommitFn: async () => 0,
+          logFn: (message) => logs.push(message),
+          nowFn: () => new Date("2026-02-22T12:00:00.000Z"),
         },
       );
     });
@@ -255,10 +319,14 @@ describe("execute automated-fix", () => {
     const issuesRaw = await readFile(join(projectRoot, ".agents", "flow", "it_000009_ISSUES.json"), "utf8");
     const issues = JSON.parse(issuesRaw) as Array<{ id: string; status: string }>;
 
-    expect(invokeCount).toBe(1);
+    // All 3 open issues should be processed
+    expect(invokeCount).toBe(3);
     expect(issues.find((issue) => issue.id === "ISSUE-000009-001")?.status).toBe("fixed");
-    expect(issues.find((issue) => issue.id === "ISSUE-000009-002")?.status).toBe("open");
-    expect(issues.find((issue) => issue.id === "ISSUE-000009-003")?.status).toBe("open");
+    expect(issues.find((issue) => issue.id === "ISSUE-000009-002")?.status).toBe("fixed");
+    expect(issues.find((issue) => issue.id === "ISSUE-000009-003")?.status).toBe("fixed");
+    // AC04: summary reflects all processed issues
+    expect(logs).toContain("Summary: Fixed=3 Failed=0");
+    expect(logs).toContain("Processed 3 open issue(s) at 2026-02-22T12:00:00.000Z");
   });
 
   test("processes only the first N open issues when --iterations is provided", async () => {
@@ -297,7 +365,7 @@ describe("execute automated-fix", () => {
     expect(issues.find((issue) => issue.id === "ISSUE-000009-003")?.status).toBe("open");
   });
 
-  test("skips issues with missing required fields and continues processing remaining open issues", async () => {
+  test("throws deterministic validation error when issues file contains entries with missing required fields", async () => {
     const projectRoot = await createProjectRoot();
     createdRoots.push(projectRoot);
 
@@ -308,34 +376,11 @@ describe("execute automated-fix", () => {
       { id: "ISSUE-000009-003", title: "Fixed", description: "skip", status: "fixed" },
     ]);
 
-    const logs: string[] = [];
-    const prompts: string[] = [];
-
     await withCwd(projectRoot, async () => {
-      await runExecuteAutomatedFix(
-        { provider: "codex", iterations: 3 },
-        {
-          loadSkillFn: async () => "debug workflow",
-          invokeAgentFn: async (options) => {
-            prompts.push(options.prompt);
-            return { exitCode: 0, stdout: "", stderr: "" };
-          },
-          runCommitFn: async () => 0,
-          logFn: (message) => logs.push(message),
-        },
+      await expect(runExecuteAutomatedFix({ provider: "codex" })).rejects.toThrow(
+        "Deterministic validation error: issues schema mismatch in .agents/flow/it_000009_ISSUES.json.",
       );
     });
-
-    expect(prompts).toHaveLength(1);
-    expect(prompts[0]).toContain('"id": "ISSUE-000009-001"');
-    expect(logs.some((line) => line.includes("Warning: Skipping issue at index 1"))).toBe(true);
-
-    const issuesRaw = await readFile(join(projectRoot, ".agents", "flow", "it_000009_ISSUES.json"), "utf8");
-    const issues = JSON.parse(issuesRaw) as Array<{ id: string; status: string }>;
-
-    expect(issues.find((issue) => issue.id === "ISSUE-000009-001")?.status).toBe("fixed");
-    expect(issues.find((issue) => issue.id === "ISSUE-000009-003")?.status).toBe("fixed");
-    expect(issues.some((issue) => issue.id === "ISSUE-000009-002")).toBe(false);
   });
 
   test("marks issue as retry when hypothesis is not confirmed and retries remain", async () => {
@@ -363,9 +408,9 @@ describe("execute automated-fix", () => {
             return { exitCode: 0, stdout: "", stderr: "" };
           },
           runCommitFn: async () => 0,
-          writeFileFn: async (path, data, options) => {
-            writtenSnapshots.push(String(data));
-            return writeFile(path, data, options);
+          writeJsonArtifactFn: async (path, _schema, data) => {
+            writtenSnapshots.push(JSON.stringify(data, null, 2));
+            await writeFile(path, `${JSON.stringify(data, null, 2)}\n`, "utf8");
           },
         },
       );
