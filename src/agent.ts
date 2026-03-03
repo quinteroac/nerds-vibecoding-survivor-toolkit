@@ -35,7 +35,7 @@ const PROVIDERS: Record<AgentProvider, { cmd: string; args: string[] }> = {
   codex: { cmd: "codex", args: ["exec", "--dangerously-bypass-approvals-and-sandbox"] },
   gemini: { cmd: "gemini", args: ["--yolo"] },
   cursor: { cmd: "agent", args: [] },
-  copilot: { cmd: "copilot", args: ["-p", "--yolo"] },
+  copilot: { cmd: "copilot", args: ["-p", "--yolo", "--no-ask-user"] },
 };
 
 export function parseProvider(name: string): AgentProvider {
@@ -113,8 +113,7 @@ export async function invokeAgent(options: AgentInvokeOptions): Promise<AgentRes
     finalArgs = ["-i", prompt];
     stdinOption = "inherit";
   } else if (provider === "copilot") {
-    // Non-interactive Copilot: -p expects the prompt value immediately after the flag.
-    // Other flags (like --allow-all-paths) must come after the prompt.
+    // Non-interactive Copilot: -p <prompt> then --yolo --no-ask-user (no confirmation prompts).
     finalArgs = ["-p", prompt, ...args.filter((arg) => arg !== "-p")];
     stdinOption = "inherit";
   } else {

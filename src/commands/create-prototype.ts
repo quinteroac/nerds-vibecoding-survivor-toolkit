@@ -434,6 +434,7 @@ export async function runCreatePrototype(
         user_story: JSON.stringify(story, null, 2),
       });
 
+      // Non-interactive (yolo for copilot), same as execute refactor
       const agentResult = await mergedDeps.invokeAgentFn({
         provider: opts.provider,
         prompt,

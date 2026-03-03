@@ -15,7 +15,7 @@ describe("agent provider parsing", () => {
     expect(parsed.provider).toBe("copilot");
     expect(parsed.remainingArgs).toEqual(["create", "--force"]);
     expect(parseProvider("copilot")).toBe("copilot");
-    expect(buildCommand("copilot")).toEqual({ cmd: "copilot", args: ["-p", "--yolo"] });
+    expect(buildCommand("copilot")).toEqual({ cmd: "copilot", args: ["-p", "--yolo", "--no-ask-user"] });
   });
 
   test("accepts cursor as a valid provider in --agent argument parsing", () => {
@@ -100,7 +100,7 @@ describe("agent invocation command availability", () => {
     }
   });
 
-  test("invokes copilot non-interactive mode with -p <prompt> --yolo and captures output", async () => {
+  test("invokes copilot non-interactive mode with -p <prompt> --yolo --no-ask-user and captures output", async () => {
     const originalSpawn = Bun.spawn;
     let capturedCmd: string[] | undefined;
     let capturedStdio:
@@ -144,7 +144,7 @@ describe("agent invocation command availability", () => {
         resolveCommandPath: () => "/usr/bin/copilot",
       });
 
-      expect(capturedCmd).toEqual(["copilot", "-p", "Do work", "--yolo"]);
+      expect(capturedCmd).toEqual(["copilot", "-p", "Do work", "--yolo", "--no-ask-user"]);
       expect(capturedStdio).toEqual({
         stdin: "inherit",
         stdout: "pipe",
