@@ -1,0 +1,120 @@
+{
+  "goals": [
+    "Support `--agent copilot` across all NVST commands that accept an agent provider",
+    "Follow the same invocation pattern as existing providers (command + args, interactive/non-interactive modes)",
+    "Maintain parity with existing provider behaviour (error messages, PATH checks, TTY handling)"
+  ],
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Invoke Copilot CLI as a non-interactive agent",
+      "description": "As a developer using NVST, I want to run `bun nvst <command> --agent copilot` so that NVST delegates work to GitHub Copilot CLI in non-interactive (print/exec) mode.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-001-AC01",
+          "text": "`AgentProvider` type includes `\"copilot\"`"
+        },
+        {
+          "id": "US-001-AC02",
+          "text": "`PROVIDERS` map contains a `copilot` entry with `cmd: \"copilot\"` and args `[\"-p\", \"--allow-all-paths\"]` for non-interactive execution"
+        },
+        {
+          "id": "US-001-AC03",
+          "text": "`parseProvider(\"copilot\")` returns `\"copilot\"` without error"
+        },
+        {
+          "id": "US-001-AC04",
+          "text": "`buildCommand(\"copilot\")` returns `{ cmd: \"copilot\", args: [\"-p\", \"--allow-all-paths\"] }`"
+        },
+        {
+          "id": "US-001-AC05",
+          "text": "When the `copilot` CLI binary is not in PATH, `ensureAgentCommandAvailable` throws a descriptive error message"
+        },
+        {
+          "id": "US-001-AC06",
+          "text": "Non-interactive invocation spawns the process with the prompt as the final arg, capturing stdout/stderr"
+        },
+        {
+          "id": "US-001-AC07",
+          "text": "Typecheck / lint passes"
+        }
+      ]
+    },
+    {
+      "id": "US-002",
+      "title": "Invoke Copilot CLI in interactive mode",
+      "description": "As a developer using NVST, I want Copilot to run in interactive (TTY) mode when NVST needs to interview me so that the conversational flow works the same as with other providers.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-002-AC01",
+          "text": "When `interactive: true`, the spawned process uses `stdin: \"inherit\"` and `stdout/stderr: \"inherit\"`"
+        },
+        {
+          "id": "US-002-AC02",
+          "text": "Interactive args drop `-p` and `--allow-all-paths`; the prompt is passed as a positional arg so Copilot enters its conversational TUI"
+        },
+        {
+          "id": "US-002-AC03",
+          "text": "The interactive branch in `invokeAgent` handles the `\"copilot\"` provider correctly"
+        },
+        {
+          "id": "US-002-AC04",
+          "text": "Typecheck / lint passes"
+        }
+      ]
+    },
+    {
+      "id": "US-003",
+      "title": "Verify Copilot provider integration",
+      "description": "As a developer, I want automated tests covering the new provider so that I can be confident the integration works and won't regress.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-003-AC01",
+          "text": "Unit test verifies `parseProvider(\"copilot\")` returns `\"copilot\"`"
+        },
+        {
+          "id": "US-003-AC02",
+          "text": "Unit test verifies `buildCommand(\"copilot\")` returns the expected command and args"
+        },
+        {
+          "id": "US-003-AC03",
+          "text": "Unit test verifies `ensureAgentCommandAvailable` throws when the copilot binary is missing"
+        },
+        {
+          "id": "US-003-AC04",
+          "text": "Unit test verifies `invokeAgent` constructs the correct args for both interactive and non-interactive modes"
+        },
+        {
+          "id": "US-003-AC05",
+          "text": "All existing tests continue to pass"
+        },
+        {
+          "id": "US-003-AC06",
+          "text": "Manual verification: run `bun nvst define requirement --agent copilot` (or equivalent) and confirm it attempts to invoke the copilot CLI"
+        }
+      ]
+    }
+  ],
+  "functionalRequirements": [
+    {
+      "id": "FR-1",
+      "description": "Add `\"copilot\"` to the `AgentProvider` union type in `src/agent.ts`"
+    },
+    {
+      "id": "FR-2",
+      "description": "Add a `copilot` entry to the `PROVIDERS` record with `cmd: \"copilot\"` and default non-interactive args `[\"-p\", \"--allow-all-paths\"]`"
+    },
+    {
+      "id": "FR-3",
+      "description": "Handle `copilot` in the interactive/non-interactive branching logic inside `invokeAgent`"
+    },
+    {
+      "id": "FR-4",
+      "description": "Provide a clear error message in `ensureAgentCommandAvailable` when the copilot CLI is not found"
+    },
+    {
+      "id": "FR-5",
+      "description": "Add unit tests for the new provider covering parsing, command building, availability check, and arg construction"
+    }
+  ]
+}

@@ -7,7 +7,7 @@ import { exists } from "./state";
 // Types
 // ---------------------------------------------------------------------------
 
-export type AgentProvider = "claude" | "codex" | "gemini" | "cursor";
+export type AgentProvider = "claude" | "codex" | "gemini" | "cursor" | "copilot";
 
 export interface AgentInvokeOptions {
   provider: AgentProvider;
@@ -35,6 +35,7 @@ const PROVIDERS: Record<AgentProvider, { cmd: string; args: string[] }> = {
   codex: { cmd: "codex", args: ["exec", "--dangerously-bypass-approvals-and-sandbox"] },
   gemini: { cmd: "gemini", args: ["--yolo"] },
   cursor: { cmd: "agent", args: [] },
+  copilot: { cmd: "copilot", args: ["-p", "--yolo"] },
 };
 
 export function parseProvider(name: string): AgentProvider {
@@ -71,7 +72,7 @@ export function ensureAgentCommandAvailable(
 // ---------------------------------------------------------------------------
 // Agent invocation
 // ---------------------------------------------------------------------------
-// For interactive interviews, claude/codex need a real TTY: pass prompt as
+// For interactive interviews, claude/codex/copilot need a real TTY: pass prompt as
 // positional arg and use stdin: "inherit" so the agent can read user input.
 // ---------------------------------------------------------------------------
 
@@ -107,8 +108,17 @@ export async function invokeAgent(options: AgentInvokeOptions): Promise<AgentRes
     // Interactive mode: drop --print so Claude runs as a conversational TUI.
     finalArgs = ["--dangerously-skip-permissions", prompt];
     stdinOption = "inherit";
+  } else if (provider === "copilot" && interactive) {
+    // Interactive mode: use -i so Copilot starts a conversational TUI with the initial prompt.
+    finalArgs = ["-i", prompt];
+    stdinOption = "inherit";
+  } else if (provider === "copilot") {
+    // Non-interactive Copilot: -p expects the prompt value immediately after the flag.
+    // Other flags (like --allow-all-paths) must come after the prompt.
+    finalArgs = ["-p", prompt, ...args.filter((arg) => arg !== "-p")];
+    stdinOption = "inherit";
   } else {
-    // Claude or Codex exec: prompt as last arg, inherit stdin.
+    // Non-interactive execution: prompt as last arg.
     finalArgs = [...args, prompt];
     stdinOption = "inherit";
   }

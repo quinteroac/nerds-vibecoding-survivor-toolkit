@@ -1,0 +1,158 @@
+{
+  "overallStatus": "pending",
+  "scope": [
+    "Integration of GitHub Copilot CLI as a new agent provider alongside existing providers (Claude, Codex, Gemini, Cursor).",
+    "Support for both non-interactive (print/exec) and interactive (TTY/conversational) invocation modes.",
+    "Validation of provider type additions, command argument construction, availability checks, and integration with existing agent invocation logic.",
+    "Verification that Copilot provider behavior maintains parity with existing providers in error handling, TTY detection, and PATH resolution.",
+    "Confirmation that all existing provider tests and CLI functionality remain unaffected."
+  ],
+  "environmentData": [
+    "**Runtime**: Bun v1+ with TypeScript 5.6.3 (strict mode).",
+    "**Test runner**: `bun:test` (Bun built-in); no external test framework dependencies.",
+    "**Test location**: Unit tests in `src/agent.test.ts`; manual CLI verification for end-to-end behavior.",
+    "**Fixtures**: Mock Copilot CLI binary (stubbed) for testing availability checks; sample prompts for non-interactive/interactive mode validation.",
+    "**Preconditions**: `src/agent.ts` contains existing provider definitions; tests should not modify global state.",
+    "## User Story: US-001 - Invoke Copilot CLI as a non-interactive agent"
+  ],
+  "automatedTests": [
+    {
+      "id": "TC-US001-01",
+      "description": "Verify `AgentProvider` type includes `\"copilot\"` union literal",
+      "status": "pending",
+      "correlatedRequirements": [
+        "FR-1"
+      ]
+    },
+    {
+      "id": "TC-US001-02",
+      "description": "Verify `PROVIDERS` map contains `copilot` entry with correct command and non-interactive args",
+      "status": "pending",
+      "correlatedRequirements": [
+        "FR-2"
+      ]
+    },
+    {
+      "id": "TC-US001-03",
+      "description": "Verify `parseProvider(\"copilot\")` parses successfully",
+      "status": "pending",
+      "correlatedRequirements": [
+        "FR-1"
+      ]
+    },
+    {
+      "id": "TC-US001-04",
+      "description": "Verify `buildCommand(\"copilot\")` returns expected command structure",
+      "status": "pending",
+      "correlatedRequirements": [
+        "FR-2"
+      ]
+    },
+    {
+      "id": "TC-US001-05",
+      "description": "Verify `ensureAgentCommandAvailable` throws descriptive error when copilot binary is missing",
+      "status": "pending",
+      "correlatedRequirements": [
+        "FR-4"
+      ]
+    },
+    {
+      "id": "TC-US001-06",
+      "description": "Verify non-interactive invocation spawns process with prompt as final arg",
+      "status": "pending",
+      "correlatedRequirements": [
+        "FR-3"
+      ]
+    },
+    {
+      "id": "TC-US001-07",
+      "description": "Verify TypeScript compilation and type safety",
+      "status": "pending",
+      "correlatedRequirements": [
+        "FR-1"
+      ]
+    },
+    {
+      "id": "TC-US002-01",
+      "description": "Verify interactive invocation uses inherited stdin/stdout/stderr",
+      "status": "pending",
+      "correlatedRequirements": [
+        "FR-3"
+      ]
+    },
+    {
+      "id": "TC-US002-02",
+      "description": "Verify interactive mode uses `-i` flag instead of non-interactive flags",
+      "status": "pending",
+      "correlatedRequirements": [
+        "FR-3"
+      ]
+    },
+    {
+      "id": "TC-US002-03",
+      "description": "Verify `invokeAgent` handles copilot provider in interactive branch",
+      "status": "pending",
+      "correlatedRequirements": [
+        "FR-3"
+      ]
+    },
+    {
+      "id": "TC-US002-04",
+      "description": "Verify TypeScript compilation and type safety for interactive path",
+      "status": "pending",
+      "correlatedRequirements": [
+        "FR-1"
+      ]
+    },
+    {
+      "id": "TC-US003-01",
+      "description": "Unit test: `parseProvider(\"copilot\")` returns `\"copilot\"`",
+      "status": "pending",
+      "correlatedRequirements": [
+        "FR-1"
+      ]
+    },
+    {
+      "id": "TC-US003-02",
+      "description": "Unit test: `buildCommand(\"copilot\")` returns expected command and args",
+      "status": "pending",
+      "correlatedRequirements": [
+        "FR-2"
+      ]
+    },
+    {
+      "id": "TC-US003-03",
+      "description": "Unit test: `ensureAgentCommandAvailable` throws when copilot binary is missing",
+      "status": "pending",
+      "correlatedRequirements": [
+        "FR-4"
+      ]
+    },
+    {
+      "id": "TC-US003-04",
+      "description": "Unit test: `invokeAgent` constructs correct args for non-interactive and interactive modes",
+      "status": "pending",
+      "correlatedRequirements": [
+        "FR-3"
+      ]
+    },
+    {
+      "id": "TC-US003-05",
+      "description": "Verify all existing tests continue to pass after copilot provider addition",
+      "status": "pending",
+      "correlatedRequirements": [
+        "FR-1"
+      ]
+    }
+  ],
+  "exploratoryManualTests": [
+    {
+      "id": "TC-US003-06",
+      "description": "Manual verification: `bun nvst define requirement --agent copilot` attempts copilot invocation",
+      "status": "pending",
+      "correlatedRequirements": [
+        "FR-3"
+      ]
+    }
+  ]
+}
