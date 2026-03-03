@@ -1,6 +1,12 @@
 import { describe, expect, test } from "bun:test";
 
-import { buildCommand, invokeAgent, parseAgentArg, parseProvider } from "./agent";
+import {
+  buildCommand,
+  ensureAgentCommandAvailable,
+  invokeAgent,
+  parseAgentArg,
+  parseProvider,
+} from "./agent";
 
 describe("agent provider parsing", () => {
   test("accepts copilot as a valid provider and maps to copilot CLI defaults", () => {
@@ -32,6 +38,12 @@ describe("agent provider parsing", () => {
 });
 
 describe("agent invocation command availability", () => {
+  test("throws when copilot provider is selected but `copilot` is not in PATH", () => {
+    expect(() =>
+      ensureAgentCommandAvailable("copilot", () => null),
+    ).toThrow("Required CLI 'copilot' for provider 'copilot' is not in PATH.");
+  });
+
   test("returns a clear error when cursor provider is selected but `agent` is not in PATH", async () => {
     await expect(
       invokeAgent({
@@ -83,6 +95,62 @@ describe("agent invocation command availability", () => {
         stderr: "inherit",
       });
       expect(result).toEqual({ exitCode: 0, stdout: "", stderr: "" });
+    } finally {
+      (Bun as { spawn: typeof Bun.spawn }).spawn = originalSpawn;
+    }
+  });
+
+  test("invokes copilot non-interactive mode with -p/--allow-all-paths and captures output", async () => {
+    const originalSpawn = Bun.spawn;
+    let capturedCmd: string[] | undefined;
+    let capturedStdio:
+      | {
+          stdin: "ignore" | "inherit";
+          stdout: "inherit" | "pipe";
+          stderr: "inherit" | "pipe";
+        }
+      | undefined;
+
+    const createStream = (text: string): ReadableStream<Uint8Array> => {
+      const encoded = new TextEncoder().encode(text);
+      return new ReadableStream<Uint8Array>({
+        start(controller) {
+          controller.enqueue(encoded);
+          controller.close();
+        },
+      });
+    };
+
+    try {
+      (Bun as { spawn: typeof Bun.spawn }).spawn = ((cmd, options) => {
+        const spawnOptions = options ?? {};
+        capturedCmd = cmd as string[];
+        capturedStdio = {
+          stdin: spawnOptions.stdin as "ignore" | "inherit",
+          stdout: spawnOptions.stdout as "inherit" | "pipe",
+          stderr: spawnOptions.stderr as "inherit" | "pipe",
+        };
+        return {
+          exited: Promise.resolve(0),
+          stdout: createStream("ok"),
+          stderr: createStream(""),
+        } as unknown as ReturnType<typeof Bun.spawn>;
+      }) as typeof Bun.spawn;
+
+      const result = await invokeAgent({
+        provider: "copilot",
+        prompt: "Do work",
+        interactive: false,
+        resolveCommandPath: () => "/usr/bin/copilot",
+      });
+
+      expect(capturedCmd).toEqual(["copilot", "-p", "--allow-all-paths", "Do work"]);
+      expect(capturedStdio).toEqual({
+        stdin: "inherit",
+        stdout: "pipe",
+        stderr: "pipe",
+      });
+      expect(result).toEqual({ exitCode: 0, stdout: "ok", stderr: "" });
     } finally {
       (Bun as { spawn: typeof Bun.spawn }).spawn = originalSpawn;
     }
