@@ -1,0 +1,157 @@
+{
+  "entries": [
+    {
+      "id": "TC-US001-01",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 4,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-03-03T20:27:13.694Z"
+    },
+    {
+      "id": "TC-US001-02",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 4,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-03-03T20:27:13.695Z"
+    },
+    {
+      "id": "TC-US001-03",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 4,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-03-03T20:27:13.695Z"
+    },
+    {
+      "id": "TC-US001-04",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 4,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-03-03T20:27:13.695Z"
+    },
+    {
+      "id": "TC-US001-05",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 4,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-03-03T20:27:13.695Z"
+    },
+    {
+      "id": "TC-US001-06",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 4,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-03-03T20:27:13.696Z"
+    },
+    {
+      "id": "TC-US001-07",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 4,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-03-03T20:27:13.696Z"
+    },
+    {
+      "id": "TC-US002-01",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 4,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-03-03T20:27:13.696Z"
+    },
+    {
+      "id": "TC-US002-02",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 4,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-03-03T20:27:13.696Z"
+    },
+    {
+      "id": "TC-US002-03",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 4,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-03-03T20:27:13.697Z"
+    },
+    {
+      "id": "TC-US002-04",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 4,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-03-03T20:27:13.697Z"
+    },
+    {
+      "id": "TC-US003-01",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 4,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-03-03T20:27:13.697Z"
+    },
+    {
+      "id": "TC-US003-02",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 4,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-03-03T20:27:13.697Z"
+    },
+    {
+      "id": "TC-US003-03",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 4,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-03-03T20:27:13.697Z"
+    },
+    {
+      "id": "TC-US003-04",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 4,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-03-03T20:27:13.697Z"
+    },
+    {
+      "id": "TC-US003-05",
+      "type": "automated",
+      "status": "passed",
+      "attempt_count": 4,
+      "last_agent_exit_code": 0,
+      "last_error_summary": "",
+      "updated_at": "2026-03-03T20:27:13.698Z"
+    },
+    {
+      "id": "TC-US003-06",
+      "type": "exploratory_manual",
+      "status": "passed",
+      "attempt_count": 1,
+      "last_agent_exit_code": null,
+      "last_error_summary": "",
+      "updated_at": "2026-03-03T20:09:44.657Z"
+    }
+  ]
+}

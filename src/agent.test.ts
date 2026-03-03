@@ -15,7 +15,7 @@ describe("agent provider parsing", () => {
     expect(parsed.provider).toBe("copilot");
     expect(parsed.remainingArgs).toEqual(["create", "--force"]);
     expect(parseProvider("copilot")).toBe("copilot");
-    expect(buildCommand("copilot")).toEqual({ cmd: "copilot", args: ["-p", "--allow-all-paths"] });
+    expect(buildCommand("copilot")).toEqual({ cmd: "copilot", args: ["-p", "--yolo"] });
   });
 
   test("accepts cursor as a valid provider in --agent argument parsing", () => {
@@ -56,7 +56,7 @@ describe("agent invocation command availability", () => {
     );
   });
 
-  test("invokes copilot interactive mode with inherited stdio and positional prompt only", async () => {
+  test("invokes copilot interactive mode with -i and inherited stdio", async () => {
     const originalSpawn = Bun.spawn;
     let capturedCmd: string[] | undefined;
     let capturedStdio:
@@ -88,7 +88,7 @@ describe("agent invocation command availability", () => {
         resolveCommandPath: () => "/usr/bin/copilot",
       });
 
-      expect(capturedCmd).toEqual(["copilot", "Interview me"]);
+      expect(capturedCmd).toEqual(["copilot", "-i", "Interview me"]);
       expect(capturedStdio).toEqual({
         stdin: "inherit",
         stdout: "inherit",
@@ -100,7 +100,7 @@ describe("agent invocation command availability", () => {
     }
   });
 
-  test("invokes copilot non-interactive mode with -p/--allow-all-paths and captures output", async () => {
+  test("invokes copilot non-interactive mode with -p <prompt> --yolo and captures output", async () => {
     const originalSpawn = Bun.spawn;
     let capturedCmd: string[] | undefined;
     let capturedStdio:
@@ -144,7 +144,7 @@ describe("agent invocation command availability", () => {
         resolveCommandPath: () => "/usr/bin/copilot",
       });
 
-      expect(capturedCmd).toEqual(["copilot", "-p", "--allow-all-paths", "Do work"]);
+      expect(capturedCmd).toEqual(["copilot", "-p", "Do work", "--yolo"]);
       expect(capturedStdio).toEqual({
         stdin: "inherit",
         stdout: "pipe",
