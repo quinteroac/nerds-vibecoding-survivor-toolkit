@@ -1,16 +1,16 @@
 {
-  "current_iteration": "000020",
-  "current_phase": "refactor",
+  "current_iteration": "000021",
+  "current_phase": "define",
   "flow_guardrail": "relaxed",
   "phases": {
     "define": {
       "requirement_definition": {
         "status": "approved",
-        "file": "it_000020_product-requirement-document.md"
+        "file": "it_000021_product-requirement-document.md"
       },
       "prd_generation": {
         "status": "completed",
-        "file": "it_000020_PRD.json"
+        "file": "it_000021_PRD.json"
       }
     },
     "prototype": {
@@ -19,35 +19,35 @@
         "file": ".agents/PROJECT_CONTEXT.md"
       },
       "test_plan": {
-        "status": "created",
-        "file": "it_000020_test-plan.md"
+        "status": "pending",
+        "file": null
       },
       "tp_generation": {
-        "status": "created",
-        "file": "it_000020_TP.json"
+        "status": "pending",
+        "file": null
       },
       "prototype_build": {
-        "status": "created",
-        "file": "it_000020_progress.json"
+        "status": "pending",
+        "file": null
       },
       "test_execution": {
-        "status": "completed",
-        "file": "it_000020_test-execution-progress.json"
+        "status": "pending",
+        "file": null
       },
-      "prototype_approved": true
+      "prototype_approved": false
     },
     "refactor": {
       "evaluation_report": {
-        "status": "created",
-        "file": "it_000020_evaluation-report.md"
+        "status": "pending",
+        "file": null
       },
       "refactor_plan": {
-        "status": "approved",
-        "file": "it_000020_refactor-plan.md"
+        "status": "pending",
+        "file": null
       },
       "refactor_execution": {
-        "status": "completed",
-        "file": "it_000020_refactor-execution-progress.json"
+        "status": "pending",
+        "file": null
       },
       "changelog": {
         "status": "pending",
@@ -55,8 +55,8 @@
       }
     }
   },
-  "last_updated": "2026-02-27T04:57:29.563Z",
-  "updated_by": "nvst:execute-refactor",
+  "last_updated": "2026-03-03T19:51:55.038Z",
+  "updated_by": "nvst:approve-requirement",
   "history": [
     {
       "iteration": "000001",
@@ -152,6 +152,11 @@
       "iteration": "000019",
       "archived_at": "2026-02-27T04:04:45.953Z",
       "archived_path": ".agents/flow/archived/000019"
+    },
+    {
+      "iteration": "000020",
+      "archived_at": "2026-03-03T19:40:48.391Z",
+      "archived_path": ".agents/flow/archived/000020"
     }
   ]
 }
