@@ -220,4 +220,28 @@ describe("audit prototype command", () => {
       expect(content).toMatch(/chosen outcome|outcome to drive|Outcome-driven/);
     });
   });
+
+  describe("US-004: Generate it_{iteration}_audit.md with refactor plan", () => {
+    test("US-004-AC01: skill instructs to produce it_{iteration}_audit.md with Executive summary, Verification by FR, Verification by US, Minor observations, Conclusions and recommendations, and Refactor plan", async () => {
+      const skillPath = join(process.cwd(), ".agents", "skills", "audit-prototype", "SKILL.md");
+      const content = await readFile(skillPath, "utf8");
+
+      expect(content).toMatch(/it_\{iteration\}_audit\.md|it_.*_audit\.md/);
+      expect(content).toContain("Executive summary");
+      expect(content).toContain("Verification by FR");
+      expect(content).toContain("Verification by US");
+      expect(content).toContain("Minor observations");
+      expect(content).toContain("Conclusions and recommendations");
+      expect(content).toContain("Refactor plan");
+    });
+
+    test("US-004-AC02: skill instructs to write file to .agents/flow/it_{iteration}_audit.md with mandatory structure", async () => {
+      const skillPath = join(process.cwd(), ".agents", "skills", "audit-prototype", "SKILL.md");
+      const content = await readFile(skillPath, "utf8");
+
+      expect(content).toContain(".agents/flow/it_{iteration}_audit.md");
+      expect(content).toMatch(/mandatory structure|Mandatory structure/);
+      expect(content).toMatch(/must be written to.*it_\{iteration\}_audit\.md/);
+    });
+  });
 });

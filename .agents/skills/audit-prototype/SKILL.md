@@ -49,6 +49,17 @@ If the user chooses **(b)**, ask what they want to change, then update the recom
 
 Use the chosen outcome to drive which artifacts you produce:
 
-1. **Always** — After the user’s choice is known, produce `.agents/flow/it_{iteration}_audit.md` containing the report sections (Executive summary, Verification by FR, Verification by US, Minor observations, Conclusions and recommendations) and the Refactor plan, reflecting the final recommendations (including any user-requested changes).
+1. **Always** — After the user's choice is known, produce the audit artifact so the result is persisted and reproducible. Write the file to **`.agents/flow/it_{iteration}_audit.md`** with the mandatory structure below.
 2. **When the user chooses to follow or apply refactor** (option a or b with refactor intent) — Produce `.agents/flow/it_{iteration}_audit.json` (e.g. via `nvst write-json` if a schema exists, or a structured JSON consistent with the audit content).
-3. **When the user marks items as technical debt** (option c or explicit “leave as debt”) — Update `.agents/TECHNICAL_DEBT.md` (or the project’s designated technical-debt file) with those items.
+3. **When the user marks items as technical debt** (option c or explicit "leave as debt") — Update `.agents/TECHNICAL_DEBT.md` (or the project's designated technical-debt file) with those items.
+
+### Mandatory structure for it_{iteration}_audit.md
+
+The file must be written to `.agents/flow/it_{iteration}_audit.md` and must contain exactly these sections (in this order), reflecting the final recommendations (including any user-requested changes):
+
+1. **Executive summary**
+2. **Verification by FR**
+3. **Verification by US**
+4. **Minor observations**
+5. **Conclusions and recommendations**
+6. **Refactor plan**
