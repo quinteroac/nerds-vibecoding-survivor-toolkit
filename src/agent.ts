@@ -7,7 +7,7 @@ import { exists } from "./state";
 // Types
 // ---------------------------------------------------------------------------
 
-export type AgentProvider = "claude" | "codex" | "gemini" | "cursor" | "copilot";
+export type AgentProvider = "claude" | "codex" | "gemini" | "cursor" | "copilot" | "ide";
 
 export interface AgentInvokeOptions {
   provider: AgentProvider;
@@ -36,6 +36,7 @@ const PROVIDERS: Record<AgentProvider, { cmd: string; args: string[] }> = {
   gemini: { cmd: "gemini", args: ["--yolo"] },
   cursor: { cmd: "agent", args: [] },
   copilot: { cmd: "copilot", args: ["-p", "--yolo", "--no-ask-user"] },
+  ide: { cmd: "", args: [] },
 };
 
 export function parseProvider(name: string): AgentProvider {
@@ -57,6 +58,10 @@ export function ensureAgentCommandAvailable(
   provider: AgentProvider,
   resolveCommandPath: ResolveCommandPath = defaultResolveCommandPath,
 ): void {
+  if (provider === "ide") {
+    return;
+  }
+
   const { cmd } = buildCommand(provider);
   if (resolveCommandPath(cmd)) return;
 
@@ -87,6 +92,15 @@ export async function invokeAgent(options: AgentInvokeOptions): Promise<AgentRes
     interactive = false,
     resolveCommandPath = defaultResolveCommandPath,
   } = options;
+  if (provider === "ide") {
+    process.stdout.write(`${prompt}\n`);
+    return {
+      exitCode: 0,
+      stdout: "",
+      stderr: "",
+    };
+  }
+
   const { cmd, args } = buildCommand(provider);
   ensureAgentCommandAvailable(provider, resolveCommandPath);
 

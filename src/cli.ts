@@ -87,7 +87,7 @@ Utilities:
                      Write a schema-validated JSON file (payload via --data or stdin)
 
 Options:
-  --agent            Agent provider (claude, codex, gemini, cursor) for agent-backed commands
+  --agent            Agent provider (claude, codex, gemini, cursor, copilot, ide) for agent-backed commands
   --iterations       Maximum prototype passes (integer >= 1)
   --retry-on-fail    Retry attempts per failed story (integer >= 0)
   --stop-on-critical Stop execution after critical failures

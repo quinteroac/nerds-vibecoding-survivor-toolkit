@@ -32,8 +32,16 @@ describe("agent provider parsing", () => {
 
   test("unknown provider error includes cursor in valid provider list", () => {
     expect(() => parseProvider("unknown-provider")).toThrow(
-      "Unknown agent provider 'unknown-provider'. Valid providers: claude, codex, gemini, cursor, copilot",
+      "Unknown agent provider 'unknown-provider'. Valid providers: claude, codex, gemini, cursor, copilot, ide",
     );
+  });
+
+  test("accepts ide as a valid provider in --agent argument parsing", () => {
+    const parsed = parseAgentArg(["create", "--agent", "ide", "--force"]);
+
+    expect(parsed.provider).toBe("ide");
+    expect(parsed.remainingArgs).toEqual(["create", "--force"]);
+    expect(parseProvider("ide")).toBe("ide");
   });
 });
 
@@ -153,6 +161,34 @@ describe("agent invocation command availability", () => {
       expect(result).toEqual({ exitCode: 0, stdout: "ok", stderr: "" });
     } finally {
       (Bun as { spawn: typeof Bun.spawn }).spawn = originalSpawn;
+    }
+  });
+
+  test("prints prompt and exits successfully for ide provider without spawning subprocess", async () => {
+    const originalSpawn = Bun.spawn;
+    const writes: string[] = [];
+    const originalWrite = process.stdout.write.bind(process.stdout);
+
+    try {
+      (Bun as { spawn: typeof Bun.spawn }).spawn = (() => {
+        throw new Error("spawn should not be called for ide provider");
+      }) as unknown as typeof Bun.spawn;
+
+      process.stdout.write = ((chunk: unknown) => {
+        writes.push(String(chunk));
+        return true;
+      }) as typeof process.stdout.write;
+
+      const result = await invokeAgent({
+        provider: "ide",
+        prompt: "Prompt body",
+      });
+
+      expect(result).toEqual({ exitCode: 0, stdout: "", stderr: "" });
+      expect(writes.join("")).toBe("Prompt body\n");
+    } finally {
+      (Bun as { spawn: typeof Bun.spawn }).spawn = originalSpawn;
+      process.stdout.write = originalWrite;
     }
   });
 });
