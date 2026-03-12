@@ -56,22 +56,15 @@ afterEach(async () => {
 });
 
 describe("US-002 --force support", () => {
-  test("US-002-AC01: cli forwards --force to phase/status-validated command handlers", async () => {
+  test("US-002-AC01: cli forwards --force to current loop command handlers", async () => {
     const source = await readFile(join(import.meta.dir, "cli.ts"), "utf8");
-    expect(source).toContain("await runCreateProjectContext({ provider, mode, force })");
     expect(source).toContain("await runDefineRequirement({ provider, force })");
-    expect(source).toContain("await runDefineRefactorPlan({ provider, force })");
     expect(source).toContain("await runRefineRequirement({ provider, challenge, force })");
-    expect(source).toContain("await runRefineProjectContext({ provider, challenge, force })");
-    expect(source).toContain("await runRefineTestPlan({ provider, challenge, force })");
-    expect(source).toContain("await runRefineRefactorPlan({ provider, challenge, force })");
     expect(source).toContain("await runApproveRequirement({ force })");
-    expect(source).toContain("await runApproveProjectContext({ force })");
-    expect(source).toContain("await runApproveTestPlan({ force })");
-    expect(source).toContain("await runApproveRefactorPlan({ force })");
+    expect(source).toContain("await runApprovePrototype({ force })");
     expect(source).toContain("await runCreatePrototype({ provider, iterations, retryOnFail, stopOnCritical, force })");
-    expect(source).toContain("await runExecuteTestPlan({ provider, force })");
-    expect(source).toContain("await runExecuteRefactor({ provider, force })");
+    expect(source).toContain("await runAuditPrototype({ provider, force })");
+    expect(source).toContain("await runRefactorPrototype({ provider, force })");
   });
 
   test("US-002-AC02/AC03: strict mode + --force warns and bypasses prompt", async () => {
@@ -130,15 +123,17 @@ describe("US-002 --force support", () => {
     const root = await mkdtemp(join(tmpdir(), "nvst-force-cli-"));
     createdRoots.push(root);
     const cliPath = join(import.meta.dir, "cli.ts");
-    const proc = Bun.spawn(["bun", cliPath, "init", "--force"], {
+    const proc = Bun.spawn(["bun", cliPath, "approve", "prototype", "--force"], {
       cwd: root,
       stdout: "pipe",
       stderr: "pipe",
     });
     const exitCode = await proc.exited;
+    const stdoutText = await new Response(proc.stdout).text();
     const stderrText = await new Response(proc.stderr).text();
 
     expect(exitCode).toBe(0);
+    expect(stdoutText).toContain("nvst approve prototype is not implemented yet.");
     expect(stderrText).toBe("");
   });
 });

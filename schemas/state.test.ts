@@ -13,6 +13,10 @@ function makeValidState(): Record<string, unknown> {
         prd_generation: { status: "pending", file: null },
       },
       prototype: {
+        prototype_creation: { status: "pending", file: null },
+        prototype_audit: { status: "pending", file: null },
+        prototype_refactor: { status: "pending", file: null },
+        prototype_approval: { status: "pending", file: null },
         project_context: { status: "pending", file: null },
         test_plan: { status: "pending", file: null },
         tp_generation: { status: "pending", file: null },
@@ -32,7 +36,7 @@ function makeValidState(): Record<string, unknown> {
 }
 
 describe("US-003 state schema parity", () => {
-  test("US-003-AC01/AC02/AC05: both schemas accept state without flow_guardrail", () => {
+  test("US-003-AC01/AC02/AC05: both schemas accept the new prototype loop shape", () => {
     const input = makeValidState();
 
     expect(ScaffoldStateSchema.safeParse(input).success).toBe(true);
@@ -51,6 +55,17 @@ describe("US-003 state schema parity", () => {
 
   test("US-003-AC01/AC02: both schemas reject non-enum flow_guardrail", () => {
     const invalidInput = { ...makeValidState(), flow_guardrail: "lenient" };
+
+    expect(ScaffoldStateSchema.safeParse(invalidInput).success).toBe(false);
+    expect(WorkingCopyStateSchema.safeParse(invalidInput).success).toBe(false);
+  });
+
+  test("US-003-AC04: both schemas reject invalid prototype_creation status", () => {
+    const invalidInput = makeValidState();
+    (invalidInput.phases as Record<string, unknown>).prototype = {
+      ...((invalidInput.phases as Record<string, unknown>).prototype as Record<string, unknown>),
+      prototype_creation: { status: "created", file: null },
+    };
 
     expect(ScaffoldStateSchema.safeParse(invalidInput).success).toBe(false);
     expect(WorkingCopyStateSchema.safeParse(invalidInput).success).toBe(false);

@@ -98,13 +98,11 @@ afterEach(async () => {
 });
 
 describe("execute refactor command", () => {
-  test("registers execute refactor command in CLI dispatch", async () => {
+  test("is no longer directly wired in CLI main-loop routing", async () => {
     const source = await readFile(join(process.cwd(), "src", "cli.ts"), "utf8");
 
-    expect(source).toContain('import { runExecuteRefactor } from "./commands/execute-refactor";');
-    expect(source).toContain('if (subcommand === "refactor") {');
-    expect(source).toContain("await runExecuteRefactor({ provider, force });");
-    expect(source).toContain("execute refactor --agent <provider>");
+    expect(source).not.toContain('import { runExecuteRefactor } from "./commands/execute-refactor";');
+    expect(source).not.toContain("execute refactor --agent <provider>");
   });
 
   // AC02: Rejects if current_phase !== "refactor"

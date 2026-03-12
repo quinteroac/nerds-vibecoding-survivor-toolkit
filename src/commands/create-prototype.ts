@@ -194,6 +194,9 @@ export async function runCreatePrototype(
   const projectRoot = process.cwd();
   const state = await readState(projectRoot);
   const force = opts.force ?? false;
+  const prototypeCreation = state.phases.prototype.prototype_creation
+    ?? { status: "pending", file: null };
+  state.phases.prototype.prototype_creation = prototypeCreation;
 
   if (opts.iterations !== undefined && (!Number.isInteger(opts.iterations) || opts.iterations < 1)) {
     throw new Error(
@@ -239,10 +242,7 @@ export async function runCreatePrototype(
   let prePrototypeCommitDone = false;
 
   if (state.current_phase === "define") {
-    if (
-      state.phases.define.prd_generation.status === "completed" &&
-      state.phases.prototype.project_context.status === "created"
-    ) {
+    if (state.phases.define.prd_generation.status === "completed") {
       const workingTreeBeforeTransition = await dollar`git status --porcelain`.cwd(projectRoot).nothrow().quiet();
       if (workingTreeBeforeTransition.exitCode !== 0) {
         throw new Error(
@@ -266,7 +266,7 @@ export async function runCreatePrototype(
       await assertGuardrail(
         state,
         true,
-        "Cannot create prototype: current_phase is define and prerequisites are not met. Complete define phase and run `bun nvst create project-context --agent <provider>` then `bun nvst approve project-context` first.",
+        "Cannot create prototype: current_phase is define and prerequisites are not met. Complete define phase by approving the requirement first.",
         { force },
       );
     }
@@ -274,17 +274,10 @@ export async function runCreatePrototype(
     await assertGuardrail(
       state,
       true,
-      "Cannot create prototype: current_phase must be define (with approved PRD) or prototype. Complete define phase and run `bun nvst create project-context --agent <provider>` then `bun nvst approve project-context` first.",
+      "Cannot create prototype: current_phase must be define (with approved PRD) or prototype. Complete define phase by approving the requirement first.",
       { force },
     );
   }
-
-  await assertGuardrail(
-    state,
-    state.phases.prototype.project_context.status !== "created",
-    "Cannot create prototype: prototype.project_context.status must be created. Run `bun nvst create project-context --agent <provider>` and `bun nvst approve project-context` first.",
-    { force },
-  );
 
   if (!prePrototypeCommitDone) {
     const workingTreeAfterPhase = await dollar`git status --porcelain`.cwd(projectRoot).nothrow().quiet();
@@ -387,8 +380,8 @@ export async function runCreatePrototype(
     return;
   }
 
-  state.phases.prototype.prototype_build.status = "in_progress";
-  state.phases.prototype.prototype_build.file = progressFileName;
+  prototypeCreation.status = "in_progress";
+  prototypeCreation.file = progressFileName;
   state.last_updated = new Date().toISOString();
   state.updated_by = "nvst:create-prototype";
   await writeState(projectRoot, state);
@@ -518,7 +511,7 @@ export async function runCreatePrototype(
   }
 
   const allCompleted = progressData.entries.every((entry) => entry.status === "completed");
-  state.phases.prototype.prototype_build.status = allCompleted ? "created" : "in_progress";
+  prototypeCreation.status = allCompleted ? "completed" : "in_progress";
   state.last_updated = new Date().toISOString();
   state.updated_by = "nvst:create-prototype";
   await writeState(projectRoot, state);

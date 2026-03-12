@@ -3,11 +3,8 @@ import { dirname, resolve } from "node:path";
 import type { ZodSchema } from "zod";
 
 import { StateSchema } from "../../scaffold/schemas/tmpl_state";
-import { ProgressSchema } from "../../scaffold/schemas/tmpl_progress";
 import { PrdSchema } from "../../scaffold/schemas/tmpl_prd";
-import { RefactorPrdSchema } from "../../scaffold/schemas/tmpl_refactor-prd";
-import { RefactorExecutionProgressSchema } from "../../scaffold/schemas/tmpl_refactor-execution-progress";
-import { TestPlanSchema } from "../../scaffold/schemas/tmpl_test-plan";
+import { PrototypeProgressSchema } from "../../scaffold/schemas/tmpl_prototype-progress";
 import { IssuesSchema } from "../../scaffold/schemas/tmpl_issues";
 
 // ---------------------------------------------------------------------------
@@ -15,11 +12,8 @@ import { IssuesSchema } from "../../scaffold/schemas/tmpl_issues";
 // ---------------------------------------------------------------------------
 const SCHEMA_REGISTRY: Record<string, ZodSchema> = {
   state: StateSchema,
-  progress: ProgressSchema,
   prd: PrdSchema,
-  "refactor-prd": RefactorPrdSchema,
-  "refactor-execution-progress": RefactorExecutionProgressSchema,
-  "test-plan": TestPlanSchema,
+  "prototype-progress": PrototypeProgressSchema,
   issues: IssuesSchema,
 };
 
