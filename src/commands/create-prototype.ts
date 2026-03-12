@@ -405,6 +405,29 @@ export async function runCreatePrototype(
   const maxStoriesToProcess = opts.iterations ?? Number.POSITIVE_INFINITY;
   const maxRetriesPerStory = opts.retryOnFail ?? 0;
 
+  if (opts.provider === "ide") {
+    let printedStories = 0;
+    for (const story of eligibleStories) {
+      if (printedStories >= maxStoriesToProcess) {
+        break;
+      }
+
+      if (printedStories > 0) {
+        mergedDeps.logFn("---");
+      }
+
+      const prompt = buildPrompt(skillTemplate, {
+        iteration,
+        project_context: projectContextContent,
+        user_story: JSON.stringify(story, null, 2),
+      });
+      mergedDeps.logFn(prompt);
+      printedStories += 1;
+    }
+
+    return;
+  }
+
   let storiesAttempted = 0;
   let haltedByCritical = false;
 
