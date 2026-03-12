@@ -1,4 +1,8 @@
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
+
 import { buildPrompt, invokeAgent, loadSkill, type AgentProvider } from "../agent";
+import { parseOpenQuestionsFromPrd } from "../prd-open-questions";
 import { assertGuardrail } from "../guardrail";
 import { readState, writeState } from "../state";
 
@@ -43,11 +47,21 @@ export async function runDefineRequirement(opts: DefineRequirementOptions): Prom
   }
 
   requirementDefinition.status = "in_progress";
-  requirementDefinition.file = `it_${state.current_iteration}_product-requirement-document.md`;
+  const prdFileName = `it_${state.current_iteration}_product-requirement-document.md`;
+  requirementDefinition.file = prdFileName;
   state.last_updated = new Date().toISOString();
   state.updated_by = "nvst:define-requirement";
 
   await writeState(projectRoot, state);
 
-  console.log("Requirement definition started and marked as in progress.");
+  const prdPath = join(projectRoot, ".agents", "flow", prdFileName);
+  const prdContent = await readFile(prdPath, "utf8").catch(() => "");
+  const openQuestions = parseOpenQuestionsFromPrd(prdContent);
+  if (openQuestions.length > 0) {
+    console.log(
+      `Requirement definition started and marked as in progress. The PRD lists ${openQuestions.length} open question(s); ensure they were resolved with the user.`,
+    );
+  } else {
+    console.log("Requirement definition started and marked as in progress.");
+  }
 }
