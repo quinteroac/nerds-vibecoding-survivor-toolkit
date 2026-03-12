@@ -80,4 +80,12 @@ describe("create-pr-document skill open-questions instructions", () => {
     expect(content).toContain("one by one");
     expect(content).toContain("Wait for the user's answer");
   });
+
+  test("US-002-AC01: skill instructs agent to include suggestions or options when asking open questions", async () => {
+    const skillPath = join(process.cwd(), ".agents", "skills", "create-pr-document", "SKILL.md");
+    const content = await readFile(skillPath, "utf8").catch(() => "");
+    if (!content) return;
+    expect(content).toContain("suggestions or inferred options");
+    expect(content).toMatch(/lettered choices|options.*Other/i);
+  });
 });
