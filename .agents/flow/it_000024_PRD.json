@@ -1,0 +1,76 @@
+{
+  "goals": [
+    "Make the \"define requirement\" phase interactive for resolving open questions.",
+    "Address any generated open questions one-by-one with the user.",
+    "Provide the user with recommendations/suggestions for answering the open questions."
+  ],
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Agent asks open questions interactively",
+      "description": "As a user, I want the agent to ask me any open questions interactively at the end of the PRD generation so that no requirements are left ambiguous.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-001-AC01",
+          "text": "At the end of the PRD generation, the agent detects if there are any open questions."
+        },
+        {
+          "id": "US-001-AC02",
+          "text": "The agent asks the open questions to the user one by one."
+        },
+        {
+          "id": "US-001-AC03",
+          "text": "The agent waits for the user's answer before proceeding to the next question."
+        },
+        {
+          "id": "US-001-AC04",
+          "text": "Typecheck / lint passes"
+        }
+      ]
+    },
+    {
+      "id": "US-002",
+      "title": "Agent provides suggestions for open questions",
+      "description": "As a user, I want the agent to provide suggestions or recommendations when asking open questions so that I have helpful context to provide an answer.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-002-AC01",
+          "text": "When an open question is asked, the agent includes valid suggestions or inferred options for the user to choose from."
+        },
+        {
+          "id": "US-002-AC02",
+          "text": "Typecheck / lint passes"
+        }
+      ]
+    },
+    {
+      "id": "US-003",
+      "title": "Sync agent skills definition",
+      "description": "As an internal process, I want the skill modifications to happen in both `.agents/` and `scaffold/` directories so that standard project context remains consistent across instantiated and scaffolded projects.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-003-AC01",
+          "text": "The prompt/skill files updated (e.g., `create-pr-document.md`) are modified identically in both `.agents/skills/` and `scaffold/agents/skills/`."
+        },
+        {
+          "id": "US-003-AC02",
+          "text": "Typecheck / lint passes"
+        }
+      ]
+    }
+  ],
+  "functionalRequirements": [
+    {
+      "id": "FR-1",
+      "description": "Update the skill prompt for PRD generation (`create-pr-document` or similar) to instruct the agent to append an interactive Q&A session if \"Open Questions\" exist after drafting the PRD."
+    },
+    {
+      "id": "FR-2",
+      "description": "Ensure the skill modifications are mirrored between the working directory (`.agents/skills/`) and the scaffold directory (`scaffold/agents/skills/`)."
+    },
+    {
+      "id": "FR-3",
+      "description": "The interactive workflow must process questions sequentially, one at a time, not parallel."
+    }
+  ]
+}

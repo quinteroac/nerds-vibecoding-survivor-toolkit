@@ -106,4 +106,43 @@ describe("define requirement command", () => {
     const stateRaw = await readFile(join(projectRoot, ".agents", "state.json"), "utf8");
     expect(stateRaw).toContain("\"in_progress\"");
   });
+
+  test("logs open-questions count when PRD has Open Questions section", async () => {
+    const projectRoot = await createProjectRoot();
+    await mkdir(join(projectRoot, ".agents", "flow"), { recursive: true });
+    await mkdir(join(projectRoot, ".agents", "skills", "create-pr-document"), { recursive: true });
+    await writeFile(
+      join(projectRoot, ".agents", "skills", "create-pr-document", "SKILL.md"),
+      "---\nname: create-pr-document\n---\n# Create PRD Skill",
+      "utf8",
+    );
+    const state = buildState();
+    state.current_iteration = "000099";
+    await writeState(projectRoot, state);
+    const prdPath = join(projectRoot, ".agents", "flow", "it_000099_product-requirement-document.md");
+    await writeFile(
+      prdPath,
+      "# Requirement: Test\n\n## Open Questions\n- What is the deadline?\n- Who approves?",
+      "utf8",
+    );
+
+    const writes: string[] = [];
+    const originalWrite = process.stdout.write.bind(process.stdout);
+    process.stdout.write = ((chunk: unknown) => {
+      writes.push(String(chunk));
+      return true;
+    }) as typeof process.stdout.write;
+
+    try {
+      await withCwd(projectRoot, async () => {
+        await runDefineRequirement({ provider: "ide" });
+      });
+    } finally {
+      process.stdout.write = originalWrite;
+    }
+
+    const writtenText = writes.join("");
+    expect(writtenText).toContain("2 open question(s)");
+    expect(writtenText).toContain("ensure they were resolved with the user");
+  });
 });
