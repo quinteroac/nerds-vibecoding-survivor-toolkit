@@ -219,6 +219,15 @@ describe("audit prototype command", () => {
       expect(content).toContain("TECHNICAL_DEBT.md");
       expect(content).toMatch(/chosen outcome|outcome to drive|Outcome-driven/);
     });
+
+    test("US-006-AC01: skill instructs to run nvst write-technical-debt when user marks items as technical debt", async () => {
+      const skillPath = join(process.cwd(), ".agents", "skills", "audit-prototype", "SKILL.md");
+      const content = await readFile(skillPath, "utf8");
+
+      expect(content).toMatch(/write-technical-debt/);
+      expect(content).toMatch(/--data|stdin/);
+      expect(content).toMatch(/iteration.*items|items.*title.*description/);
+    });
   });
 
   describe("US-004: Generate it_{iteration}_audit.md with refactor plan", () => {

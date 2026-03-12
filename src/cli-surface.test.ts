@@ -52,6 +52,7 @@ describe("US-001: CLI surface matches the new loop", () => {
     expect(stdoutText).toContain("init");
     expect(stdoutText).toContain("destroy [--clean]");
     expect(stdoutText).toContain("write-json --schema <name> --out <path> [--data '<json>']");
+    expect(stdoutText).toContain("write-technical-debt");
   });
 
   test("US-001-AC03 + US-001-AC04: legacy commands are absent from help", async () => {
