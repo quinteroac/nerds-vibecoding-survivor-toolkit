@@ -78,11 +78,11 @@ nerds-vst is a package that provides:
 
   Template files in this repository live under [`scaffold/`](scaffold/) with a `tmpl_` prefix (e.g. `tmpl_AGENTS.md`, `tmpl_state.ts`); `bun nvst init` copies them into the target project and writes them without the prefix to avoid naming conflicts when the toolkit is integrated elsewhere. The `state.json` file is created and managed by the toolkit at runtime.
 
-- **Command-line tool** — Sends instructions to your chosen agent provider (Claude, Codex, Gemini, etc.) so it follows the framework. Commands drive the main development loop and keep state in sync, giving you a single way to run the process regardless of which agent you use.
+- **Command-line tool** — Prompts and orchestrates the development loop, keeping state in sync. Instead of internally calling an agent within the commands, it outputs instructions as prompts to be executed by your preferred AI environment (e.g., Cursor, Antigravity, Claude Code Web, GitHub Copilot).
 
   **Command summary** (see [process_design.md](process_design.md) for full details):
 
-  `Define/Refine/Approve Requirement → Create Prototype → Audit Prototype → Refactor Prototype → Approve Prototype`
+  `[Ideation (Optional)] → Define/Refine/Approve Requirement → Create Prototype → Audit Prototype → Refactor Prototype → Approve Prototype`
 
   | Group | Commands |
   |-------|----------|
@@ -92,14 +92,16 @@ nerds-vst is a package that provides:
   **Typical iteration example**:
 
   ```bash
-  bun nvst define requirement --agent codex
-  bun nvst refine requirement --agent codex --challenge   # optional
+  bun nvst define requirement
+  bun nvst refine requirement --challenge   # optional
   bun nvst approve requirement
-  bun nvst create prototype --agent codex --iterations 10
-  bun nvst audit prototype --agent codex
-  bun nvst refactor prototype --agent codex
+  bun nvst create prototype
+  bun nvst audit prototype
+  bun nvst refactor prototype
   bun nvst approve prototype
   ```
+
+  _Note: Commands output instructions as prompts to be used in modern IDEs and web environments (e.g., Cursor, Antigravity, Claude Code Web, GitHub Copilot) rather than calling agents internally._
 
 
 ## Installation
