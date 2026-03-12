@@ -1,26 +1,53 @@
 {
-  "current_iteration": "000022",
-  "current_phase": "prototype",
-  "flow_guardrail": "relaxed",
+  "current_iteration": "000023",
+  "current_phase": "define",
   "phases": {
     "define": {
       "requirement_definition": {
-        "status": "approved",
-        "file": "it_000022_product-requirement-document.md"
+        "status": "pending",
+        "file": null
       },
       "prd_generation": {
-        "status": "completed",
-        "file": "it_000022_PRD.json"
+        "status": "pending",
+        "file": null
       }
     },
     "prototype": {
+      "prototype_creation": {
+        "status": "pending",
+        "file": null
+      },
+      "prototype_audit": {
+        "status": "pending",
+        "file": null
+      },
+      "prototype_refactor": {
+        "status": "pending",
+        "file": null
+      },
+      "prototype_approval": {
+        "status": "pending",
+        "file": null
+      },
       "project_context": {
         "status": "created",
         "file": ".agents/PROJECT_CONTEXT.md"
       },
+      "test_plan": {
+        "status": "pending",
+        "file": null
+      },
+      "tp_generation": {
+        "status": "pending",
+        "file": null
+      },
       "prototype_build": {
-        "status": "created",
-        "file": "it_000022_progress.json"
+        "status": "pending",
+        "file": null
+      },
+      "test_execution": {
+        "status": "pending",
+        "file": null
       },
       "prototype_approved": false
     },
@@ -43,8 +70,7 @@
       }
     }
   },
-  "last_updated": "2026-03-12T03:26:23.954Z",
-  "updated_by": "nvst:create-prototype",
+  "last_updated": "2026-03-12T17:28:12.426Z",
   "history": [
     {
       "iteration": "000001",
@@ -155,6 +181,12 @@
       "iteration": "000021",
       "archived_at": "2026-03-12T02:08:27.201Z",
       "archived_path": ".agents/flow/archived/000021"
+    },
+    {
+      "iteration": "000022",
+      "archived_at": "2026-03-12T17:28:12.426Z",
+      "archived_path": ".agents/flow/archived/000022"
     }
-  ]
+  ],
+  "flow_guardrail": "relaxed"
 }

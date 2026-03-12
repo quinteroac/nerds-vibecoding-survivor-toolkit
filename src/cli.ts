@@ -2,6 +2,7 @@
 
 import { join } from "node:path";
 import { parseAgentArg } from "./agent";
+import { runStartIteration } from "./commands/start-iteration";
 import { runAuditPrototype } from "./commands/audit-prototype";
 import { GuardrailAbortError } from "./guardrail";
 import { runApprovePrototype } from "./commands/approve-prototype";
@@ -63,6 +64,7 @@ function printUsage() {
   console.log(`Usage: nvst <command> [options]
 
 Primary workflow:
+  start iteration    Start a new iteration, archiving flow files
   define requirement --agent <provider> [--force]
                      Create requirement document via agent
   refine requirement --agent <provider> [--challenge] [--force]
@@ -140,6 +142,24 @@ async function main() {
       return;
     }
     await runDestroy({ clean });
+    return;
+  }
+
+  if (command === "start") {
+    if (args.length === 0 || args[0] !== "iteration") {
+      console.error("Usage for start: nvst start iteration");
+      printUsage();
+      process.exitCode = 1;
+      return;
+    }
+    const unknownArgs = args.slice(1);
+    if (unknownArgs.length > 0) {
+      console.error(`Unknown option(s) for start iteration: ${unknownArgs.join(" ")}`);
+      printUsage();
+      process.exitCode = 1;
+      return;
+    }
+    await runStartIteration();
     return;
   }
 
