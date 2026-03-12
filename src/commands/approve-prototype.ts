@@ -7,7 +7,7 @@ interface ApprovePrototypeDeps {
 }
 
 const defaultDeps: ApprovePrototypeDeps = {
-  logFn: console.log,
+  logFn: console.warn,
 };
 
 export async function runApprovePrototype(
@@ -15,5 +15,5 @@ export async function runApprovePrototype(
   deps: Partial<ApprovePrototypeDeps> = {},
 ): Promise<void> {
   const mergedDeps = { ...defaultDeps, ...deps };
-  mergedDeps.logFn("nvst approve prototype is not implemented yet.");
+  mergedDeps.logFn("⚠️  The 'nvst approve prototype' command is currently a stub and not fully implemented yet.");
 }

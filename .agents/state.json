@@ -18,21 +18,9 @@
         "status": "created",
         "file": ".agents/PROJECT_CONTEXT.md"
       },
-      "test_plan": {
-        "status": "pending",
-        "file": null
-      },
-      "tp_generation": {
-        "status": "pending",
-        "file": null
-      },
       "prototype_build": {
-        "status": "in_progress",
+        "status": "created",
         "file": "it_000022_progress.json"
-      },
-      "test_execution": {
-        "status": "pending",
-        "file": null
       },
       "prototype_approved": false
     },
@@ -55,7 +43,7 @@
       }
     }
   },
-  "last_updated": "2026-03-12T03:02:35.969Z",
+  "last_updated": "2026-03-12T03:26:23.954Z",
   "updated_by": "nvst:create-prototype",
   "history": [
     {

@@ -10,7 +10,7 @@ interface RefactorPrototypeDeps {
 }
 
 const defaultDeps: RefactorPrototypeDeps = {
-  logFn: console.log,
+  logFn: console.warn,
 };
 
 export async function runRefactorPrototype(
@@ -18,5 +18,5 @@ export async function runRefactorPrototype(
   deps: Partial<RefactorPrototypeDeps> = {},
 ): Promise<void> {
   const mergedDeps = { ...defaultDeps, ...deps };
-  mergedDeps.logFn("nvst refactor prototype is not implemented yet.");
+  mergedDeps.logFn("⚠️  The 'nvst refactor prototype' command is currently a stub and not fully implemented yet.");
 }

@@ -10,7 +10,7 @@ interface AuditPrototypeDeps {
 }
 
 const defaultDeps: AuditPrototypeDeps = {
-  logFn: console.log,
+  logFn: console.warn,
 };
 
 export async function runAuditPrototype(
@@ -18,5 +18,5 @@ export async function runAuditPrototype(
   deps: Partial<AuditPrototypeDeps> = {},
 ): Promise<void> {
   const mergedDeps = { ...defaultDeps, ...deps };
-  mergedDeps.logFn("nvst audit prototype is not implemented yet.");
+  mergedDeps.logFn("⚠️  The 'nvst audit prototype' command is currently a stub and not fully implemented yet.");
 }
