@@ -1,20 +1,20 @@
 ---
 name: audit-prototype
-description: "Placeholder skill for nvst audit prototype until full implementation lands."
+description: "Validate the current iteration's PRD against the implemented code via the audit prototype skill."
 user-invocable: false
 ---
 
-# Audit Prototype (Placeholder)
+# Audit Prototype
 
-This is a minimal loop-aware placeholder.
+Validate the product requirement document (PRD) for the current iteration against the implemented code.
 
 ## Context
 
 - Iteration artifacts live under `.agents/flow/`.
-- Relevant files for this command are expected to include:
-  - `.agents/flow/it_{iteration}_PRD.json`
-  - `.agents/flow/it_{iteration}_progress.json`
+- Relevant files:
+  - `.agents/flow/it_{iteration}_PRD.json` — PRD (user stories, acceptance criteria, functional requirements)
+  - `.agents/flow/it_{iteration}_progress.json` — implementation progress
 
-## Current status
+## Task
 
-`nvst audit prototype` is currently a stub command and does not invoke this skill yet.
+For each use case / user story and its acceptance criteria (and any referenced functional requirements), validate that the codebase satisfies the PRD. Report any gaps or non-compliance.
