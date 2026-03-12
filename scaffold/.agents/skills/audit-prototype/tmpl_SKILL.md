@@ -34,3 +34,21 @@ The report must include exactly these sections:
 5. **Conclusions and recommendations** — string.
 
 Each FR and US from the PRD must be explicitly assessed with one of: comply / partially comply / does not comply (English), or cumple / parcialmente cumple / no cumple if the surrounding document is in Spanish. In the JSON file use the English enum values: `"comply"`, `"partially_comply"`, `"does_not_comply"`.
+
+## After the report: choose how to act on recommendations
+
+After presenting the compliance report to the user, ask them to choose one of:
+
+- **(a) Follow recommendations** — apply the recommendations as-is (e.g. proceed to refactor).
+- **(b) Change recommendations** — adjust the recommendations before proceeding.
+- **(c) Leave as is** — do not apply; optionally record items as technical debt.
+
+If the user chooses **(b)**, ask what they want to change, then update the recommendations accordingly (e.g. revise the conclusions and recommendations text or the refactor plan) before continuing.
+
+## Outcome-driven artifacts
+
+Use the chosen outcome to drive which artifacts you produce:
+
+1. **Always** — After the user’s choice is known, produce `.agents/flow/it_{iteration}_audit.md` containing the report sections (Executive summary, Verification by FR, Verification by US, Minor observations, Conclusions and recommendations) and the Refactor plan, reflecting the final recommendations (including any user-requested changes).
+2. **When the user chooses to follow or apply refactor** (option a or b with refactor intent) — Produce `.agents/flow/it_{iteration}_audit.json` (e.g. via `nvst write-json` if a schema exists, or a structured JSON consistent with the audit content).
+3. **When the user marks items as technical debt** (option c or explicit “leave as debt”) — Update `.agents/TECHNICAL_DEBT.md` (or the project’s designated technical-debt file) with those items.

@@ -186,4 +186,38 @@ describe("audit prototype command", () => {
       expect(skillNames).toEqual(["audit-prototype"]);
     });
   });
+
+  describe("US-003: Choose how to act on recommendations", () => {
+    test("US-003-AC01: skill instructs to ask user to choose (a) follow, (b) change, (c) leave as is after report", async () => {
+      const skillPath = join(process.cwd(), ".agents", "skills", "audit-prototype", "SKILL.md");
+      const content = await readFile(skillPath, "utf8");
+
+      expect(content).toContain("(a)");
+      expect(content).toContain("(b)");
+      expect(content).toContain("(c)");
+      expect(content).toContain("follow recommendations");
+      expect(content).toContain("change recommendations");
+      expect(content).toContain("leave as is");
+      expect(content).toMatch(/presenting the compliance report|After presenting the report/i);
+    });
+
+    test("US-003-AC02: skill instructs to ask what to change and update recommendations when user chooses (b)", async () => {
+      const skillPath = join(process.cwd(), ".agents", "skills", "audit-prototype", "SKILL.md");
+      const content = await readFile(skillPath, "utf8");
+
+      expect(content).toContain("(b)");
+      expect(content).toMatch(/ask.*what.*change|what they want to change/i);
+      expect(content).toMatch(/update the recommendations|update recommendations accordingly/i);
+    });
+
+    test("US-003-AC03: skill instructs that chosen outcome drives generation of it_{iteration}_audit.md and when applicable audit.json and TECHNICAL_DEBT.md", async () => {
+      const skillPath = join(process.cwd(), ".agents", "skills", "audit-prototype", "SKILL.md");
+      const content = await readFile(skillPath, "utf8");
+
+      expect(content).toMatch(/it_\{iteration\}_audit\.md|it_.*_audit\.md/);
+      expect(content).toMatch(/it_\{iteration\}_audit\.json|it_.*_audit\.json/);
+      expect(content).toContain("TECHNICAL_DEBT.md");
+      expect(content).toMatch(/chosen outcome|outcome to drive|Outcome-driven/);
+    });
+  });
 });
