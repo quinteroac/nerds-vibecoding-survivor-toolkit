@@ -66,6 +66,7 @@ describe("US-004: Skills and schemas align to the new loop", () => {
     expect(source).toContain("state: StateSchema");
     expect(source).toContain("prd: PrdSchema");
     expect(source).toContain("issues: IssuesSchema");
+    expect(source).toContain("audit: AuditSchema");
 
     expect(source).not.toContain("RefactorPrdSchema");
     expect(source).not.toContain("RefactorExecutionProgressSchema");

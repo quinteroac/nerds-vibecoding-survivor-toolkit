@@ -2,6 +2,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import type { ZodSchema } from "zod";
 
+import { AuditSchema } from "../../scaffold/schemas/tmpl_audit";
 import { StateSchema } from "../../scaffold/schemas/tmpl_state";
 import { PrdSchema } from "../../scaffold/schemas/tmpl_prd";
 import { PrototypeProgressSchema } from "../../scaffold/schemas/tmpl_prototype-progress";
@@ -15,6 +16,7 @@ const SCHEMA_REGISTRY: Record<string, ZodSchema> = {
   prd: PrdSchema,
   "prototype-progress": PrototypeProgressSchema,
   issues: IssuesSchema,
+  audit: AuditSchema,
 };
 
 const SUPPORTED_SCHEMAS = Object.keys(SCHEMA_REGISTRY).join(", ");
