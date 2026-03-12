@@ -1,0 +1,165 @@
+{
+  "goals": [
+    "Deliver a compliance report between the PRD and the prototype for each use case / FR, with clear recommendations (fix in code, adjust in PRD, or record as technical debt).",
+    "Allow the user to drive next steps by choosing to follow recommendations, change them, or leave as is.",
+    "Persist the audit result and refactor plan in defined artifacts (`it_{iteration}_audit.md`, `it_{iteration}_audit.json` when refactor is chosen, in `.agents/flow/`) and update technical debt when the user marks items as debt."
+  ],
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Run audit prototype after create prototype",
+      "description": "As an end user, I want to run `nvst audit prototype` only after I have run `nvst create prototype` so that the audit validates the current iteration’s PRD against the code that was just produced.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-001-AC01",
+          "text": "The command fails or refuses to run if the current phase/state does not allow audit (e.g. create prototype has not been run for this iteration)."
+        },
+        {
+          "id": "US-001-AC02",
+          "text": "When allowed, the command invokes the audit skill so the agent can validate PRD vs implemented code per use case / FR."
+        },
+        {
+          "id": "US-001-AC03",
+          "text": "The command is implemented following the same skill-based pattern as other agent-backed commands (handler in `src/commands/`, skill loaded from `.agents/skills/audit-prototype/`), and the audit skill template exists in `scaffold/.agents/skills/audit-prototype/` so that scaffolded projects get the same behaviour."
+        },
+        {
+          "id": "US-001-AC04",
+          "text": "Typecheck / lint passes."
+        }
+      ]
+    },
+    {
+      "id": "US-002",
+      "title": "Receive compliance report with mandatory structure",
+      "description": "As an end user, I want the agent to produce a compliance report with a fixed structure so that I get a consistent summary and per-FR / per-US verification.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-002-AC01",
+          "text": "The report includes: Executive summary, Verification by FR (comply / partially comply / does not comply), Verification by US (comply / partially comply / does not comply), Minor observations, Conclusions and recommendations."
+        },
+        {
+          "id": "US-002-AC02",
+          "text": "Each FR and US is explicitly assessed with one of: cumple / parcialmente cumple / no cumple (or equivalent English labels if the document is in English)."
+        },
+        {
+          "id": "US-002-AC03",
+          "text": "Typecheck / lint passes."
+        }
+      ]
+    },
+    {
+      "id": "US-003",
+      "title": "Choose how to act on recommendations",
+      "description": "As an end user, I want to tell the agent what to do with the recommendations: follow them, change them, or leave as is so that I control whether to refactor, adjust the PRD, or record debt.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-003-AC01",
+          "text": "After presenting the report, the agent asks the user to choose: (a) follow recommendations, (b) change recommendations, (c) leave as is."
+        },
+        {
+          "id": "US-003-AC02",
+          "text": "If the user chooses (b), the agent asks what they want to change and updates the recommendations accordingly."
+        },
+        {
+          "id": "US-003-AC03",
+          "text": "The chosen outcome is used to drive generation of `it_{iteration}_audit.md` (and when applicable `it_{iteration}_audit.json` and `TECHNICAL_DEBT.md`)."
+        },
+        {
+          "id": "US-003-AC04",
+          "text": "Typecheck / lint passes."
+        }
+      ]
+    },
+    {
+      "id": "US-004",
+      "title": "Generate it_{iteration}_audit.md with refactor plan",
+      "description": "As an end user, I want the command to always produce an audit artifact `it_{iteration}_audit.md` in `.agents/flow/` with the report sections plus the refactor plan so that the result is persisted and reproducible.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-004-AC01",
+          "text": "After the user has made their choice (follow / change / leave as is), the agent produces `it_{iteration}_audit.md` in `.agents/flow/` containing: Executive summary, Verification by FR, Verification by US, Minor observations, Conclusions and recommendations, and Refactor plan."
+        },
+        {
+          "id": "US-004-AC02",
+          "text": "The file is written to `.agents/flow/it_{iteration}_audit.md` with the mandatory structure."
+        },
+        {
+          "id": "US-004-AC03",
+          "text": "Typecheck / lint passes."
+        }
+      ]
+    },
+    {
+      "id": "US-005",
+      "title": "Generate it_{iteration}_audit.json via write-json when user opts to refactor",
+      "description": "As an end user, I want when I choose to follow or apply refactor recommendations that the command produces `it_{iteration}_audit.json` with structure similar to `PRD.json` so that downstream refactor/approval flows can consume it.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-005-AC01",
+          "text": "When the user chooses to refactor (option a or after changing recommendations to include refactor), the command generates `it_{iteration}_audit.json` using `nvst write-json` (or the programmatic equivalent used by write-json)."
+        },
+        {
+          "id": "US-005-AC02",
+          "text": "The JSON structure is similar to the existing PRD JSON (e.g. goals, userStories, functionalRequirements or equivalent refactor-oriented fields)."
+        },
+        {
+          "id": "US-005-AC03",
+          "text": "The file is written to `.agents/flow/it_{iteration}_audit.json`."
+        },
+        {
+          "id": "US-005-AC04",
+          "text": "Typecheck / lint passes."
+        }
+      ]
+    },
+    {
+      "id": "US-006",
+      "title": "Update TECHNICAL_DEBT.md when user marks items as debt",
+      "description": "As an end user, I want when I choose to leave some recommendations as technical debt that `TECHNICAL_DEBT.md` is updated so that debt is tracked in one place.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-006-AC01",
+          "text": "When the user marks one or more recommendations as technical debt (e.g. via option c or by explicitly choosing “leave as debt”), the command updates `.agents/TECHNICAL_DEBT.md` (or the project’s designated technical-debt file) with those items."
+        },
+        {
+          "id": "US-006-AC02",
+          "text": "Updates are additive or merge correctly so existing debt entries are not lost."
+        },
+        {
+          "id": "US-006-AC03",
+          "text": "Typecheck / lint passes."
+        }
+      ]
+    }
+  ],
+  "functionalRequirements": [
+    {
+      "id": "FR-1",
+      "description": "** The `nvst audit prototype` command must only run when the workflow state indicates that “create prototype” has been completed for the current iteration (e.g. phase/status checks in `state.json`)."
+    },
+    {
+      "id": "FR-2",
+      "description": "** The audit skill must instruct the agent to validate the current iteration’s PRD (and optionally `it_*_PRD.json`) against the codebase and produce the compliance report with the mandatory sections (Executive summary, Verification by FR, Verification by US, Minor observations, Conclusions and recommendations)."
+    },
+    {
+      "id": "FR-3",
+      "description": "** The audit flow must present recommendations to the user and collect their choice: (a) follow recommendations, (b) change recommendations, (c) leave as is. If (b), the agent must ask what to change and adjust before continuing."
+    },
+    {
+      "id": "FR-4",
+      "description": "** The command must always generate `it_{iteration}_audit.md` in `.agents/flow/` with the mandatory structure plus Refactor plan, after the user’s choice is known."
+    },
+    {
+      "id": "FR-5",
+      "description": "** When the user’s choice implies refactor, the command must generate `it_{iteration}_audit.json` in `.agents/flow/` using the same mechanism as `nvst write-json` (schema-driven write), with structure similar to the PRD JSON."
+    },
+    {
+      "id": "FR-6",
+      "description": "** When the user marks recommendations as technical debt, the command must update `TECHNICAL_DEBT.md` (location per project convention, e.g. `.agents/TECHNICAL_DEBT.md`) with the new debt items."
+    },
+    {
+      "id": "FR-7",
+      "description": "** The implementation must follow the same skill-based command pattern as other agent-backed commands (handler in `src/commands/`, skill loaded from `.agents/skills/<name>/SKILL.md`, prompt building and agent invocation via shared utilities) and must update both `.agents/` (runtime skills and flow) and `scaffold/` (skill templates under `scaffold/.agents/skills/`) so that the audit skill and behaviour are available in instantiated and scaffolded projects alike."
+    }
+  ]
+}
