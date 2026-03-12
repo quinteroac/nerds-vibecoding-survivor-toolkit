@@ -22,10 +22,10 @@ describe("US-001: CLI surface matches the new loop", () => {
     expect(source).toContain("await runCreatePrototype({ provider, iterations, retryOnFail, stopOnCritical, force });");
 
     expect(source).toContain('if (command === "audit")');
-    expect(source).toContain("await runExecuteTestPlan({ provider, force });");
+    expect(source).toContain("await runAuditPrototype({ provider, force });");
 
     expect(source).toContain('if (command === "refactor")');
-    expect(source).toContain("await runExecuteRefactor({ provider, force });");
+    expect(source).toContain("await runRefactorPrototype({ provider, force });");
 
     expect(source).toContain("await runApprovePrototype({ force });");
   });

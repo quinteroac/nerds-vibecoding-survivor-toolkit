@@ -2,15 +2,15 @@
 
 import { join } from "node:path";
 import { parseAgentArg } from "./agent";
+import { runAuditPrototype } from "./commands/audit-prototype";
 import { GuardrailAbortError } from "./guardrail";
 import { runApprovePrototype } from "./commands/approve-prototype";
 import { runApproveRequirement } from "./commands/approve-requirement";
 import { runCreatePrototype } from "./commands/create-prototype";
 import { runDefineRequirement } from "./commands/define-requirement";
 import { runDestroy } from "./commands/destroy";
-import { runExecuteRefactor } from "./commands/execute-refactor";
-import { runExecuteTestPlan } from "./commands/execute-test-plan";
 import { runInit } from "./commands/init";
+import { runRefactorPrototype } from "./commands/refactor-prototype";
 import { runRefineRequirement } from "./commands/refine-requirement";
 import { runWriteJson } from "./commands/write-json";
 
@@ -288,7 +288,7 @@ async function main() {
           return;
         }
 
-        await runExecuteTestPlan({ provider, force });
+        await runAuditPrototype({ provider, force });
         return;
       } catch (error) {
         console.error(error instanceof Error ? error.message : String(error));
@@ -324,7 +324,7 @@ async function main() {
           return;
         }
 
-        await runExecuteRefactor({ provider, force });
+        await runRefactorPrototype({ provider, force });
         return;
       } catch (error) {
         console.error(error instanceof Error ? error.message : String(error));

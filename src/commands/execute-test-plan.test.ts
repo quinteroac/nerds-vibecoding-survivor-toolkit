@@ -107,15 +107,11 @@ afterEach(async () => {
 });
 
 describe("execute test-plan command", () => {
-  test("registers execute test-plan command in CLI dispatch with --agent provider", async () => {
+  test("is no longer directly wired in CLI main-loop routing", async () => {
     const source = await readFile(join(process.cwd(), "src", "cli.ts"), "utf8");
 
-    expect(source).toContain('import { runExecuteTestPlan } from "./commands/execute-test-plan";');
-    expect(source).toContain("if (command === \"execute\") {");
-    expect(source).toContain('if (subcommand === "test-plan") {');
-    expect(source).toContain("const { provider, remainingArgs: postAgentArgs } = parseAgentArg(args.slice(1));");
-    expect(source).toContain("await runExecuteTestPlan({ provider, force });");
-    expect(source).toContain("execute test-plan --agent <provider>");
+    expect(source).not.toContain('import { runExecuteTestPlan } from "./commands/execute-test-plan";');
+    expect(source).not.toContain("execute test-plan --agent <provider>");
   });
 
   test("fails when tp_generation.status is not created", async () => {
