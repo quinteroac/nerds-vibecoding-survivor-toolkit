@@ -3,7 +3,7 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import type { AgentResult } from "../agent";
+import { buildPrompt, type AgentResult } from "../agent";
 import { readState, writeState } from "../state";
 import type { State } from "../../scaffold/schemas/tmpl_state";
 import { promptForDirtyTreeCommit, runCreatePrototype, runPrePrototypeCommit } from "./create-prototype";
@@ -81,6 +81,27 @@ async function seedPrd(projectRoot: string, iteration: string): Promise<void> {
   );
 }
 
+async function seedPrdWithStories(
+  projectRoot: string,
+  iteration: string,
+  stories: Array<{
+    id: string;
+    title: string;
+    description: string;
+    acceptanceCriteria: Array<{ id: string; text: string }>;
+  }>,
+): Promise<void> {
+  await writeFile(
+    join(projectRoot, ".agents", "flow", `it_${iteration}_PRD.json`),
+    JSON.stringify({
+      goals: [],
+      userStories: stories,
+      functionalRequirements: [],
+    }),
+    "utf8",
+  );
+}
+
 async function seedProjectContext(projectRoot: string): Promise<void> {
   await mkdir(join(projectRoot, ".agents"), { recursive: true });
   await writeFile(join(projectRoot, ".agents", "PROJECT_CONTEXT.md"), "# Project Context\n", "utf8");
@@ -104,6 +125,71 @@ afterEach(async () => {
 });
 
 describe("create prototype phase validation", () => {
+  test("US-003-AC01/AC02/AC03/AC04: --agent ide prints one buildPrompt block per story, separated by --- and does not invoke agent", async () => {
+    const root = await createProjectRoot();
+    createdRoots.push(root);
+    const iteration = "000023";
+    await seedState(root, makeState({ currentPhase: "prototype", prdStatus: "completed", projectContextStatus: "created", iteration }));
+    const stories = [
+      {
+        id: "US-101",
+        title: "First story",
+        description: "First description",
+        acceptanceCriteria: [{ id: "AC-1", text: "First AC" }],
+      },
+      {
+        id: "US-102",
+        title: "Second story",
+        description: "Second description",
+        acceptanceCriteria: [{ id: "AC-2", text: "Second AC" }],
+      },
+    ];
+    await seedPrdWithStories(root, iteration, stories);
+
+    const projectContextContent = "# Project Context\n## Testing Strategy\n";
+    await mkdir(join(root, ".agents"), { recursive: true });
+    await writeFile(join(root, ".agents", "PROJECT_CONTEXT.md"), projectContextContent, "utf8");
+    await initGitRepo(root);
+
+    const printedBlocks: string[] = [];
+    let invokeAgentCalled = false;
+
+    await withCwd(root, async () => {
+      await runCreatePrototype(
+        { provider: "ide" },
+        {
+          loadSkillFn: async () => "Implement this story skill body",
+          invokeAgentFn: async () => {
+            invokeAgentCalled = true;
+            return makeAgentResult(0);
+          },
+          logFn: (message) => {
+            printedBlocks.push(message);
+          },
+          checkGhAvailableFn: async () => false,
+        },
+      );
+    });
+
+    const expectedPromptOne = buildPrompt("Implement this story skill body", {
+      iteration,
+      project_context: projectContextContent,
+      user_story: JSON.stringify(stories[0], null, 2),
+    });
+    const expectedPromptTwo = buildPrompt("Implement this story skill body", {
+      iteration,
+      project_context: projectContextContent,
+      user_story: JSON.stringify(stories[1], null, 2),
+    });
+
+    expect(printedBlocks).toEqual([expectedPromptOne, "---", expectedPromptTwo]);
+    expect(invokeAgentCalled).toBe(false);
+
+    const updatedState = await readState(root);
+    expect(updatedState.phases.prototype.prototype_creation?.status).toBe("in_progress");
+    expect(updatedState.phases.prototype.prototype_creation?.file).toBe(`it_${iteration}_progress.json`);
+  });
+
   test("US-003-AC04: state transition writes prototype_creation status (not deprecated prototype_build)", async () => {
     const source = await readFile(join(process.cwd(), "src", "commands", "create-prototype.ts"), "utf8");
     expect(source).toContain("prototypeCreation.status = \"in_progress\"");

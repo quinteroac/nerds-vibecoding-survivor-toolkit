@@ -87,7 +87,9 @@ Utilities:
                      Write a schema-validated JSON file (payload via --data or stdin)
 
 Options:
-  --agent            Agent provider (claude, codex, gemini, cursor) for agent-backed commands
+  --agent            Agent provider for agent-backed commands
+                     Valid providers: claude, codex, gemini, cursor, copilot, ide
+                     ide prints skill prompts to stdout instead of invoking an agent subprocess
   --iterations       Maximum prototype passes (integer >= 1)
   --retry-on-fail    Retry attempts per failed story (integer >= 0)
   --stop-on-critical Stop execution after critical failures
@@ -95,7 +97,11 @@ Options:
   --challenge        Run requirement refine in challenger mode
   --clean            When used with destroy, also removes .agents/flow/archived
   -h, --help         Show this help message
-  -v, --version      Print version and exit`);
+  -v, --version      Print version and exit
+
+Examples:
+  nvst define requirement --agent ide
+  nvst create prototype --agent ide --iterations 1`);
 }
 
 async function printVersion(): Promise<void> {

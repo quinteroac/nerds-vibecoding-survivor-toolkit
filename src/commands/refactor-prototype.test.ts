@@ -30,4 +30,27 @@ describe("refactor prototype command", () => {
 
     expect(logs).toEqual(["nvst refactor prototype is not implemented yet."]);
   });
+
+  test("builds and invokes full prompt for ide provider", async () => {
+    const prompts: string[] = [];
+
+    await expect(
+      runRefactorPrototype(
+        { provider: "ide" },
+        {
+          loadSkillFn: async () => "# Refactor Skill",
+          readIterationFn: async () => "000023",
+          invokeAgentFn: async (options) => {
+            prompts.push(options.prompt);
+            return { exitCode: 0, stdout: "", stderr: "" };
+          },
+        },
+      ),
+    ).resolves.toBeUndefined();
+
+    expect(prompts).toHaveLength(1);
+    expect(prompts[0]).toContain("# Refactor Skill");
+    expect(prompts[0]).toContain("### iteration");
+    expect(prompts[0]).toContain("000023");
+  });
 });

@@ -30,4 +30,27 @@ describe("audit prototype command", () => {
 
     expect(logs).toEqual(["nvst audit prototype is not implemented yet."]);
   });
+
+  test("builds and invokes full prompt for ide provider", async () => {
+    const prompts: string[] = [];
+
+    await expect(
+      runAuditPrototype(
+        { provider: "ide" },
+        {
+          loadSkillFn: async () => "# Audit Skill",
+          readIterationFn: async () => "000023",
+          invokeAgentFn: async (options) => {
+            prompts.push(options.prompt);
+            return { exitCode: 0, stdout: "", stderr: "" };
+          },
+        },
+      ),
+    ).resolves.toBeUndefined();
+
+    expect(prompts).toHaveLength(1);
+    expect(prompts[0]).toContain("# Audit Skill");
+    expect(prompts[0]).toContain("### iteration");
+    expect(prompts[0]).toContain("000023");
+  });
 });

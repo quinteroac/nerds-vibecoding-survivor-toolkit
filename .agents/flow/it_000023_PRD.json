@@ -1,0 +1,124 @@
+{
+  "goals": [
+    "Enable NVST to be used in agentic IDE and web AI environments without spawning subprocesses.",
+    "Keep the existing agent-invocation path fully intact for all current providers; this is an additive, non-breaking change.",
+    "Maintain consistent state transitions in both modes so workflow state remains reliable."
+  ],
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "`--agent ide` Prints Skill Prompt to Stdout",
+      "description": "As a developer using NVST in an agentic IDE or web AI environment, I want to run any agent-backed command with `--agent ide` so that the full skill prompt is printed to stdout and I (or my AI environment) can act on it directly.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-001-AC01",
+          "text": "`ide` is accepted as a valid value for `--agent` in all agent-backed commands: `nvst define requirement`, `nvst refine requirement`, `nvst create prototype`, `nvst audit prototype`, `nvst refactor prototype`."
+        },
+        {
+          "id": "US-001-AC02",
+          "text": "When `--agent ide` is used, the command builds the full skill prompt (skill body + context variables, via the same `buildPrompt` logic) and writes it to stdout."
+        },
+        {
+          "id": "US-001-AC03",
+          "text": "When `--agent ide` is used, the command exits with code `0` after printing the prompt."
+        },
+        {
+          "id": "US-001-AC04",
+          "text": "When `--agent ide` is used, state transitions still occur — e.g., `define requirement --agent ide` updates `requirement_definition.status` to `\"in_progress\"` in `state.json`, identical to other providers."
+        },
+        {
+          "id": "US-001-AC05",
+          "text": "When any other `--agent <provider>` is used, behavior is identical to the current implementation (subprocess spawning, interactive mode, result handling, state transitions)."
+        },
+        {
+          "id": "US-001-AC06",
+          "text": "Passing an unknown provider value (not one of `claude`, `codex`, `gemini`, `cursor`, `copilot`, `ide`) still produces a clear error message listing all valid providers including `ide`."
+        },
+        {
+          "id": "US-001-AC07",
+          "text": "No existing tests break; new behavior is covered by unit tests."
+        },
+        {
+          "id": "US-001-AC08",
+          "text": "Typecheck / lint passes."
+        }
+      ]
+    },
+    {
+      "id": "US-002",
+      "title": "CLI Help Reflects the New `ide` Provider",
+      "description": "As a developer, I want the CLI help text to list `ide` as a valid provider so that I can discover prompt-output mode without reading the source code.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-002-AC01",
+          "text": "The `--agent` flag description in help output lists `ide` alongside the other valid providers (e.g., `claude, codex, gemini, cursor, copilot, ide`)."
+        },
+        {
+          "id": "US-002-AC02",
+          "text": "The `ide` provider is briefly described as the prompt-output mode (e.g., \"prints skill prompt to stdout instead of invoking an agent subprocess\")."
+        },
+        {
+          "id": "US-002-AC03",
+          "text": "Usage examples or command descriptions for agent-backed commands show `ide` as a valid option for `--agent`."
+        },
+        {
+          "id": "US-002-AC04",
+          "text": "Typecheck / lint passes."
+        }
+      ]
+    },
+    {
+      "id": "US-003",
+      "title": "`create prototype --agent ide` Prints Per-Story Prompts",
+      "description": "As a developer, I want `nvst create prototype --agent ide` to print the implement-user-story skill prompt for each user story in the PRD so that I can execute them one by one in my AI environment.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-003-AC01",
+          "text": "When `--agent ide` is used, `create prototype` reads the PRD user stories (same as agent mode) and prints the full `implement-user-story` skill prompt for each story, separated by a clear delimiter (e.g., `---`)."
+        },
+        {
+          "id": "US-003-AC02",
+          "text": "Each printed block includes the story-specific context variables (story JSON, project context, iteration) injected via `buildPrompt`, identical to what would be sent to an agent subprocess."
+        },
+        {
+          "id": "US-003-AC03",
+          "text": "State transition for `prototype_creation` to `\"in_progress\"` still occurs."
+        },
+        {
+          "id": "US-003-AC04",
+          "text": "No agent subprocess is spawned when `--agent ide` is used."
+        },
+        {
+          "id": "US-003-AC05",
+          "text": "Typecheck / lint passes."
+        }
+      ]
+    }
+  ],
+  "functionalRequirements": [
+    {
+      "id": "FR-1",
+      "description": "** `ide` MUST be added as a valid `AgentProvider` value in `src/agent.ts`. `parseProvider()` MUST accept `\"ide\"` and return it without error. The valid-providers error message MUST include `ide`."
+    },
+    {
+      "id": "FR-2",
+      "description": "** When the resolved provider is `ide`, agent-backed commands MUST build the full skill prompt via `buildPrompt(skillBody, context)` and write it to `process.stdout`. No subprocess MUST be spawned. The command MUST exit with code `0`."
+    },
+    {
+      "id": "FR-3",
+      "description": "** State transitions (reads/updates to `state.json`) MUST occur when `--agent ide` is used, exactly as they do for other providers. Commands MUST NOT skip state persistence for the `ide` provider."
+    },
+    {
+      "id": "FR-4",
+      "description": "** The `--agent` flag description in `src/cli.ts` help output MUST list `ide` as a valid provider with a brief description of its prompt-output behavior."
+    },
+    {
+      "id": "FR-5",
+      "description": "** For `nvst create prototype --agent ide`, each user story MUST produce a separate prompt block written to stdout, using the same per-story context injection as agent mode. Story blocks MUST be separated by a visible delimiter."
+    },
+    {
+      "id": "FR-6",
+      "description": "** All changes MUST follow existing architectural and coding conventions in `.agents/PROJECT_CONTEXT.md` (TypeScript strict mode, Bun runtime, no `process.exit()`, async I/O, one file per command, `src/agent.ts` for prompt/skill utilities)."
+    }
+  ]
+}
