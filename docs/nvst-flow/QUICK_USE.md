@@ -1,6 +1,6 @@
 # NVST Quick Use
 
-Quick reference for common workflows. See [COMMANDS.md](COMMANDS.md) for full command reference.
+Quick reference for the main development loop. See [COMMANDS.md](COMMANDS.md) for full command reference.
 
 **Running commands:** Use `bun nvst` so Bun resolves the binary. Or add `node_modules/.bin` to your PATH: `export PATH="$PATH:$(pwd)/node_modules/.bin"` to run `nvst` directly.
 
@@ -17,69 +17,23 @@ bun add @quinteroac/agents-coding-toolkit
 
 # Initialize scaffold in your project
 bun nvst init
-
-# Start the first iteration
-bun nvst start iteration
 ```
 
-## Typical iteration flow
-
-### 1. Define
+## Typical iteration flow (end-to-end)
 
 ```bash
 bun nvst define requirement --agent codex
-# Review, then optionally:
-bun nvst refine requirement --agent codex --challenge
+bun nvst refine requirement --agent codex --challenge   # optional
 bun nvst approve requirement
-# PRD JSON is created when needed (e.g. via create prototype)
-```
-
-### 2. Prototype
-
-```bash
-bun nvst create project-context --agent codex --mode yolo
-bun nvst approve project-context
-
 bun nvst create prototype --agent codex --iterations 10
-
-bun nvst define test-plan --agent codex
-bun nvst refine test-plan --agent codex   # optional
-bun nvst approve test-plan
-
-bun nvst execute test-plan --agent codex
-
-# If tests fail:
-bun nvst execute automated-fix --agent codex
-# or for manual debugging:
-bun nvst execute manual-fix --agent codex
-
-# When all pass:
+bun nvst audit prototype --agent codex
+bun nvst refactor prototype --agent codex
 bun nvst approve prototype
 ```
 
-### 3. Refactor
+Use this command order as the standard loop:
 
-```bash
-bun nvst define refactor-plan --agent codex
-bun nvst refine refactor-plan --agent codex   # optional
-bun nvst approve refactor-plan
-
-bun nvst execute refactor --agent codex
-
-# Run all tests, update PROJECT_CONTEXT.md, record CHANGELOG.md
-# Then start next iteration:
-bun nvst start iteration
-```
-
-## Flow command (semi-automated)
-
-`bun nvst flow` runs the next pending step(s) until it hits an approval gate:
-
-```bash
-bun nvst flow --agent codex
-```
-
-Use `--force` to bypass guardrail confirmations.
+`Define/Refine/Approve Requirement → Create Prototype → Audit Prototype → Refactor Prototype → Approve Prototype`
 
 ## Agent providers
 

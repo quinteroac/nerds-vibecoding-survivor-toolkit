@@ -78,16 +78,28 @@ nerds-vst is a package that provides:
 
   Template files in this repository live under [`scaffold/`](scaffold/) with a `tmpl_` prefix (e.g. `tmpl_AGENTS.md`, `tmpl_state.ts`); `bun nvst init` copies them into the target project and writes them without the prefix to avoid naming conflicts when the toolkit is integrated elsewhere. The `state.json` file is created and managed by the toolkit at runtime.
 
-- **Command-line tool** — Sends instructions to your chosen agent provider (Claude, Codex, Gemini, etc.) so it follows the framework. Commands drive the Define → Prototype → Refactor flow and keep state in sync, giving you a single way to run the process regardless of which agent you use.
+- **Command-line tool** — Sends instructions to your chosen agent provider (Claude, Codex, Gemini, etc.) so it follows the framework. Commands drive the main development loop and keep state in sync, giving you a single way to run the process regardless of which agent you use.
 
   **Command summary** (see [process_design.md](process_design.md) for full details):
 
-  | Phase | Commands |
+  `Define/Refine/Approve Requirement → Create Prototype → Audit Prototype → Refactor Prototype → Approve Prototype`
+
+  | Group | Commands |
   |-------|----------|
-  | **Iteration** | `bun nvst start iteration` — Start or advance to the next iteration (archives current, resets state). |
-  | **Define** | `bun nvst define requirement` → `bun nvst refine requirement` (optional) → `bun nvst approve requirement` → `bun nvst create prd` |
-  | **Prototype** | `bun nvst create project-context` → `bun nvst approve project-context` → `bun nvst create prototype` → `bun nvst define test-plan` → `bun nvst refine test-plan` (optional) → `bun nvst approve test-plan` → `bun nvst execute test-plan` → `bun nvst execute automated-fix` / `bun nvst execute manual-fix` → when all tests pass, prototype is done and Refactor can begin |
-  | **Refactor** | `bun nvst define refactor-plan` → `bun nvst refine refactor-plan` (optional) → `bun nvst approve refactor-plan` → `bun nvst create prd --refactor` → `bun nvst execute refactor` → update PROJECT_CONTEXT, CHANGELOG → then `bun nvst start iteration` for next iteration |
+  | **Main loop** | `bun nvst define requirement` → `bun nvst refine requirement` (optional) → `bun nvst approve requirement` → `bun nvst create prototype` → `bun nvst audit prototype` → `bun nvst refactor prototype` → `bun nvst approve prototype` |
+  | **Utilities** | `bun nvst init`, `bun nvst destroy [--clean]`, `bun nvst write-json --schema <name> --out <path> [--data '<json>']` |
+
+  **Typical iteration example**:
+
+  ```bash
+  bun nvst define requirement --agent codex
+  bun nvst refine requirement --agent codex --challenge   # optional
+  bun nvst approve requirement
+  bun nvst create prototype --agent codex --iterations 10
+  bun nvst audit prototype --agent codex
+  bun nvst refactor prototype --agent codex
+  bun nvst approve prototype
+  ```
 
 
 ## Installation
