@@ -21,25 +21,44 @@ const definePhase = z.object({
 });
 
 const prototypePhase = z.object({
+  prototype_creation: statusFile.extend({
+    status: z.enum(["pending", "in_progress", "completed"]),
+  }).optional(),
+  prototype_audit: statusFile.extend({
+    status: z.enum(["pending", "in_progress", "completed", "failed"]),
+  }).optional(),
+  prototype_refactor: statusFile.extend({
+    status: z.enum(["pending", "in_progress", "completed"]),
+  }).optional(),
+  prototype_approval: statusFile.extend({
+    status: z.enum(["pending", "approved"]),
+  }).optional(),
+  // DEPRECATED: kept for backward compatibility with older command flows.
   project_context: statusFile.extend({
     status: z.enum(["pending", "pending_approval", "created"]),
   }),
+  // DEPRECATED: kept for backward compatibility with older command flows.
   test_plan: statusFile.extend({
     status: z.enum(["pending", "pending_approval", "created"]),
   }),
+  // DEPRECATED: kept for backward compatibility with older command flows.
   tp_generation: z.object({
     status: z.enum(["pending", "created"]),
     file: z.string().nullable(),
   }),
+  // DEPRECATED: replaced by prototype_creation.
   prototype_build: statusFile.extend({
     status: z.enum(["pending", "in_progress", "created"]),
   }),
+  // DEPRECATED: kept for backward compatibility with older command flows.
   test_execution: statusFile.extend({
     status: z.enum(["pending", "in_progress", "completed", "failed"]),
   }),
+  // DEPRECATED: replaced by prototype_approval.
   prototype_approved: z.boolean(),
 });
 
+// DEPRECATED: legacy phase, kept for backward compatibility with older command flows.
 const refactorPhase = z.object({
   evaluation_report: z.object({
     status: z.enum(["pending", "created"]),

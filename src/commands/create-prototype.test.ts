@@ -38,6 +38,10 @@ function makeState(overrides: {
         prd_generation: { status: overrides.prdStatus ?? "completed", file: `it_${iteration}_PRD.json` },
       },
       prototype: {
+        prototype_creation: { status: "pending", file: null },
+        prototype_audit: { status: "pending", file: null },
+        prototype_refactor: { status: "pending", file: null },
+        prototype_approval: { status: "pending", file: null },
         project_context: { status: overrides.projectContextStatus ?? "created", file: ".agents/PROJECT_CONTEXT.md" },
         test_plan: { status: "pending", file: null },
         tp_generation: { status: "pending", file: null },
@@ -100,6 +104,13 @@ afterEach(async () => {
 });
 
 describe("create prototype phase validation", () => {
+  test("US-003-AC04: state transition writes prototype_creation status (not deprecated prototype_build)", async () => {
+    const source = await readFile(join(process.cwd(), "src", "commands", "create-prototype.ts"), "utf8");
+    expect(source).toContain("prototypeCreation.status = \"in_progress\"");
+    expect(source).toContain("prototypeCreation.status = allCompleted ? \"completed\" : \"in_progress\"");
+    expect(source).not.toContain("state.phases.prototype.prototype_build.status =");
+  });
+
   test("throws when current_phase is define and PRD is not completed", async () => {
     const root = await createProjectRoot();
     createdRoots.push(root);
@@ -114,18 +125,32 @@ describe("create prototype phase validation", () => {
     });
   });
 
-  test("throws when current_phase is define and project_context is not created", async () => {
+  test("does not require deprecated project_context status when current_phase is define", async () => {
     const root = await createProjectRoot();
     createdRoots.push(root);
     const iteration = "000009";
     await seedState(root, makeState({ currentPhase: "define", prdStatus: "completed", projectContextStatus: "pending", iteration }));
     await seedPrd(root, iteration);
+    await seedProjectContext(root);
+    await initGitRepo(root);
 
     await withCwd(root, async () => {
-      await expect(runCreatePrototype({ provider: "claude" })).rejects.toThrow(
-        "Cannot create prototype: current_phase is define and prerequisites are not met.",
-      );
+      await expect(runCreatePrototype(
+        { provider: "claude" },
+        {
+          loadSkillFn: async () => "Implement story",
+          invokeAgentFn: async ({ cwd }) => {
+            if (!cwd) throw new Error("Expected cwd");
+            await writeFile(join(cwd, "story.txt"), "implemented\n", "utf8");
+            return makeAgentResult(0);
+          },
+          checkGhAvailableFn: async () => false,
+        },
+      )).resolves.toBeUndefined();
     });
+
+    const updatedState = await readState(root);
+    expect(updatedState.current_phase).toBe("prototype");
   });
 
   test("prompts and returns when dirty during define-to-prototype transition and confirmation is denied", async () => {
@@ -223,7 +248,7 @@ describe("create prototype phase validation", () => {
 
     await withCwd(root, async () => {
       await expect(runCreatePrototype({ provider: "claude" })).rejects.toThrow(
-        "Cannot create prototype: current_phase must be define (with approved PRD) or prototype.",
+        "Cannot create prototype: current_phase must be define (with approved PRD) or prototype. Complete define phase by approving the requirement first.",
       );
     });
   });
@@ -370,7 +395,7 @@ describe("create prototype phase validation", () => {
     expect(promptCount).toBe(1);
 
     const updatedState = await readState(root);
-    expect(updatedState.phases.prototype.prototype_build.status).toBe("created");
+    expect(updatedState.phases.prototype.prototype_creation?.status).toBe("completed");
   });
 
   test("throws pre-prototype commit failure and does not continue build", async () => {
@@ -618,6 +643,6 @@ describe("create prototype gh PR creation", () => {
     expect(warnings[0]).toContain("gh pr create failed (non-fatal)");
 
     const updatedState = await readState(root);
-    expect(updatedState.phases.prototype.prototype_build.status).toBe("created");
+    expect(updatedState.phases.prototype.prototype_creation?.status).toBe("completed");
   });
 });
