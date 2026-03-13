@@ -625,4 +625,50 @@ describe("approve prototype command", () => {
       expect(warnings[0]).toContain("validation failed: already has an open pull request");
     });
   });
+
+  describe("US-006: Mark prototype_approval as completed in state.json", () => {
+    test("US-006-AC01/AC02: after successful git and PR flow, writes state with prototype_approval.status=completed and file=null", async () => {
+      const projectRoot = process.cwd();
+      const iteration = "000027";
+      const flowDir = join(projectRoot, FLOW_REL_DIR);
+      const refactorReportPath = join(flowDir, `it_${iteration}_refactor-report.md`);
+      const prdPath = join(flowDir, `it_${iteration}_PRD.json`);
+
+      const existingPaths = [refactorReportPath, prdPath];
+      let writtenState: State | null = null;
+      let writtenRoot: string | null = null;
+
+      await expect(
+        runApprovePrototype(
+          { force: false },
+          {
+            readStateFn: async () => makeState({ current_iteration: iteration }),
+            existsFn: async (path: string) => existingPaths.includes(path),
+            loadSkillFn: async () => "# Approve Prototype",
+            invokeAgentFn: async () => ({ exitCode: 0, stdout: "", stderr: "" }),
+            readChangedFilesFn: async () => ["PROJECT_CONTEXT.md"],
+            promptGitOpsConfirmationFn: async () => true,
+            gitAddAndCommitFn: async () => {},
+            getCurrentBranchFn: async () => "feature/it_000027",
+            gitPushFn: async () => {},
+            checkGhAvailableFn: async () => true,
+            createPullRequestFn: async () => ({ exitCode: 0, stderr: "" }),
+            writeStateFn: async (root, state) => {
+              writtenRoot = root;
+              writtenState = state;
+            },
+          },
+        ),
+      ).resolves.toBeUndefined();
+
+      expect(writtenRoot).toBe(projectRoot);
+      expect(writtenState).not.toBeNull();
+      expect(writtenState?.phases.prototype.prototype_approval).toEqual({
+        status: "completed",
+        file: null,
+      });
+      expect(typeof writtenState?.last_updated).toBe("string");
+      expect(writtenState?.updated_by).toBe("nvst:approve-prototype");
+    });
+  });
 });

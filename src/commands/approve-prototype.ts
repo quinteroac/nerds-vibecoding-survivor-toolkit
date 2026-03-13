@@ -13,7 +13,7 @@ import {
 } from "../agent";
 import { assertGuardrail } from "../guardrail";
 import { defaultReadLine } from "../readline";
-import { exists, FLOW_REL_DIR, readState } from "../state";
+import { exists, FLOW_REL_DIR, readState, writeState } from "../state";
 import { runGitAddAndCommit } from "./create-prototype";
 
 export interface ApprovePrototypeOptions {
@@ -38,6 +38,7 @@ interface ApprovePrototypeDeps {
     body: string,
   ) => Promise<{ exitCode: number; stderr: string }>;
   warnFn: (message: string) => void;
+  writeStateFn: (projectRoot: string, state: State) => Promise<void>;
 }
 
 const defaultDeps: ApprovePrototypeDeps = {
@@ -102,6 +103,7 @@ const defaultDeps: ApprovePrototypeDeps = {
     };
   },
   warnFn: console.warn,
+  writeStateFn: writeState,
 };
 
 type ReadLineFn = () => Promise<string | null>;
@@ -252,44 +254,61 @@ export async function runApprovePrototype(
     mergedDeps.warnFn(
       "GitHub CLI (gh) not found. Skipping PR creation. Push was successful.",
     );
-    return;
-  }
-
-  const prdPath = join(flowDir, `it_${iteration}_PRD.json`);
-  let requirementName = `approve prototype iteration it_${iteration}`;
-  let prdTitle = requirementName;
-
-  if (await mergedDeps.existsFn(prdPath)) {
-    try {
-      const raw = await readFile(prdPath, "utf8");
-      const parsed = JSON.parse(raw);
-      const validation = PrdSchema.safeParse(parsed);
-      if (validation.success) {
-        const prd = validation.data;
-        const firstStory = prd.userStories[0];
-        if (firstStory) {
-          requirementName = firstStory.title;
-          prdTitle = firstStory.title;
-        }
-      } else {
-        mergedDeps.warnFn("Unable to derive PR metadata from PRD: schema mismatch.");
-      }
-    } catch {
-      mergedDeps.warnFn("Unable to derive PR metadata from PRD: invalid JSON.");
-    }
   } else {
-    mergedDeps.warnFn(
-      `Unable to derive PR metadata from PRD: ${join(FLOW_REL_DIR, `it_${iteration}_PRD.json`)} missing.`,
-    );
+    const prdPath = join(flowDir, `it_${iteration}_PRD.json`);
+    let requirementName = `approve prototype iteration it_${iteration}`;
+    let prdTitle = requirementName;
+
+    if (await mergedDeps.existsFn(prdPath)) {
+      try {
+        const raw = await readFile(prdPath, "utf8");
+        const parsed = JSON.parse(raw);
+        const validation = PrdSchema.safeParse(parsed);
+        if (validation.success) {
+          const prd = validation.data;
+          const firstStory = prd.userStories[0];
+          if (firstStory) {
+            requirementName = firstStory.title;
+            prdTitle = firstStory.title;
+          }
+        } else {
+          mergedDeps.warnFn("Unable to derive PR metadata from PRD: schema mismatch.");
+        }
+      } catch {
+        mergedDeps.warnFn("Unable to derive PR metadata from PRD: invalid JSON.");
+      }
+    } else {
+      mergedDeps.warnFn(
+        `Unable to derive PR metadata from PRD: ${join(FLOW_REL_DIR, `it_${iteration}_PRD.json`)} missing.`,
+      );
+    }
+
+    const refactorReportRelativePath = join(FLOW_REL_DIR, `it_${iteration}_refactor-report.md`);
+    const prTitle = `feat: it_${iteration} — ${requirementName}`;
+    const prBody = `${prdTitle}\n\nRefactor report: ${refactorReportRelativePath}`;
+
+    const prResult = await mergedDeps.createPullRequestFn(projectRoot, prTitle, prBody);
+    if (prResult.exitCode !== 0) {
+      const suffix = prResult.stderr.length > 0 ? `: ${prResult.stderr}` : "";
+      mergedDeps.warnFn(`gh pr create failed (non-fatal)${suffix}`);
+    }
   }
 
-  const refactorReportRelativePath = join(FLOW_REL_DIR, `it_${iteration}_refactor-report.md`);
-  const prTitle = `feat: it_${iteration} — ${requirementName}`;
-  const prBody = `${prdTitle}\n\nRefactor report: ${refactorReportRelativePath}`;
+  const nextState: State = {
+    ...state,
+    phases: {
+      ...state.phases,
+      prototype: {
+        ...state.phases.prototype,
+        prototype_approval: {
+          status: "completed",
+          file: null,
+        },
+      },
+    },
+    last_updated: new Date().toISOString(),
+    updated_by: "nvst:approve-prototype",
+  };
 
-  const prResult = await mergedDeps.createPullRequestFn(projectRoot, prTitle, prBody);
-  if (prResult.exitCode !== 0) {
-    const suffix = prResult.stderr.length > 0 ? `: ${prResult.stderr}` : "";
-    mergedDeps.warnFn(`gh pr create failed (non-fatal)${suffix}`);
-  }
+  await mergedDeps.writeStateFn(projectRoot, nextState);
 }

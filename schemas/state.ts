@@ -31,7 +31,7 @@ const prototypePhase = z.object({
     status: z.enum(["pending", "in_progress", "completed"]),
   }).optional(),
   prototype_approval: statusFile.extend({
-    status: z.enum(["pending", "approved"]),
+    status: z.enum(["pending", "approved", "completed"]),
   }).optional(),
   // DEPRECATED: kept for backward compatibility with older command flows.
   project_context: statusFile.extend({
