@@ -15,6 +15,7 @@ import { runRefactorPrototype } from "./commands/refactor-prototype";
 import { runRefineRequirement } from "./commands/refine-requirement";
 import { runSyncAgentSkills } from "./commands/sync-agent-skills";
 import { runWriteJson } from "./commands/write-json";
+import { runWriteTechnicalDebt } from "./commands/write-technical-debt";
 
 function extractFlagValue(args: string[], flag: string): { value: string | null; remainingArgs: string[] } {
   const idx = args.indexOf(flag);
@@ -87,6 +88,8 @@ Utilities:
   sync skills         Copy .agents/skills/ to scaffold/.agents/skills/ (keep both identical)
   write-json --schema <name> --out <path> [--data '<json>']
                      Write a schema-validated JSON file (payload via --data or stdin)
+  write-technical-debt [--out <path>] [--data '<json>']
+                     Append technical debt items to .agents/TECHNICAL_DEBT.md (payload via --data or stdin)
 
 Options:
   --agent            Agent provider for agent-backed commands
@@ -421,6 +424,11 @@ async function main() {
 
   if (command === "write-json") {
     await runWriteJson({ args });
+    return;
+  }
+
+  if (command === "write-technical-debt") {
+    await runWriteTechnicalDebt({ args });
     return;
   }
 

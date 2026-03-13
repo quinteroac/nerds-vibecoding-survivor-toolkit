@@ -4,12 +4,8 @@ import { join } from "node:path";
 const cliPath = join(import.meta.dir, "cli.ts");
 
 describe("US-002 prototype loop stubs", () => {
-  test("audit/refactor/approve prototype commands are invocable stub handlers", async () => {
+  test("refactor/approve prototype commands are invocable stub handlers", async () => {
     const cases: Array<{ args: string[]; expectedMessage: string }> = [
-      {
-        args: ["audit", "prototype", "--agent", "codex"],
-        expectedMessage: "nvst audit prototype is not implemented yet.",
-      },
       {
         args: ["refactor", "prototype", "--agent", "codex"],
         expectedMessage: "nvst refactor prototype is not implemented yet.",

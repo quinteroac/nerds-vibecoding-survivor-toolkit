@@ -31,23 +31,12 @@ nerds-vst is a package that provides:
     state_rules.md
     state.example.json
     skills/
+      approve-prototype/SKILL.md
+      audit-prototype/SKILL.md
       create-pr-document/SKILL.md
-      refine-pr-document/SKILL.md
-      create-project-context/SKILL.md
-      refine-project-context/SKILL.md
-      create-test-plan/SKILL.md
-      refine-test-plan/SKILL.md
       implement-user-story/SKILL.md
-      create-issue/SKILL.md
-      execute-test-case/SKILL.md
-      execute-test-batch/SKILL.md
-      evaluate/SKILL.md
-      plan-refactor/SKILL.md
-      refactor-prd/SKILL.md
-      refine-refactor-plan/SKILL.md
-      execute-refactor-item/SKILL.md
-      automated-fix/SKILL.md
-      debug/SKILL.md
+      refactor-prototype/SKILL.md
+      refine-pr-document/SKILL.md
     flow/
       it_000001_progress.example.json
       archived/
@@ -63,12 +52,15 @@ nerds-vst is a package that provides:
         it_000001_evaluation-report.md
         it_000001_refactor_plan.md
   schemas/
+    node-shims.d.ts
     state.ts
+    audit.ts
+    compliance-report.ts
     prd.ts
     progress.ts
-    test-plan.ts
     issues.ts
     prototype-progress.ts
+    test-plan.ts
     test-execution-progress.ts
     refactor-prd.ts
     refactor-execution-progress.ts
@@ -76,7 +68,7 @@ nerds-vst is a package that provides:
     validate-progress.ts
   ```
 
-  Template files in this repository live under [`scaffold/`](scaffold/) with a `tmpl_` prefix (e.g. `tmpl_AGENTS.md`, `tmpl_state.ts`); `bun nvst init` copies them into the target project and writes them without the prefix to avoid naming conflicts when the toolkit is integrated elsewhere. The `state.json` file is created and managed by the toolkit at runtime.
+  Template files in this repository live under [`scaffold/`](scaffold/) with a `tmpl_` prefix (e.g. `tmpl_AGENTS.md`, `tmpl_state.ts`); `bun nvst init` copies them into the target project and writes them without the prefix to avoid naming conflicts when the toolkit is integrated elsewhere. The `state.json` file is created and managed by the toolkit at runtime. To keep the scaffold in sync with the runtime skills, run `bun nvst sync skills` after changing any file under `.agents/skills/`.
 
 - **Command-line tool** — Prompts and orchestrates the development loop, keeping state in sync. Instead of internally calling an agent within the commands, it outputs instructions as prompts to be executed by your preferred AI environment (e.g., Cursor, Antigravity, Claude Code Web, GitHub Copilot).
 
