@@ -1,5 +1,5 @@
-import { access, readFile, writeFile } from "node:fs/promises";
-import { join } from "node:path";
+import { access, mkdir, readFile, writeFile } from "node:fs/promises";
+import { dirname, join } from "node:path";
 
 import { StateSchema, type State } from "../scaffold/schemas/tmpl_state";
 
@@ -48,5 +48,10 @@ export async function readState(projectRoot: string): Promise<State> {
 
 export async function writeState(projectRoot: string, state: State): Promise<void> {
   const statePath = join(projectRoot, STATE_REL_PATH);
-  await writeFile(statePath, `${JSON.stringify(state, null, 2)}\n`, "utf8");
+  const nextState: State = {
+    ...state,
+    last_updated: new Date().toISOString(),
+  };
+  await mkdir(dirname(statePath), { recursive: true });
+  await writeFile(statePath, `${JSON.stringify(nextState, null, 2)}\n`, "utf8");
 }

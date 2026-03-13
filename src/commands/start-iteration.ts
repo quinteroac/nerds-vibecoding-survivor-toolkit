@@ -39,7 +39,7 @@ function createInitialState(nowIso: string): State {
   };
 }
 
-function nextIteration(iteration: string): string {
+export function nextIteration(iteration: string): string {
   return String(Number.parseInt(iteration, 10) + 1).padStart(6, "0");
 }
 

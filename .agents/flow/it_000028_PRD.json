@@ -1,0 +1,214 @@
+{
+  "goals": [
+    "Restore automated test coverage for NVST's core modules after the refactor.",
+    "Ensure every public function/exported symbol in the targeted modules has at least one test.",
+    "All tests run successfully with `bun test` (no additional tooling required)."
+  ],
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Tests for `state.ts`",
+      "description": "As a developer, I want automated tests for `state.ts` so that state read/write/validation logic is verified and regressions are caught early.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-001-AC01",
+          "text": "`exists(path)` returns `true` for an existing file and `false` for a non-existent path."
+        },
+        {
+          "id": "US-001-AC02",
+          "text": "`readState(projectRoot)` returns a valid `State` object when `state.json` is present and valid."
+        },
+        {
+          "id": "US-001-AC03",
+          "text": "`readState(projectRoot)` throws an error with a descriptive message when `state.json` contains malformed JSON."
+        },
+        {
+          "id": "US-001-AC04",
+          "text": "`readState(projectRoot)` throws an error when `state.json` fails Zod schema validation."
+        },
+        {
+          "id": "US-001-AC05",
+          "text": "`writeState(projectRoot, state)` writes a valid JSON file at the correct path."
+        },
+        {
+          "id": "US-001-AC06",
+          "text": "`writeState(projectRoot, state)` updates `last_updated` to the current timestamp."
+        },
+        {
+          "id": "US-001-AC07",
+          "text": "Typecheck / lint passes."
+        }
+      ]
+    },
+    {
+      "id": "US-002",
+      "title": "Tests for `guardrail.ts`",
+      "description": "As a developer, I want automated tests for `assertGuardrail` so that all guardrail modes (strict, relaxed, force) behave exactly as specified.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-002-AC01",
+          "text": "When `violated` is `false`, `assertGuardrail` returns without side effects (all modes)."
+        },
+        {
+          "id": "US-002-AC02",
+          "text": "In **strict** mode (default) with `force: false`, throws `Error` with the provided message when violated."
+        },
+        {
+          "id": "US-002-AC03",
+          "text": "In **strict** mode with `force: true`, returns without throwing when violated."
+        },
+        {
+          "id": "US-002-AC04",
+          "text": "In **relaxed** mode with `force: false`, writes warning + prompt to stderr and throws `GuardrailAbortError` when user inputs anything other than `\"y\"` or `\"Y\"`."
+        },
+        {
+          "id": "US-002-AC05",
+          "text": "In **relaxed** mode with `force: false`, returns (does not throw) when user inputs `\"y\"`."
+        },
+        {
+          "id": "US-002-AC06",
+          "text": "In **relaxed** mode with `force: false`, returns (does not throw) when user inputs `\"Y\"`."
+        },
+        {
+          "id": "US-002-AC07",
+          "text": "In **relaxed** mode with `force: true`, writes warning to stderr and returns without prompting or throwing."
+        },
+        {
+          "id": "US-002-AC08",
+          "text": "`GuardrailAbortError` sets `process.exitCode = 1` before throwing."
+        },
+        {
+          "id": "US-002-AC09",
+          "text": "Typecheck / lint passes."
+        }
+      ]
+    },
+    {
+      "id": "US-003",
+      "title": "Tests for `commands/start-iteration.ts`",
+      "description": "As a developer, I want automated tests for `runStartIteration` so that iteration increment, state reset, and archive logic are reliably verified.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-003-AC01",
+          "text": "`nextIteration(\"000001\")` returns `\"000002\"`."
+        },
+        {
+          "id": "US-003-AC02",
+          "text": "`nextIteration(\"000009\")` returns `\"000010\"` (zero-padded correctly)."
+        },
+        {
+          "id": "US-003-AC03",
+          "text": "`runStartIteration` creates a fresh `state.json` with `current_iteration: \"000001\"` when no prior state exists."
+        },
+        {
+          "id": "US-003-AC04",
+          "text": "`runStartIteration` increments `current_iteration` and archives the previous flow artifacts."
+        },
+        {
+          "id": "US-003-AC05",
+          "text": "The archived folder path follows the pattern `.agents/flow/archived/<iteration>`."
+        },
+        {
+          "id": "US-003-AC06",
+          "text": "After archiving, the flow directory no longer contains the previous iteration files (they are moved, not copied)."
+        },
+        {
+          "id": "US-003-AC07",
+          "text": "Typecheck / lint passes."
+        }
+      ]
+    },
+    {
+      "id": "US-004",
+      "title": "Tests for `commands/write-json.ts`",
+      "description": "As a developer, I want automated tests for `runWriteJson` so that JSON artifact writing, schema validation, and error paths are all verified.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-004-AC01",
+          "text": "`runWriteJson` with `--schema state --out <path> --data <validJson>` writes the file at `<path>`."
+        },
+        {
+          "id": "US-004-AC02",
+          "text": "Written file content is valid JSON matching the `StateSchema`."
+        },
+        {
+          "id": "US-004-AC03",
+          "text": "`runWriteJson` sets `process.exitCode = 1` and prints an error when `--schema` is missing."
+        },
+        {
+          "id": "US-004-AC04",
+          "text": "`runWriteJson` sets `process.exitCode = 1` and prints an error for an unknown schema name."
+        },
+        {
+          "id": "US-004-AC05",
+          "text": "`runWriteJson` sets `process.exitCode = 1` and prints an error when `--out` is missing."
+        },
+        {
+          "id": "US-004-AC06",
+          "text": "`runWriteJson` sets `process.exitCode = 1` when the JSON payload fails Zod schema validation."
+        },
+        {
+          "id": "US-004-AC07",
+          "text": "`runWriteJson` sets `process.exitCode = 1` when the JSON payload is malformed (not valid JSON)."
+        },
+        {
+          "id": "US-004-AC08",
+          "text": "Typecheck / lint passes."
+        }
+      ]
+    },
+    {
+      "id": "US-005",
+      "title": "Tests for CLI routing (`cli.ts`)",
+      "description": "As a developer, I want automated tests for the CLI router so that command dispatch and error handling are verified independently of individual command implementations.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-005-AC01",
+          "text": "An unknown command (e.g. `nvst foobar`) sets `process.exitCode = 1` and prints a usage/error message."
+        },
+        {
+          "id": "US-005-AC02",
+          "text": "`extractFlagValue` returns the correct value and remaining args when the flag is present."
+        },
+        {
+          "id": "US-005-AC03",
+          "text": "`extractFlagValue` returns `null` value and the original args when the flag is absent."
+        },
+        {
+          "id": "US-005-AC04",
+          "text": "`extractFlagValue` throws an error when the flag is present but has no following value."
+        },
+        {
+          "id": "US-005-AC05",
+          "text": "Typecheck / lint passes."
+        }
+      ]
+    }
+  ],
+  "functionalRequirements": [
+    {
+      "id": "FR-1",
+      "description": "All test files MUST live under `tests/` (e.g. `tests/state.test.ts`)."
+    },
+    {
+      "id": "FR-2",
+      "description": "Tests MUST use `bun:test` (`import { describe, it, expect } from \"bun:test\"`). No external test libraries."
+    },
+    {
+      "id": "FR-3",
+      "description": "External dependencies (file system, stdin) MUST be isolated using temporary directories or dependency injection (injectable `readLineFn` / `stderrWriteFn` already available on `assertGuardrail`)."
+    },
+    {
+      "id": "FR-4",
+      "description": "Tests MUST NOT call `process.exit()`. Any function that sets `process.exitCode` must be tested by inspecting `process.exitCode` before and after."
+    },
+    {
+      "id": "FR-5",
+      "description": "Each test file must correspond to one source module (e.g. `tests/state.test.ts` → `src/state.ts`)."
+    },
+    {
+      "id": "FR-6",
+      "description": "The `bun test` command (as configured in `package.json`) must exit with code 0 after all tests pass."
+    }
+  ]
+}

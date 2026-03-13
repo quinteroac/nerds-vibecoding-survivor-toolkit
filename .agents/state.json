@@ -1,43 +1,25 @@
 {
-  "current_iteration": "000027",
+  "current_iteration": "000028",
   "current_phase": "prototype",
-  "flow_guardrail": "strict",
   "phases": {
     "define": {
       "requirement_definition": {
-        "status": "completed",
-        "file": "it_000027_requirement.md"
+        "status": "approved",
+        "file": "it_000028_product-requirement-document.md"
       },
       "prd_generation": {
         "status": "completed",
-        "file": "it_000027_product-requirement-document.md"
+        "file": "it_000028_PRD.json"
       }
     },
     "prototype": {
-      "project_context": {
+      "prototype_creation": {
         "status": "completed",
-        "file": "it_000027_project-context.md"
+        "file": "it_000028_progress.json"
       },
-      "test_plan": {
-        "status": "completed",
-        "file": "it_000027_test-plan.md"
-      },
-      "tp_generation": {
-        "status": "completed",
-        "file": "it_000027_test-plan-generation.md"
-      },
-      "prototype_build": {
-        "status": "completed",
-        "file": "it_000027_prototype-build.md"
-      },
-      "test_execution": {
-        "status": "completed",
-        "file": "it_000027_test-execution.md"
-      },
-      "prototype_approved": false,
       "prototype_audit": {
-        "status": "completed",
-        "file": "it_000027_audit.md"
+        "status": "pending",
+        "file": null
       },
       "prototype_refactor": {
         "status": "pending",
@@ -46,7 +28,28 @@
       "prototype_approval": {
         "status": "completed",
         "file": null
-      }
+      },
+      "project_context": {
+        "status": "pending",
+        "file": null
+      },
+      "test_plan": {
+        "status": "pending",
+        "file": null
+      },
+      "tp_generation": {
+        "status": "pending",
+        "file": null
+      },
+      "prototype_build": {
+        "status": "pending",
+        "file": null
+      },
+      "test_execution": {
+        "status": "pending",
+        "file": null
+      },
+      "prototype_approved": false
     },
     "refactor": {
       "evaluation_report": {
@@ -67,6 +70,18 @@
       }
     }
   },
-  "last_updated": "2026-03-13T04:01:14.815Z",
-  "updated_by": "nvst:approve-prototype"
+  "last_updated": "2026-03-13T04:35:13.861Z",
+  "updated_by": "nvst:approve-prototype",
+  "history": [
+    {
+      "iteration": "000001",
+      "archived_at": "2026-03-13T04:10:33.101Z",
+      "archived_path": ".agents/flow/archived/000001"
+    },
+    {
+      "iteration": "000027",
+      "archived_at": "2026-03-13T04:10:55.733Z",
+      "archived_path": ".agents/flow/archived/000027"
+    }
+  ]
 }

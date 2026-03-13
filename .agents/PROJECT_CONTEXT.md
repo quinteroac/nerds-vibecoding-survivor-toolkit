@@ -26,7 +26,7 @@
 - Approach: initial unit tests for core modules; schema validation scripts and manual CLI verification for the rest
 - Runner: `bun:test` (Bun built-in)
 - Coverage targets: none defined yet
-- Test location convention: co-located `src/**/*.test.ts` for most unit/command tests; `tests/**/*.test.ts` for workflow/integration tests; `schemas/**/*.test.ts` for schema tests
+- Test location convention: **all new automated tests MUST live under the `tests/` directory** (e.g. `tests/**/*.test.ts` for unit, integration, and workflow tests). Legacy patterns such as co-located `src/**/*.test.ts` or `schemas/**/*.test.ts` are considered deprecated and should not be introduced in new iterations.
 
 ## Product Architecture
 - NVST is a CLI toolkit (`bun nvst <command>`) that orchestrates an iterative development workflow: Ideation (optional) → Define Requirement → Create Prototype → Audit Prototype → Refactor Prototype → Approve Prototype.
