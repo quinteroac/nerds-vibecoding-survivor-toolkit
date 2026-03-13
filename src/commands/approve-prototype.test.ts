@@ -11,6 +11,10 @@ import {
   runApprovePrototype,
 } from "./approve-prototype";
 
+function makeExistsForPaths(existing: string[]): (path: string) => Promise<boolean> {
+  return async (path: string) => existing.includes(path);
+}
+
 function makeState(overrides?: Partial<State>): State {
   return {
     current_iteration: "000027",
@@ -58,12 +62,8 @@ describe("approve prototype command", () => {
   });
 
   describe("guardrail based on audit/refactor artifacts", () => {
-    function makeExistsForPaths(existing: string[]): (path: string) => Promise<boolean> {
-      return async (path: string) => existing.includes(path);
-    }
-
     test("US-001-AC01/AC02: resolves audit and refactor paths and fails when neither audit.md nor refactor-report.md exists", async () => {
-      const projectRoot = "/project";
+      const projectRoot = process.cwd();
       const iteration = "000027";
       const flowDir = join(projectRoot, FLOW_REL_DIR);
       const auditMdPath = join(flowDir, `it_${iteration}_audit.md`);
@@ -92,7 +92,7 @@ describe("approve prototype command", () => {
     });
 
     test("US-001-AC03: fails with refactor-specific message when audit.json exists but refactor-report.md does not", async () => {
-      const projectRoot = "/project";
+      const projectRoot = process.cwd();
       const iteration = "000027";
       const flowDir = join(projectRoot, FLOW_REL_DIR);
       const auditJsonPath = join(flowDir, `it_${iteration}_audit.json`);
@@ -114,7 +114,7 @@ describe("approve prototype command", () => {
     });
 
     test("US-001-AC04: proceeds when audit.md exists and audit.json does not (nothing to refactor path) and invokes approve-prototype skill", async () => {
-      const projectRoot = "/project";
+      const projectRoot = process.cwd();
       const iteration = "000027";
       const flowDir = join(projectRoot, FLOW_REL_DIR);
       const auditMdPath = join(flowDir, `it_${iteration}_audit.md`);
@@ -149,7 +149,7 @@ describe("approve prototype command", () => {
     });
 
     test("US-001-AC05: proceeds when refactor-report.md exists (refactor done path) and invokes approve-prototype skill", async () => {
-      const projectRoot = "/project";
+      const projectRoot = process.cwd();
       const iteration = "000027";
       const flowDir = join(projectRoot, FLOW_REL_DIR);
       const refactorReportPath = join(flowDir, `it_${iteration}_refactor-report.md`);
@@ -184,7 +184,7 @@ describe("approve prototype command", () => {
     });
 
     test("US-001-AC06: guardrail respects --force via assertGuardrail (force bypasses failures) and still invokes approve-prototype skill", async () => {
-      const projectRoot = "/project";
+      const projectRoot = process.cwd();
       const iteration = "000027";
       const flowDir = join(projectRoot, FLOW_REL_DIR);
       const auditJsonPath = join(flowDir, `it_${iteration}_audit.json`);
@@ -225,7 +225,7 @@ describe("approve prototype command", () => {
 
   describe("US-002: Agent updates context files interactively", () => {
     test("US-002-AC01/AC04: loads approve-prototype skill, builds prompt with iteration, invokes agent with interactive: true and throws on non-zero exit", async () => {
-      const projectRoot = "/project";
+      const projectRoot = process.cwd();
       const iteration = "000027";
       const flowDir = join(projectRoot, FLOW_REL_DIR);
       const refactorReportPath = join(flowDir, `it_${iteration}_refactor-report.md`);
@@ -364,7 +364,7 @@ describe("approve prototype command", () => {
     });
 
     test("US-003-AC02/AC04: runApprovePrototype logs abort message and exits cleanly when user declines git operations", async () => {
-      const projectRoot = "/project";
+      const projectRoot = process.cwd();
       const iteration = "000027";
       const flowDir = join(projectRoot, FLOW_REL_DIR);
       const refactorReportPath = join(flowDir, `it_${iteration}_refactor-report.md`);
@@ -394,7 +394,7 @@ describe("approve prototype command", () => {
     });
 
     test("US-003-AC03: when user confirms, runApprovePrototype returns successfully without logging abort message", async () => {
-      const projectRoot = "/project";
+      const projectRoot = process.cwd();
       const iteration = "000027";
       const flowDir = join(projectRoot, FLOW_REL_DIR);
       const refactorReportPath = join(flowDir, `it_${iteration}_refactor-report.md`);
@@ -426,7 +426,7 @@ describe("approve prototype command", () => {
 
   describe("US-004: Commit and push the feature branch", () => {
     test("US-004-AC01/AC02: when user confirms, runs gitAddAndCommitFn with expected message and then gitPushFn with current branch", async () => {
-      const projectRoot = "/project";
+      const projectRoot = process.cwd();
       const iteration = "000027";
       const flowDir = join(projectRoot, FLOW_REL_DIR);
       const refactorReportPath = join(flowDir, `it_${iteration}_refactor-report.md`);
@@ -464,7 +464,7 @@ describe("approve prototype command", () => {
     });
 
     test("US-004-AC03: if git push fails, the command throws an error mentioning the branch and underlying reason", async () => {
-      const projectRoot = "/project";
+      const projectRoot = process.cwd();
       const iteration = "000027";
       const flowDir = join(projectRoot, FLOW_REL_DIR);
       const refactorReportPath = join(flowDir, `it_${iteration}_refactor-report.md`);
@@ -546,7 +546,7 @@ describe("approve prototype command", () => {
     });
 
     test("US-005-AC03: when gh is unavailable, prints warning and skips PR creation without error", async () => {
-      const projectRoot = "/project";
+      const projectRoot = process.cwd();
       const iteration = "000027";
       const flowDir = join(projectRoot, FLOW_REL_DIR);
       const refactorReportPath = join(flowDir, `it_${iteration}_refactor-report.md`);
@@ -587,7 +587,7 @@ describe("approve prototype command", () => {
     });
 
     test("US-005-AC04: gh pr create failures are reported as non-fatal warnings containing stderr", async () => {
-      const projectRoot = "/project";
+      const projectRoot = process.cwd();
       const iteration = "000027";
       const flowDir = join(projectRoot, FLOW_REL_DIR);
       const refactorReportPath = join(flowDir, `it_${iteration}_refactor-report.md`);
@@ -661,14 +661,15 @@ describe("approve prototype command", () => {
         ),
       ).resolves.toBeUndefined();
 
-      expect(writtenRoot).toBe(projectRoot);
+      expect(writtenRoot as unknown as string).toBe(projectRoot);
       expect(writtenState).not.toBeNull();
-      expect(writtenState?.phases.prototype.prototype_approval).toEqual({
+      const finalState = writtenState as unknown as State;
+      expect(finalState.phases.prototype.prototype_approval).toEqual({
         status: "completed",
         file: null,
       });
-      expect(typeof writtenState?.last_updated).toBe("string");
-      expect(writtenState?.updated_by).toBe("nvst:approve-prototype");
+      expect(typeof finalState.last_updated).toBe("string");
+      expect(finalState.updated_by).toBe("nvst:approve-prototype");
     });
   });
 });

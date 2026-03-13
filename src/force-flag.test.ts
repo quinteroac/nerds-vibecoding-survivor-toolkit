@@ -5,6 +5,7 @@ import { join } from "node:path";
 
 import type { State } from "../scaffold/schemas/tmpl_state";
 import { runApproveProjectContext } from "./commands/approve-project-context";
+import { runApprovePrototype } from "./commands/approve-prototype";
 
 const createdRoots: string[] = [];
 
@@ -88,7 +89,7 @@ describe("US-002 --force support", () => {
     const state = JSON.parse(
       await readFile(join(root, ".agents", "state.json"), "utf8"),
     ) as State;
-    expect(state.phases.prototype.project_context.status).toBe("created");
+    expect(state.phases.prototype.project_context?.status).toBe("created");
     expect(messages.join("")).toContain(
       "Warning: Cannot approve project context from status 'pending'. Expected pending_approval.",
     );
@@ -120,20 +121,39 @@ describe("US-002 --force support", () => {
   });
 
   test("US-002-AC04: commands without guardrail checks ignore --force when successful", async () => {
-    const root = await mkdtemp(join(tmpdir(), "nvst-force-cli-"));
-    createdRoots.push(root);
-    const cliPath = join(import.meta.dir, "cli.ts");
-    const proc = Bun.spawn(["bun", cliPath, "approve", "prototype", "--force"], {
-      cwd: root,
-      stdout: "pipe",
-      stderr: "pipe",
-    });
-    const exitCode = await proc.exited;
-    const stdoutText = await new Response(proc.stdout).text();
-    const stderrText = await new Response(proc.stderr).text();
+    const state = buildState("strict");
+    const deps = {
+      readStateFn: async () => state,
+      existsFn: async () => true,
+      loadSkillFn: async () => "# approve prototype skill",
+      invokeAgentFn: async () => ({ exitCode: 0, stdout: "", stderr: "" }),
+      readChangedFilesFn: async () => [],
+      promptGitOpsConfirmationFn: async () => {
+        throw new Error("promptForGitOperationsConfirmation should not be called when there are no changed files.");
+      },
+      gitAddAndCommitFn: async () => {
+        throw new Error("gitAddAndCommitFn should not be called when there are no changed files.");
+      },
+      getCurrentBranchFn: async () => {
+        throw new Error("getCurrentBranchFn should not be called when there are no changed files.");
+      },
+      gitPushFn: async () => {
+        throw new Error("gitPushFn should not be called when there are no changed files.");
+      },
+      checkGhAvailableFn: async () => {
+        throw new Error("checkGhAvailableFn should not be called when there are no changed files.");
+      },
+      createPullRequestFn: async () => {
+        throw new Error("createPullRequestFn should not be called when there are no changed files.");
+      },
+      warnFn: () => {
+        throw new Error("warnFn should not be called when there are no changed files.");
+      },
+      writeStateFn: async () => {
+        // no-op for this test
+      },
+    } as any;
 
-    expect(exitCode).toBe(0);
-    expect(stdoutText).toContain("nvst approve prototype is not implemented yet.");
-    expect(stderrText).toBe("");
+    await expect(runApprovePrototype({ force: true }, deps)).resolves.toBeUndefined();
   });
 });

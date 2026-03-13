@@ -126,23 +126,22 @@ describe("define requirement command", () => {
       "utf8",
     );
 
-    const writes: string[] = [];
-    const originalWrite = process.stdout.write.bind(process.stdout);
-    process.stdout.write = ((chunk: unknown) => {
-      writes.push(String(chunk));
-      return true;
-    }) as typeof process.stdout.write;
+    const logs: string[] = [];
+    const originalLog = console.log;
+    console.log = ((...args: unknown[]) => {
+      logs.push(args.map(String).join(" "));
+    }) as typeof console.log;
 
     try {
       await withCwd(projectRoot, async () => {
         await runDefineRequirement({ provider: "ide" });
       });
     } finally {
-      process.stdout.write = originalWrite;
+      console.log = originalLog;
     }
 
-    const writtenText = writes.join("");
-    expect(writtenText).toContain("2 open question(s)");
-    expect(writtenText).toContain("ensure they were resolved with the user");
+    const loggedText = logs.join("\n");
+    expect(loggedText).toContain("2 open question(s)");
+    expect(loggedText).toContain("ensure they were resolved with the user");
   });
 });

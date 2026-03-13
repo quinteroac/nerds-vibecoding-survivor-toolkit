@@ -64,13 +64,12 @@ afterEach(async () => {
 });
 
 describe("refine refactor-plan command", () => {
-  test("registers refine refactor-plan command in CLI dispatch", async () => {
+  test("is no longer registered in CLI dispatch", async () => {
     const source = await readFile(join(process.cwd(), "src", "cli.ts"), "utf8");
 
-    expect(source).toContain('import { runRefineRefactorPlan } from "./commands/refine-refactor-plan";');
-    expect(source).toContain('if (subcommand === "refactor-plan") {');
-    expect(source).toContain('const challenge = postForceArgs.includes("--challenge");');
-    expect(source).toContain("await runRefineRefactorPlan({ provider, challenge, force });");
+    expect(source).not.toContain('import { runRefineRefactorPlan } from "./commands/refine-refactor-plan";');
+    expect(source).not.toContain('if (subcommand === "refactor-plan") {');
+    expect(source).not.toContain("await runRefineRefactorPlan({ provider, challenge, force });");
   });
 
   test("requires refactor.refactor_plan.status to be pending_approval", async () => {

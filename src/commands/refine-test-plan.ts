@@ -42,6 +42,9 @@ export async function runRefineTestPlan(
   const mergedDeps: RefineTestPlanDeps = { ...defaultDeps, ...deps };
 
   const testPlan = state.phases.prototype.test_plan;
+  if (!testPlan) {
+    throw new Error("Cannot refine test plan: prototype.test_plan is missing from state.");
+  }
   await assertGuardrail(
     state,
     testPlan.status !== "pending_approval",

@@ -14,6 +14,9 @@ export async function runApproveProjectContext(opts: ApproveProjectContextOption
 
     // US-002-AC01: Validate status is pending_approval
     const projectContext = state.phases.prototype.project_context;
+    if (!projectContext) {
+        throw new Error("Cannot approve project context: project_context phase is missing from state.");
+    }
     await assertGuardrail(
         state,
         projectContext.status !== "pending_approval",

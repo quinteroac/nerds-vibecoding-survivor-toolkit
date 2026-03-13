@@ -35,4 +35,9 @@ You will receive:
 - `iteration`: current iteration (e.g. `000026`).
 - `audit_json_path`: absolute path to `it_{iteration}_audit.json` in `.agents/flow/`. Read this file to get the refactor plan and quality checks.
 
+From the project root, you must use the following iteration artifacts under `.agents/flow/` as your primary sources of truth:
+
+- `.agents/flow/it_{iteration}_PRD.json` — the approved PRD for this iteration (JSON source of truth).
+- `.agents/flow/it_{iteration}_progress.json` — the prototype progress file that reflects what actually shipped.
+
 Use the audit JSON as the single source of truth for what to refactor; then apply all changes and verify with the project's quality checks in this single run, finishing by writing the refactor completion report described above.

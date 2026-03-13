@@ -37,8 +37,8 @@ Before you modify any file, you **must**:
 
 1. Build a concise plan describing:
    - Which of the following files you intend to modify: `.agents/PROJECT_CONTEXT.md`, `ROADMAP.md`, `AGENTS.md`, `README.md`.
-   - For each file: a short summary of the **current state** (based on what you read).
-   - For each file: a short summary of the **proposed changes** (what you will add, remove, or rewrite).
+   - For each file: a short summary of the current state (based on what you read).
+   - For each file: a short summary of the proposed changes (what you will add, remove, or rewrite).
 2. Present this plan to the user **as a clearly separated section**, for example under a heading like `## Planned updates`.
 3. Wait for the user to review and confirm/adjust the plan using the interactive session.
 

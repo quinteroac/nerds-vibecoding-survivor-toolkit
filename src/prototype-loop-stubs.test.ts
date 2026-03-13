@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { join } from "node:path";
+import { runApprovePrototype } from "./commands/approve-prototype";
 
 const cliPath = join(import.meta.dir, "cli.ts");
 
@@ -16,16 +17,56 @@ describe("US-002 prototype loop stubs", () => {
   });
 
   test("approve prototype command is invocable stub handler", async () => {
-    const proc = Bun.spawn(["bun", cliPath, "approve", "prototype"], {
-      stdout: "pipe",
-      stderr: "pipe",
-    });
-    const exitCode = await proc.exited;
-    const stdoutText = await new Response(proc.stdout).text();
-    const stderrText = await new Response(proc.stderr).text();
+    let invoked = false;
 
-    expect(exitCode).toBe(0);
-    expect(stdoutText).toContain("nvst approve prototype is not implemented yet.");
-    expect(stderrText).toBe("");
+    const deps = {
+      readStateFn: async () =>
+        ({
+          current_iteration: "000001",
+          flow_guardrail: "strict",
+          phases: {
+            define: {},
+            prototype: {},
+            refactor: {},
+          },
+        } as any),
+      existsFn: async () => true,
+      loadSkillFn: async () => "# approve prototype skill",
+      invokeAgentFn: async (options: any) => {
+        invoked = true;
+        expect(options.provider).toBe("ide");
+        expect(options.cwd).toBe(process.cwd());
+        expect(options.interactive).toBe(true);
+        return { exitCode: 0, stdout: "", stderr: "" };
+      },
+      readChangedFilesFn: async () => [],
+      promptGitOpsConfirmationFn: async () => {
+        throw new Error("promptForGitOperationsConfirmation should not be called when there are no changed files.");
+      },
+      gitAddAndCommitFn: async () => {
+        throw new Error("gitAddAndCommitFn should not be called when there are no changed files.");
+      },
+      getCurrentBranchFn: async () => {
+        throw new Error("getCurrentBranchFn should not be called when there are no changed files.");
+      },
+      gitPushFn: async () => {
+        throw new Error("gitPushFn should not be called when there are no changed files.");
+      },
+      checkGhAvailableFn: async () => {
+        throw new Error("checkGhAvailableFn should not be called when there are no changed files.");
+      },
+      createPullRequestFn: async () => {
+        throw new Error("createPullRequestFn should not be called when there are no changed files.");
+      },
+      warnFn: () => {
+        throw new Error("warnFn should not be called when there are no changed files.");
+      },
+      writeStateFn: async () => {
+        // no-op for this test
+      },
+    } as any;
+
+    await expect(runApprovePrototype({ force: false }, deps)).resolves.toBeUndefined();
+    expect(invoked).toBe(true);
   });
 });

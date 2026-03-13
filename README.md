@@ -74,7 +74,7 @@ nerds-vst is a package that provides:
 
   | Group | Commands |
   |-------|----------|
-  | **Main loop** | `bun nvst start iteration` → `bun nvst define requirement` → `bun nvst refine requirement` (optional) → `bun nvst approve requirement` → `bun nvst create prototype` → `bun nvst audit prototype` → `bun nvst refactor prototype` → `bun nvst approve prototype` |
+  | **Main loop** | `bun nvst define requirement` → `bun nvst refine requirement` (optional) → `bun nvst approve requirement` → `bun nvst create prototype` → `bun nvst audit prototype` → `bun nvst refactor prototype` → `bun nvst approve prototype` |
   | **Utilities** | `bun nvst init`, `bun nvst destroy [--clean]`, `bun nvst sync skills`, `bun nvst write-json --schema <name> --out <path> [--data '<json>']`, `bun nvst write-technical-debt [--out <path>] [--data '<json>']` |
 
   **Agent providers:** `claude`, `codex`, `gemini`, `cursor`, `copilot`, `ide` — where `ide` prints skill prompts to stdout instead of invoking an agent subprocess.
@@ -82,7 +82,6 @@ nerds-vst is a package that provides:
   **Typical iteration example**:
 
   ```bash
-  bun nvst start iteration
   bun nvst define requirement --agent ide
   bun nvst refine requirement --agent ide --challenge   # optional
   bun nvst approve requirement

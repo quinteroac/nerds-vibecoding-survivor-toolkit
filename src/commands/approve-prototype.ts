@@ -208,7 +208,7 @@ export async function runApprovePrototype(
   let violated = false;
   let message = "";
 
-  if (!hasAuditMd && !hasRefactorReport) {
+  if (!hasAuditMd && !hasAuditJson && !hasRefactorReport) {
     violated = true;
     message = AUDIT_MISSING_MESSAGE;
   } else if (hasAuditJson && !hasRefactorReport) {

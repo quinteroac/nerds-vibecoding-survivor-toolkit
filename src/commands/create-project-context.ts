@@ -29,6 +29,9 @@ export async function runCreateProjectContext(opts: CreateProjectContextOptions)
   );
 
   const projectContext = state.phases.prototype.project_context;
+  if (!projectContext) {
+    throw new Error("Cannot create project context: project_context phase is missing from state.");
+  }
   await assertGuardrail(
     state,
     projectContext.status === "pending_approval",
@@ -91,8 +94,8 @@ export async function runCreateProjectContext(opts: CreateProjectContextOptions)
     throw new Error(`Agent invocation failed with exit code ${result.exitCode}.`);
   }
 
-  state.phases.prototype.project_context.status = "pending_approval";
-  state.phases.prototype.project_context.file = ".agents/PROJECT_CONTEXT.md";
+  projectContext.status = "pending_approval";
+  projectContext.file = ".agents/PROJECT_CONTEXT.md";
   state.last_updated = new Date().toISOString();
   state.updated_by = "nvst:create-project-context";
 

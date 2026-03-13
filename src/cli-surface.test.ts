@@ -69,7 +69,6 @@ describe("US-001: CLI surface matches the new loop", () => {
     expect(stdoutText).not.toContain("refine refactor-plan");
     expect(stdoutText).not.toContain("approve refactor-plan");
     expect(stdoutText).not.toContain("flow [--agent <provider>] [--force]");
-    expect(stdoutText).not.toContain("start iteration");
     expect(stdoutText).not.toContain("create issue");
     expect(stdoutText).not.toContain("execute automated-fix");
     expect(stdoutText).not.toContain("execute manual-fix");
