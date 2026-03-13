@@ -423,4 +423,76 @@ describe("approve prototype command", () => {
       expect(process.exitCode).toBe(0);
     });
   });
+
+  describe("US-004: Commit and push the feature branch", () => {
+    test("US-004-AC01/AC02: when user confirms, runs gitAddAndCommitFn with expected message and then gitPushFn with current branch", async () => {
+      const projectRoot = "/project";
+      const iteration = "000027";
+      const flowDir = join(projectRoot, FLOW_REL_DIR);
+      const refactorReportPath = join(flowDir, `it_${iteration}_refactor-report.md`);
+
+      const existingPaths = [refactorReportPath];
+      const commits: Array<{ root: string; message: string }> = [];
+      const pushes: Array<{ root: string; branch: string }> = [];
+
+      await expect(
+        runApprovePrototype(
+          { force: false },
+          {
+            readStateFn: async () => makeState({ current_iteration: iteration }),
+            existsFn: async (path: string) => existingPaths.includes(path),
+            loadSkillFn: async () => "# Approve Prototype",
+            invokeAgentFn: async () => ({ exitCode: 0, stdout: "", stderr: "" }),
+            readChangedFilesFn: async () => ["PROJECT_CONTEXT.md", "ROADMAP.md"],
+            promptGitOpsConfirmationFn: async () => true,
+            gitAddAndCommitFn: async (root, message) => {
+              commits.push({ root, message });
+            },
+            getCurrentBranchFn: async () => "feature/it_000027",
+            gitPushFn: async (root, branch) => {
+              pushes.push({ root, branch });
+            },
+          },
+        ),
+      ).resolves.toBeUndefined();
+
+      expect(commits).toHaveLength(1);
+      expect(commits[0].message).toBe("feat: approve iteration 000027 prototype");
+
+      expect(pushes).toHaveLength(1);
+      expect(pushes[0].branch).toBe("feature/it_000027");
+    });
+
+    test("US-004-AC03: if git push fails, the command throws an error mentioning the branch and underlying reason", async () => {
+      const projectRoot = "/project";
+      const iteration = "000027";
+      const flowDir = join(projectRoot, FLOW_REL_DIR);
+      const refactorReportPath = join(flowDir, `it_${iteration}_refactor-report.md`);
+
+      const existingPaths = [refactorReportPath];
+
+      await expect(
+        runApprovePrototype(
+          { force: false },
+          {
+            readStateFn: async () => makeState({ current_iteration: iteration }),
+            existsFn: async (path: string) => existingPaths.includes(path),
+            loadSkillFn: async () => "# Approve Prototype",
+            invokeAgentFn: async () => ({ exitCode: 0, stdout: "", stderr: "" }),
+            readChangedFilesFn: async () => ["PROJECT_CONTEXT.md", "ROADMAP.md"],
+            promptGitOpsConfirmationFn: async () => true,
+            gitAddAndCommitFn: async () => {},
+            getCurrentBranchFn: async () => "feature/it_000027",
+            gitPushFn: async () => {
+              throw new Error(
+                "Git push failed for branch 'feature/it_000027': remote rejected non-fast-forward",
+              );
+            },
+          },
+        ),
+      ).rejects.toThrow(
+        "Git push failed for branch 'feature/it_000027': remote rejected non-fast-forward",
+      );
+    });
+  });
 });

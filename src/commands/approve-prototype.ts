@@ -12,6 +12,7 @@ import {
 import { assertGuardrail } from "../guardrail";
 import { defaultReadLine } from "../readline";
 import { exists, FLOW_REL_DIR, readState } from "../state";
+import { runGitAddAndCommit } from "./create-prototype";
 
 export interface ApprovePrototypeOptions {
   force?: boolean;
@@ -25,6 +26,9 @@ interface ApprovePrototypeDeps {
   invokeAgentFn: (options: AgentInvokeOptions) => Promise<AgentResult>;
   readChangedFilesFn: (projectRoot: string) => Promise<string[]>;
   promptGitOpsConfirmationFn: (files: string[]) => Promise<boolean>;
+  gitAddAndCommitFn: (projectRoot: string, commitMessage: string) => Promise<void>;
+  getCurrentBranchFn: (projectRoot: string) => Promise<string>;
+  gitPushFn: (projectRoot: string, branch: string) => Promise<void>;
 }
 
 const defaultDeps: ApprovePrototypeDeps = {
@@ -36,6 +40,40 @@ const defaultDeps: ApprovePrototypeDeps = {
   readChangedFilesFn: readChangedFiles,
   promptGitOpsConfirmationFn: (files) =>
     promptForGitOperationsConfirmation(files, defaultReadLine, defaultStdoutWrite, defaultIsTTY),
+  gitAddAndCommitFn: runGitAddAndCommit,
+  getCurrentBranchFn: async (projectRoot: string): Promise<string> => {
+    const branchResult = await dollar`git rev-parse --abbrev-ref HEAD`
+      .cwd(projectRoot)
+      .nothrow()
+      .quiet();
+
+    if (branchResult.exitCode !== 0) {
+      const reason = branchResult.stderr.toString().trim() || branchResult.stdout.toString().trim();
+      throw new Error(
+        `Failed to determine current git branch for push.${reason ? ` Reason: ${reason}` : ""}`,
+      );
+    }
+
+    const branch = branchResult.stdout.toString().trim();
+    if (!branch) {
+      throw new Error("Failed to determine current git branch for push: empty branch name.");
+    }
+
+    return branch;
+  },
+  gitPushFn: async (projectRoot: string, branch: string): Promise<void> => {
+    const pushResult = await dollar`git push --set-upstream origin ${branch}`
+      .cwd(projectRoot)
+      .nothrow()
+      .quiet();
+
+    if (pushResult.exitCode !== 0) {
+      const details = pushResult.stderr.toString().trim() || pushResult.stdout.toString().trim();
+      throw new Error(
+        `Git push failed for branch '${branch}'${details ? `: ${details}` : "."}`,
+      );
+    }
+  },
 };
 
 type ReadLineFn = () => Promise<string | null>;
@@ -174,4 +212,10 @@ export async function runApprovePrototype(
     mergedDeps.logFn("Aborted. No git operations performed.");
     return;
   }
+
+  const commitMessage = `feat: approve iteration ${iteration} prototype`;
+  await mergedDeps.gitAddAndCommitFn(projectRoot, commitMessage);
+
+  const branch = await mergedDeps.getCurrentBranchFn(projectRoot);
+  await mergedDeps.gitPushFn(projectRoot, branch);
 }

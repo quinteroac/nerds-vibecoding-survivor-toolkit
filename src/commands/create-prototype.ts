@@ -110,7 +110,7 @@ export async function promptForDirtyTreeCommit(
   return line !== null && (line.trim() === "y" || line.trim() === "Y");
 }
 
-async function runGitAddAndCommit(projectRoot: string, commitMessage: string): Promise<void> {
+export async function runGitAddAndCommit(projectRoot: string, commitMessage: string): Promise<void> {
   const addResult = await dollar`git add -A`.cwd(projectRoot).nothrow().quiet();
   if (addResult.exitCode !== 0) {
     throw new Error(`Pre-prototype commit failed:\n${addResult.stderr.toString().trim()}`);
