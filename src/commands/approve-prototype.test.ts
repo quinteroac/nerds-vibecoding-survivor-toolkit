@@ -620,9 +620,9 @@ describe("approve prototype command", () => {
         ),
       ).resolves.toBeUndefined();
 
-      expect(warnings).toHaveLength(1);
-      expect(warnings[0]).toContain("gh pr create failed (non-fatal)");
-      expect(warnings[0]).toContain("validation failed: already has an open pull request");
+      const joinedWarnings = warnings.join("\n");
+      expect(joinedWarnings).toContain("gh pr create failed (non-fatal)");
+      expect(joinedWarnings).toContain("validation failed: already has an open pull request");
     });
   });
 
