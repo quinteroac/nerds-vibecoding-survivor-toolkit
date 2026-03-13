@@ -84,6 +84,9 @@ export async function runBuildBinary(options: BuildBinaryOptions): Promise<strin
   const entry = options.entry ?? DEFAULT_ENTRY;
   const outputName = resolveBinaryFilename(name, target);
   const outfile = join(outdir, outputName);
+  const pkg = (await Bun.file("package.json").json()) as { version?: string };
+  const version = typeof pkg.version === "string" ? pkg.version : "unknown";
+  const compileTimeVersion = JSON.stringify(version);
 
   await mkdir(outdir, { recursive: true });
   await cleanupPriorOutputs(outdir, name);
@@ -93,6 +96,7 @@ export async function runBuildBinary(options: BuildBinaryOptions): Promise<strin
     "build",
     entry,
     "--compile",
+    `--define=NVST_COMPILED_VERSION=${compileTimeVersion}`,
     `--outfile=${outfile}`,
     ...(target ? [`--target=${target}`] : []),
   ];

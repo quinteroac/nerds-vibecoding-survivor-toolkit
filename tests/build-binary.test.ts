@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { mkdtemp, readdir, rm, stat } from "node:fs/promises";
+import { chmod, mkdtemp, readdir, rm, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -60,6 +60,60 @@ describe("build-binary script", () => {
     expect(artifactStats.isFile()).toBe(true);
     expect(artifactStats.size).toBeGreaterThan(0);
     expect(stdout).toContain(`Built binary: ${join(outdir, expectedFile)}`);
+
+    const binaryPath = join(outdir, expectedFile);
+    if (process.platform !== "win32") {
+      await chmod(binaryPath, 0o755);
+    }
+
+    const binaryHelpProc = Bun.spawn([binaryPath, "--help"], {
+      cwd: outdir,
+      stdout: "pipe",
+      stderr: "pipe",
+    });
+    await binaryHelpProc.exited;
+    const binaryHelpStdout = await new Response(binaryHelpProc.stdout).text();
+    const binaryHelpStderr = await new Response(binaryHelpProc.stderr).text();
+
+    const sourceHelpProc = Bun.spawn([process.argv[0], "src/cli.ts", "--help"], {
+      stdout: "pipe",
+      stderr: "pipe",
+    });
+    await sourceHelpProc.exited;
+    const sourceHelpStdout = await new Response(sourceHelpProc.stdout).text();
+    const sourceHelpStderr = await new Response(sourceHelpProc.stderr).text();
+
+    expect(binaryHelpProc.exitCode).toBe(0);
+    expect(binaryHelpStderr).toBe("");
+    expect(sourceHelpProc.exitCode).toBe(0);
+    expect(sourceHelpStderr).toBe("");
+    expect(binaryHelpStdout).toBe(sourceHelpStdout);
+    expect(binaryHelpStdout).toContain("Usage: nvst");
+    expect(binaryHelpStdout).toContain("define requirement");
+
+    const binaryVersionProc = Bun.spawn([binaryPath, "--version"], {
+      cwd: outdir,
+      stdout: "pipe",
+      stderr: "pipe",
+    });
+    await binaryVersionProc.exited;
+    const binaryVersionStdout = await new Response(binaryVersionProc.stdout).text();
+    const binaryVersionStderr = await new Response(binaryVersionProc.stderr).text();
+
+    const sourceVersionProc = Bun.spawn([process.argv[0], "src/cli.ts", "--version"], {
+      stdout: "pipe",
+      stderr: "pipe",
+    });
+    await sourceVersionProc.exited;
+    const sourceVersionStdout = await new Response(sourceVersionProc.stdout).text();
+    const sourceVersionStderr = await new Response(sourceVersionProc.stderr).text();
+
+    expect(binaryVersionProc.exitCode).toBe(0);
+    expect(binaryVersionStderr).toBe("");
+    expect(sourceVersionProc.exitCode).toBe(0);
+    expect(sourceVersionStderr).toBe("");
+    expect(binaryVersionStdout.trim()).toBe(sourceVersionStdout.trim());
+    expect(binaryVersionStdout.trim()).not.toBe("");
 
     await rm(outdir, { recursive: true, force: true });
   });
