@@ -5,6 +5,13 @@ import { join } from "node:path";
 
 import { parseBuildBinaryArgs, resolveBinaryFilename } from "../src/scripts/build-binary";
 
+function withPathWithoutRuntime(): NodeJS.ProcessEnv {
+  const env: NodeJS.ProcessEnv = { ...process.env };
+  const pathKey = Object.keys(env).find((key) => key.toLowerCase() === "path") ?? "PATH";
+  env[pathKey] = "";
+  return env;
+}
+
 describe("build-binary script", () => {
   it("resolves output filename for current and specified platforms", () => {
     const currentPlatformName = resolveBinaryFilename("nvst");
@@ -90,6 +97,20 @@ describe("build-binary script", () => {
     expect(binaryHelpStdout).toBe(sourceHelpStdout);
     expect(binaryHelpStdout).toContain("Usage: nvst");
     expect(binaryHelpStdout).toContain("define requirement");
+
+    const binaryNoRuntimeProc = Bun.spawn([binaryPath, "--help"], {
+      cwd: outdir,
+      env: withPathWithoutRuntime(),
+      stdout: "pipe",
+      stderr: "pipe",
+    });
+    await binaryNoRuntimeProc.exited;
+    const binaryNoRuntimeStdout = await new Response(binaryNoRuntimeProc.stdout).text();
+    const binaryNoRuntimeStderr = await new Response(binaryNoRuntimeProc.stderr).text();
+
+    expect(binaryNoRuntimeProc.exitCode).toBe(0);
+    expect(binaryNoRuntimeStderr).toBe("");
+    expect(binaryNoRuntimeStdout).toContain("Usage: nvst");
 
     const binaryVersionProc = Bun.spawn([binaryPath, "--version"], {
       cwd: outdir,
