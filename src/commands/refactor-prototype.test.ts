@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 
+import { FLOW_REL_DIR } from "../state";
 import type { State } from "../../scaffold/schemas/tmpl_state";
 import { runRefactorPrototype } from "./refactor-prototype";
 
@@ -56,25 +57,32 @@ describe("refactor prototype command", () => {
     expect(source).toContain("await runRefactorPrototype({ provider, force });");
   });
 
-  test("prints not implemented placeholder message without throwing", async () => {
-    const logs: string[] = [];
+  test("US-002-AC01: throws when it_{iteration}_audit.json is missing from .agents/flow/", async () => {
+    const expectedRel = join(FLOW_REL_DIR, "it_000026_audit.json");
 
     await expect(
       runRefactorPrototype(
-        { provider: "gemini" },
+        { provider: "ide" },
         {
-          logFn: (message) => {
-            logs.push(message);
-          },
           readStateFn: async () => makeState(),
+          existsFn: async () => false,
         },
       ),
-    ).resolves.toBeUndefined();
+    ).rejects.toThrow(/Audit artifact not found/);
 
-    expect(logs).toEqual(["nvst refactor prototype is not implemented yet."]);
+    await expect(
+      runRefactorPrototype(
+        { provider: "ide" },
+        {
+          readStateFn: async () => makeState(),
+          existsFn: async () => false,
+        },
+      ),
+    ).rejects.toThrow(expectedRel);
   });
 
-  test("builds and invokes full prompt for ide provider", async () => {
+  test("US-002-AC02: skill prompt receives iteration and path to it_{iteration}_audit.json via buildPrompt", async () => {
+    const projectRoot = process.cwd();
     const prompts: string[] = [];
 
     await expect(
@@ -82,6 +90,64 @@ describe("refactor prototype command", () => {
         { provider: "ide" },
         {
           readStateFn: async () => makeState(),
+          existsFn: async () => true,
+          loadSkillFn: async () => "# Refactor Skill",
+          invokeAgentFn: async (options) => {
+            prompts.push(options.prompt);
+            return { exitCode: 0, stdout: "", stderr: "" };
+          },
+        },
+      ),
+    ).resolves.toBeUndefined();
+
+    expect(prompts).toHaveLength(1);
+    expect(prompts[0]).toContain("# Refactor Skill");
+    expect(prompts[0]).toContain("### iteration");
+    expect(prompts[0]).toContain("000026");
+    expect(prompts[0]).toContain("### audit_json_path");
+    const expectedPath = join(projectRoot, FLOW_REL_DIR, "it_000026_audit.json");
+    expect(prompts[0]).toContain(expectedPath);
+  });
+
+  test("US-002-AC03: SKILL.md instructs the agent to read the audit JSON, understand the refactor plan, and apply code changes", async () => {
+    const skillPath = join(process.cwd(), ".agents", "skills", "refactor-prototype", "SKILL.md");
+    const content = await readFile(skillPath, "utf8");
+    expect(content).toMatch(/read.*audit|audit.*read/i);
+    expect(content).toMatch(/refactor plan/i);
+    expect(content).toMatch(/apply.*(code )?change|apply.*refactor/i);
+  });
+
+  test("US-002-AC04: invokes agent via invokeAgent with interactive: true", async () => {
+    const invoked: { interactive?: boolean }[] = [];
+
+    await expect(
+      runRefactorPrototype(
+        { provider: "codex" },
+        {
+          readStateFn: async () => makeState(),
+          existsFn: async () => true,
+          loadSkillFn: async () => "# Refactor Skill",
+          invokeAgentFn: async (options) => {
+            invoked.push({ interactive: options.interactive });
+            return { exitCode: 0, stdout: "", stderr: "" };
+          },
+        },
+      ),
+    ).resolves.toBeUndefined();
+
+    expect(invoked).toHaveLength(1);
+    expect(invoked[0].interactive).toBe(true);
+  });
+
+  test("builds and invokes full prompt for ide provider when audit file exists", async () => {
+    const prompts: string[] = [];
+
+    await expect(
+      runRefactorPrototype(
+        { provider: "ide" },
+        {
+          readStateFn: async () => makeState(),
+          existsFn: async () => true,
           loadSkillFn: async () => "# Refactor Skill",
           invokeAgentFn: async (options) => {
             prompts.push(options.prompt);
@@ -133,6 +199,7 @@ describe("refactor prototype command", () => {
             { provider: "ide" },
             {
               readStateFn: async () => makeState({ prototypeAuditStatus: "completed" }),
+              existsFn: async () => true,
               loadSkillFn: async () => "# Refactor Skill",
               invokeAgentFn: async (options) => {
                 invoked.push(options);
@@ -151,6 +218,7 @@ describe("refactor prototype command", () => {
             { provider: "ide" },
             {
               readStateFn: async () => makeState({ prototypeAuditStatus: "in_progress" }),
+              existsFn: async () => true,
               loadSkillFn: async () => "# Refactor Skill",
               invokeAgentFn: async (options) => {
                 invoked.push(options);
@@ -169,6 +237,7 @@ describe("refactor prototype command", () => {
             { provider: "ide" },
             {
               readStateFn: async () => makeState({ prototypeAuditStatus: "failed" }),
+              existsFn: async () => true,
               loadSkillFn: async () => "# Refactor Skill",
               invokeAgentFn: async (options) => {
                 invoked.push(options);
@@ -200,6 +269,7 @@ describe("refactor prototype command", () => {
             { provider: "ide", force: true },
             {
               readStateFn: async () => makeState({ prototypeAuditStatus: "pending" }),
+              existsFn: async () => true,
               loadSkillFn: async () => "# Refactor Skill",
               invokeAgentFn: async (options) => {
                 invoked.push(options);

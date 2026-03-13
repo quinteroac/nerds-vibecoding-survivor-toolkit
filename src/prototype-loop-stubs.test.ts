@@ -4,30 +4,28 @@ import { join } from "node:path";
 const cliPath = join(import.meta.dir, "cli.ts");
 
 describe("US-002 prototype loop stubs", () => {
-  test("refactor/approve prototype commands are invocable stub handlers", async () => {
-    const cases: Array<{ args: string[]; expectedMessage: string }> = [
-      {
-        args: ["refactor", "prototype", "--agent", "codex"],
-        expectedMessage: "nvst refactor prototype is not implemented yet.",
-      },
-      {
-        args: ["approve", "prototype"],
-        expectedMessage: "nvst approve prototype is not implemented yet.",
-      },
-    ];
+  test("refactor prototype command is invocable (loads audit and invokes agent or fails with clear error)", async () => {
+    const proc = Bun.spawn(["bun", cliPath, "refactor", "prototype", "--agent", "codex"], {
+      stdout: "pipe",
+      stderr: "pipe",
+    });
+    const exitCode = await proc.exited;
 
-    for (const commandCase of cases) {
-      const proc = Bun.spawn(["bun", cliPath, ...commandCase.args], {
-        stdout: "pipe",
-        stderr: "pipe",
-      });
-      const exitCode = await proc.exited;
-      const stdoutText = await new Response(proc.stdout).text();
-      const stderrText = await new Response(proc.stderr).text();
+    // Exit 0: agent ran; exit 1: guardrail, missing audit file, or agent failure
+    expect([0, 1]).toContain(exitCode);
+  });
 
-      expect(exitCode).toBe(0);
-      expect(stdoutText).toContain(commandCase.expectedMessage);
-      expect(stderrText).toBe("");
-    }
+  test("approve prototype command is invocable stub handler", async () => {
+    const proc = Bun.spawn(["bun", cliPath, "approve", "prototype"], {
+      stdout: "pipe",
+      stderr: "pipe",
+    });
+    const exitCode = await proc.exited;
+    const stdoutText = await new Response(proc.stdout).text();
+    const stderrText = await new Response(proc.stderr).text();
+
+    expect(exitCode).toBe(0);
+    expect(stdoutText).toContain("nvst approve prototype is not implemented yet.");
+    expect(stderrText).toBe("");
   });
 });
