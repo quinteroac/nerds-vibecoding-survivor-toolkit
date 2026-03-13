@@ -201,6 +201,29 @@ describe("refactor prototype command", () => {
     });
   });
 
+  describe("US-004: Completion report artifact in .agents/flow/", () => {
+    test("US-004-AC01: SKILL.md instructs writing it_{iteration}_refactor-report.md in .agents/flow/ with required contents", async () => {
+      const skillPath = join(process.cwd(), ".agents", "skills", "refactor-prototype", "SKILL.md");
+      const content = await readFile(skillPath, "utf8");
+
+      expect(content).toMatch(/it_\{iteration\}_refactor-report\.md/i);
+      expect(content).toMatch(/\.agents\/flow\//i);
+      expect(content).toMatch(/summary of changes/i);
+      expect(content).toMatch(/quality checks/i);
+      expect(content).toMatch(/deviations from refactor plan/i);
+      expect(content).toMatch(/None/);
+    });
+
+    test("US-004-AC02: SKILL.md defines mandatory sections Summary of changes, Quality checks, Deviations from refactor plan", async () => {
+      const skillPath = join(process.cwd(), ".agents", "skills", "refactor-prototype", "SKILL.md");
+      const content = await readFile(skillPath, "utf8");
+
+      expect(content).toMatch(/## Summary of changes/i);
+      expect(content).toMatch(/## Quality checks/i);
+      expect(content).toMatch(/## Deviations from refactor plan/i);
+    });
+  });
+
   describe("US-001: State guard — command only runs after audit is complete", () => {
     describe("US-001-AC01: reads state and checks prototype_audit.status is not pending", () => {
       test("throws when prototype_audit.status is pending", async () => {

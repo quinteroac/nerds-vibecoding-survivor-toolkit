@@ -20,6 +20,14 @@ Apply the refactor plan produced by the audit phase to the codebase in a **singl
 
 5. **Perform the full refactor autonomously** — do not stop mid-way to ask the user what to do next or whether to continue. Use the refactor plan and the existing codebase as your source of truth, carry out the entire refactor in this single session, and only use interaction (if any) to report progress and final status.
 
+6. **Write a completion report artifact** — after all refactor changes have been applied and quality checks have passed, write a markdown file named `it_{iteration}_refactor-report.md` into the `.agents/flow/` directory at the project root. This file is the completion indicator used by downstream steps to verify that the refactor finished.
+
+   The report **must be in English** and include, at minimum, the following top-level sections with meaningful content:
+
+   - `## Summary of changes` — a concise summary of the key refactor changes you implemented.
+   - `## Quality checks` — which checks you ran (including `bun run typecheck` and `bun test` when appropriate), their outcomes, and any important notes.
+   - `## Deviations from refactor plan` — describe any deviations from the original refactor plan in the audit JSON. If there were no deviations, explicitly write `None`.
+
 ## Context
 
 You will receive:
@@ -27,4 +35,4 @@ You will receive:
 - `iteration`: current iteration (e.g. `000026`).
 - `audit_json_path`: absolute path to `it_{iteration}_audit.json` in `.agents/flow/`. Read this file to get the refactor plan and quality checks.
 
-Use the audit JSON as the single source of truth for what to refactor; then apply all changes and verify with the project's quality checks in this single run.
+Use the audit JSON as the single source of truth for what to refactor; then apply all changes and verify with the project's quality checks in this single run, finishing by writing the refactor completion report described above.
