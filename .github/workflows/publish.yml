@@ -65,6 +65,11 @@ jobs:
           test -f dist/release/nvst-linux-x64
           test -f dist/release/nvst-windows-x64.exe
 
+      - name: Smoke-test Linux binary
+        run: |
+          chmod +x dist/release/nvst-linux-x64
+          dist/release/nvst-linux-x64 --version
+
       - name: Upload release binaries
         uses: softprops/action-gh-release@v2
         with:
