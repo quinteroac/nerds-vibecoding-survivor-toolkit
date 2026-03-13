@@ -72,6 +72,26 @@ describe("US-004: Skills and schemas align to the new loop", () => {
     }
   });
 
+  test("US-007-AC02/AC03: approve-prototype runtime and scaffold skills stay in sync", async () => {
+    const runtimeSkill = await readFile(
+      join(PROJECT_ROOT, ".agents", "skills", "approve-prototype", "SKILL.md"),
+      "utf8",
+    );
+    const scaffoldSkill = await readFile(
+      join(
+        PROJECT_ROOT,
+        "scaffold",
+        ".agents",
+        "skills",
+        "approve-prototype",
+        "tmpl_SKILL.md",
+      ),
+      "utf8",
+    );
+
+    expect(runtimeSkill).toBe(scaffoldSkill);
+  });
+
   test("US-004-AC03: write-json schemas support only current loop/core artifacts", async () => {
     const source = await readFile(join(PROJECT_ROOT, "src", "commands", "write-json.ts"), "utf8");
 
