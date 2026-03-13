@@ -1,0 +1,151 @@
+{
+  "goals": [
+    "Enable the user to run `nvst refactor prototype` only after `nvst audit prototype` has been completed, ensuring the refactor is grounded in a validated audit artifact.",
+    "Spawn a single agent invocation that reads the refactor plan from `it_{iteration}_audit.json` and applies code changes end-to-end.",
+    "Persist a completion report in `.agents/flow/` once the agent signals that the refactor is done.",
+    "Keep runtime skills and scaffold templates in sync so both existing and newly scaffolded projects benefit from the full refactor behaviour."
+  ],
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "State guard — command only runs after audit is complete",
+      "description": "As a developer running the NVST CLI, I want `nvst refactor prototype` to refuse to run if the audit phase has not been completed for the current iteration so that the refactor always has a valid audit artifact to work from.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-001-AC01",
+          "text": "The command reads `state.json` and checks that `phases.prototype.prototype_audit.status` is not `\"pending\"` (i.e. audit was run for this iteration)."
+        },
+        {
+          "id": "US-001-AC02",
+          "text": "If the guard fails, the command prints a descriptive error message (e.g. _\"Cannot refactor prototype: audit prototype must be run for this iteration first.\"_) and exits with a non-zero code (via `process.exitCode`, never `process.exit()`)."
+        },
+        {
+          "id": "US-001-AC03",
+          "text": "The guard respects the `--force` flag and `flow_guardrail` mode via `assertGuardrail` (same pattern as `audit-prototype.ts`)."
+        },
+        {
+          "id": "US-001-AC04",
+          "text": "Typecheck / lint passes."
+        }
+      ]
+    },
+    {
+      "id": "US-002",
+      "title": "Load audit JSON artifact and invoke agent",
+      "description": "As a developer running the NVST CLI, I want the command to load the refactor plan from `it_{iteration}_audit.json` and pass it to the agent via the skill prompt so that the agent has all the context needed to perform the refactor.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-002-AC01",
+          "text": "The command loads `it_{iteration}_audit.json` from `.agents/flow/` (where `{iteration}` = `state.current_iteration`)."
+        },
+        {
+          "id": "US-002-AC02",
+          "text": "The skill prompt receives at minimum: `iteration` and the path to `it_{iteration}_audit.json` (injected as template variables via `buildPrompt`)."
+        },
+        {
+          "id": "US-002-AC03",
+          "text": "The skill `SKILL.md` instructs the agent to read the audit JSON, understand the refactor plan, and apply the code changes."
+        },
+        {
+          "id": "US-002-AC04",
+          "text": "The command invokes the agent via `invokeAgent` from `src/agent.ts` with `interactive: true`."
+        },
+        {
+          "id": "US-002-AC05",
+          "text": "Typecheck / lint passes."
+        }
+      ]
+    },
+    {
+      "id": "US-003",
+      "title": "Single agent performs the refactor",
+      "description": "As a developer running the NVST CLI, I want one agent invocation to carry out the entire refactor so that I do not have to orchestrate multiple steps manually.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-003-AC01",
+          "text": "The `SKILL.md` for `refactor-prototype` instructs the agent to read the refactor plan, apply all recommended code changes, run the quality checks defined in the plan, and report completion."
+        },
+        {
+          "id": "US-003-AC02",
+          "text": "The skill does not exit mid-way to ask the user questions; it performs the full refactor autonomously in one session."
+        },
+        {
+          "id": "US-003-AC03",
+          "text": "If the agent exits with a non-zero code, the command throws an `Error` with a descriptive message (same pattern as `audit-prototype.ts`)."
+        },
+        {
+          "id": "US-003-AC04",
+          "text": "Typecheck / lint passes."
+        }
+      ]
+    },
+    {
+      "id": "US-004",
+      "title": "Completion report artifact in `.agents/flow/`",
+      "description": "As a developer running the NVST CLI, I want the command to produce a completion indicator in `.agents/flow/` after the agent finishes so that I can verify the refactor happened and downstream steps can detect it.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-004-AC01",
+          "text": "The `SKILL.md` instructs the agent to write a file `it_{iteration}_refactor-report.md` in `.agents/flow/` upon completion. The file must contain at minimum: a summary of changes made, quality checks performed, and any deviations from the original refactor plan."
+        },
+        {
+          "id": "US-004-AC02",
+          "text": "The mandatory sections in `it_{iteration}_refactor-report.md` are: **Summary of changes**, **Quality checks**, **Deviations from refactor plan** (can be \"None\")."
+        },
+        {
+          "id": "US-004-AC03",
+          "text": "Typecheck / lint passes."
+        }
+      ]
+    },
+    {
+      "id": "US-005",
+      "title": "Runtime skill and scaffold template updated",
+      "description": "As a developer scaffolding a new NVST project, I want the `refactor-prototype` skill to be available in both the runtime directory and the scaffold template so that projects initialised with `nvst init` have the full refactor behaviour out of the box.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-005-AC01",
+          "text": "`.agents/skills/refactor-prototype/SKILL.md` is replaced with the full implementation (no longer a placeholder)."
+        },
+        {
+          "id": "US-005-AC02",
+          "text": "`scaffold/.agents/skills/refactor-prototype/tmpl_SKILL.md` is updated to match the runtime skill (no longer a placeholder)."
+        },
+        {
+          "id": "US-005-AC03",
+          "text": "Both files are identical in content (modulo any template-variable syntax that applies only to the scaffold copy)."
+        },
+        {
+          "id": "US-005-AC04",
+          "text": "Typecheck / lint passes."
+        }
+      ]
+    }
+  ],
+  "functionalRequirements": [
+    {
+      "id": "FR-1",
+      "description": "** `nvst refactor prototype` must only run when `state.phases.prototype.prototype_audit.status` is not `\"pending\"` for the current iteration. It must call `assertGuardrail` with an appropriate message and respect `--force` and `flow_guardrail` mode."
+    },
+    {
+      "id": "FR-2",
+      "description": "** The command must resolve the path `<projectRoot>/.agents/flow/it_{iteration}_audit.json` and pass it as a template variable (`auditFile` or equivalent) to `buildPrompt`."
+    },
+    {
+      "id": "FR-3",
+      "description": "** The command must load the skill from `.agents/skills/refactor-prototype/` via `loadSkill`, build the prompt via `buildPrompt`, and invoke the agent via `invokeAgent` with `interactive: true` — exactly the same pattern as `audit-prototype.ts`."
+    },
+    {
+      "id": "FR-4",
+      "description": "** The `refactor-prototype` SKILL.md must instruct the agent to: (a) read `it_{iteration}_audit.json`, (b) apply all refactor plan items to the codebase, (c) run quality checks (typecheck at minimum), and (d) write `it_{iteration}_refactor-report.md` with the mandatory sections."
+    },
+    {
+      "id": "FR-5",
+      "description": "** If `invokeAgent` returns a non-zero exit code, the command must throw `new Error(...)` with a descriptive message."
+    },
+    {
+      "id": "FR-6",
+      "description": "** Both the runtime skill (`.agents/skills/refactor-prototype/SKILL.md`) and the scaffold template (`scaffold/.agents/skills/refactor-prototype/tmpl_SKILL.md`) must be updated from placeholder to full implementation."
+    }
+  ]
+}

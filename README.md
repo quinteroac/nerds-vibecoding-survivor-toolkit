@@ -60,10 +60,6 @@ nerds-vst is a package that provides:
     progress.ts
     issues.ts
     prototype-progress.ts
-    test-plan.ts
-    test-execution-progress.ts
-    refactor-prd.ts
-    refactor-execution-progress.ts
     validate-state.ts
     validate-progress.ts
   ```
@@ -72,24 +68,27 @@ nerds-vst is a package that provides:
 
 - **Command-line tool** — Prompts and orchestrates the development loop, keeping state in sync. Instead of internally calling an agent within the commands, it outputs instructions as prompts to be executed by your preferred AI environment (e.g., Cursor, Antigravity, Claude Code Web, GitHub Copilot).
 
-  **Command summary** (see [process_design.md](process_design.md) for full details):
+  **Command summary** (see [docs/nvst-flow/COMMANDS.md](docs/nvst-flow/COMMANDS.md) for the full reference):
 
-  `[Ideation (Optional)] → Define/Refine/Approve Requirement → Create Prototype → Audit Prototype → Refactor Prototype → Approve Prototype`
+  `[Start Iteration] → Define/Refine/Approve Requirement → Create Prototype → Audit Prototype → Refactor Prototype → Approve Prototype`
 
   | Group | Commands |
   |-------|----------|
-  | **Main loop** | `bun nvst define requirement` → `bun nvst refine requirement` (optional) → `bun nvst approve requirement` → `bun nvst create prototype` → `bun nvst audit prototype` → `bun nvst refactor prototype` → `bun nvst approve prototype` |
-  | **Utilities** | `bun nvst init`, `bun nvst destroy [--clean]`, `bun nvst write-json --schema <name> --out <path> [--data '<json>']` |
+  | **Main loop** | `bun nvst start iteration` → `bun nvst define requirement` → `bun nvst refine requirement` (optional) → `bun nvst approve requirement` → `bun nvst create prototype` → `bun nvst audit prototype` → `bun nvst refactor prototype` → `bun nvst approve prototype` |
+  | **Utilities** | `bun nvst init`, `bun nvst destroy [--clean]`, `bun nvst sync skills`, `bun nvst write-json --schema <name> --out <path> [--data '<json>']`, `bun nvst write-technical-debt [--out <path>] [--data '<json>']` |
+
+  **Agent providers:** `claude`, `codex`, `gemini`, `cursor`, `copilot`, `ide` — where `ide` prints skill prompts to stdout instead of invoking an agent subprocess.
 
   **Typical iteration example**:
 
   ```bash
-  bun nvst define requirement
-  bun nvst refine requirement --challenge   # optional
+  bun nvst start iteration
+  bun nvst define requirement --agent ide
+  bun nvst refine requirement --agent ide --challenge   # optional
   bun nvst approve requirement
-  bun nvst create prototype
-  bun nvst audit prototype
-  bun nvst refactor prototype
+  bun nvst create prototype --agent ide --iterations 5
+  bun nvst audit prototype --agent ide
+  bun nvst refactor prototype --agent ide
   bun nvst approve prototype
   ```
 
@@ -110,8 +109,8 @@ Install from a local directory or a packed tarball:
 # From project root
 bun add /path/to/nerds-vibecoding-survivor-toolkit
 
-# Or from a packed .tgz (run `bun run package` first)
-bun add ./quinteroac-agents-coding-toolkit-0.1.1-preview.0.tgz
+# Or from a packed .tgz (run `bun run package` first, then install the generated file)
+bun add ./quinteroac-agents-coding-toolkit-<version>.tgz
 ```
 
 ### From npm
@@ -153,6 +152,6 @@ Acknowledgements and credits will be added after the initial release.
 
 ## References
 
-- [process_design.md](process_design.md) — Full process specification.
 - [docs/nvst-flow/COMMANDS.md](docs/nvst-flow/COMMANDS.md) — Full CLI command reference.
 - [docs/nvst-flow/QUICK_USE.md](docs/nvst-flow/QUICK_USE.md) — Quick start and common workflows.
+- [process_design.md](process_design.md) — Full process specification.

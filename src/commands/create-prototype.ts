@@ -354,6 +354,8 @@ export async function runCreatePrototype(
     progressData = progressValidation.data;
   } else {
     const now = new Date().toISOString();
+    const auditArtifactPath = join(FLOW_REL_DIR, `it_${iteration}_audit.json`);
+    const refactorReportPath = join(FLOW_REL_DIR, `it_${iteration}_refactor-report.md`);
     const progress = {
       entries: prdValidation.data.userStories.map((story) => ({
         use_case_id: story.id,
@@ -363,6 +365,8 @@ export async function runCreatePrototype(
         quality_checks: [],
         last_error_summary: "",
         updated_at: now,
+        audit_artifact_path: auditArtifactPath,
+        refactor_report_path: refactorReportPath,
       })),
     };
 

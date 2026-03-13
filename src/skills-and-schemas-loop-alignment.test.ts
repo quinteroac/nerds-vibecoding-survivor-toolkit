@@ -41,8 +41,8 @@ describe("US-004: Skills and schemas align to the new loop", () => {
     expect(scaffoldSkills).toEqual([...EXPECTED_SKILLS]);
   });
 
-  test("US-004-AC02: loop-stub placeholder skills are present and artifact-aware", async () => {
-    const placeholders = [
+  test("US-004-AC02: loop skills are present and artifact-aware", async () => {
+    const allSkills = [
       ".agents/skills/audit-prototype/SKILL.md",
       ".agents/skills/refactor-prototype/SKILL.md",
       ".agents/skills/approve-prototype/SKILL.md",
@@ -51,10 +51,21 @@ describe("US-004: Skills and schemas align to the new loop", () => {
       "scaffold/.agents/skills/approve-prototype/tmpl_SKILL.md",
     ];
 
-    for (const relativePath of placeholders) {
+    for (const relativePath of allSkills) {
       const content = await readFile(join(PROJECT_ROOT, relativePath), "utf8");
       expect(content).toContain(".agents/flow/it_{iteration}_PRD.json");
       expect(content).toContain(".agents/flow/it_{iteration}_progress.json");
+    }
+
+    const stubSkills = [
+      ".agents/skills/refactor-prototype/SKILL.md",
+      ".agents/skills/approve-prototype/SKILL.md",
+      "scaffold/.agents/skills/refactor-prototype/tmpl_SKILL.md",
+      "scaffold/.agents/skills/approve-prototype/tmpl_SKILL.md",
+    ];
+
+    for (const relativePath of stubSkills) {
+      const content = await readFile(join(PROJECT_ROOT, relativePath), "utf8");
       expect(content).toContain("currently a stub command");
     }
   });
