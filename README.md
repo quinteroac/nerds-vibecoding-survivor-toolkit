@@ -145,6 +145,20 @@ nvst --help
 ./node_modules/.bin/nvst --help
 ```
 
+### Build standalone binary
+
+Build a single platform binary from this repository:
+
+```bash
+bun run build:binary
+```
+
+Optional flags:
+
+```bash
+bun run build:binary --target bun-linux-x64 --outdir dist --name nvst
+```
+
 ## Acknowledgement
 
 Acknowledgements and credits will be added after the initial release.
