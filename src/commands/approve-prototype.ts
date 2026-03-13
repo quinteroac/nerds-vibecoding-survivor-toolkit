@@ -1,7 +1,9 @@
+import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { $ as dollar } from "bun";
 
 import type { State } from "../../scaffold/schemas/tmpl_state";
+import { PrdSchema } from "../../scaffold/schemas/tmpl_prd";
 import {
   buildPrompt,
   invokeAgent,
@@ -29,6 +31,13 @@ interface ApprovePrototypeDeps {
   gitAddAndCommitFn: (projectRoot: string, commitMessage: string) => Promise<void>;
   getCurrentBranchFn: (projectRoot: string) => Promise<string>;
   gitPushFn: (projectRoot: string, branch: string) => Promise<void>;
+  checkGhAvailableFn: (projectRoot: string) => Promise<boolean>;
+  createPullRequestFn: (
+    projectRoot: string,
+    title: string,
+    body: string,
+  ) => Promise<{ exitCode: number; stderr: string }>;
+  warnFn: (message: string) => void;
 }
 
 const defaultDeps: ApprovePrototypeDeps = {
@@ -74,6 +83,25 @@ const defaultDeps: ApprovePrototypeDeps = {
       );
     }
   },
+  checkGhAvailableFn: async (projectRoot: string) => {
+    const proc = Bun.spawn(["gh", "--version"], {
+      cwd: projectRoot,
+      stdout: "ignore",
+      stderr: "ignore",
+    });
+    return (await proc.exited) === 0;
+  },
+  createPullRequestFn: async (projectRoot, title, body) => {
+    const result = await dollar`gh pr create --title ${title} --body ${body}`
+      .cwd(projectRoot)
+      .nothrow()
+      .quiet();
+    return {
+      exitCode: result.exitCode,
+      stderr: result.stderr.toString().trim(),
+    };
+  },
+  warnFn: console.warn,
 };
 
 type ReadLineFn = () => Promise<string | null>;
@@ -218,4 +246,50 @@ export async function runApprovePrototype(
 
   const branch = await mergedDeps.getCurrentBranchFn(projectRoot);
   await mergedDeps.gitPushFn(projectRoot, branch);
+
+  const ghAvailable = await mergedDeps.checkGhAvailableFn(projectRoot);
+  if (!ghAvailable) {
+    mergedDeps.warnFn(
+      "GitHub CLI (gh) not found. Skipping PR creation. Push was successful.",
+    );
+    return;
+  }
+
+  const prdPath = join(flowDir, `it_${iteration}_PRD.json`);
+  let requirementName = `approve prototype iteration it_${iteration}`;
+  let prdTitle = requirementName;
+
+  if (await mergedDeps.existsFn(prdPath)) {
+    try {
+      const raw = await readFile(prdPath, "utf8");
+      const parsed = JSON.parse(raw);
+      const validation = PrdSchema.safeParse(parsed);
+      if (validation.success) {
+        const prd = validation.data;
+        const firstStory = prd.userStories[0];
+        if (firstStory) {
+          requirementName = firstStory.title;
+          prdTitle = firstStory.title;
+        }
+      } else {
+        mergedDeps.warnFn("Unable to derive PR metadata from PRD: schema mismatch.");
+      }
+    } catch {
+      mergedDeps.warnFn("Unable to derive PR metadata from PRD: invalid JSON.");
+    }
+  } else {
+    mergedDeps.warnFn(
+      `Unable to derive PR metadata from PRD: ${join(FLOW_REL_DIR, `it_${iteration}_PRD.json`)} missing.`,
+    );
+  }
+
+  const refactorReportRelativePath = join(FLOW_REL_DIR, `it_${iteration}_refactor-report.md`);
+  const prTitle = `feat: it_${iteration} — ${requirementName}`;
+  const prBody = `${prdTitle}\n\nRefactor report: ${refactorReportRelativePath}`;
+
+  const prResult = await mergedDeps.createPullRequestFn(projectRoot, prTitle, prBody);
+  if (prResult.exitCode !== 0) {
+    const suffix = prResult.stderr.length > 0 ? `: ${prResult.stderr}` : "";
+    mergedDeps.warnFn(`gh pr create failed (non-fatal)${suffix}`);
+  }
 }

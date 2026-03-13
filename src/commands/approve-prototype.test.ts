@@ -495,4 +495,134 @@ describe("approve prototype command", () => {
       );
     });
   });
+
+  describe("US-005: Create a GitHub Pull Request", () => {
+    test("US-005-AC01/AC02: after successful push, checks gh availability and creates PR with expected title/body when available", async () => {
+      const projectRoot = process.cwd();
+      const iteration = "000027";
+      const flowDir = join(projectRoot, FLOW_REL_DIR);
+      const refactorReportPath = join(flowDir, `it_${iteration}_refactor-report.md`);
+      const prdPath = join(flowDir, `it_${iteration}_PRD.json`);
+
+      const existingPaths = [refactorReportPath, prdPath];
+
+      let checkGhCalled = false;
+      let prTitle = "";
+      let prBody = "";
+
+      await expect(
+        runApprovePrototype(
+          { force: false },
+          {
+            readStateFn: async () => makeState({ current_iteration: iteration }),
+            existsFn: async (path: string) => existingPaths.includes(path),
+            loadSkillFn: async () => "# Approve Prototype",
+            invokeAgentFn: async () => ({ exitCode: 0, stdout: "", stderr: "" }),
+            readChangedFilesFn: async () => ["PROJECT_CONTEXT.md"],
+            promptGitOpsConfirmationFn: async () => true,
+            gitAddAndCommitFn: async () => {},
+            getCurrentBranchFn: async () => "feature/it_000027",
+            gitPushFn: async () => {},
+            checkGhAvailableFn: async () => {
+              checkGhCalled = true;
+              return true;
+            },
+            createPullRequestFn: async (_projectRoot, title, body) => {
+              prTitle = title;
+              prBody = body;
+              return { exitCode: 0, stderr: "" };
+            },
+          },
+        ),
+      ).resolves.toBeUndefined();
+
+      expect(checkGhCalled).toBe(true);
+      expect(prTitle).toBe(
+        "feat: it_000027 — Guardrail — command only runs after audit is done and refactor path is resolved",
+      );
+      expect(prBody).toBe(
+        "Guardrail — command only runs after audit is done and refactor path is resolved\n\nRefactor report: .agents/flow/it_000027_refactor-report.md",
+      );
+    });
+
+    test("US-005-AC03: when gh is unavailable, prints warning and skips PR creation without error", async () => {
+      const projectRoot = "/project";
+      const iteration = "000027";
+      const flowDir = join(projectRoot, FLOW_REL_DIR);
+      const refactorReportPath = join(flowDir, `it_${iteration}_refactor-report.md`);
+
+      const existingPaths = [refactorReportPath];
+      const warnings: string[] = [];
+      let createPrCalled = false;
+
+      await expect(
+        runApprovePrototype(
+          { force: false },
+          {
+            readStateFn: async () => makeState({ current_iteration: iteration }),
+            existsFn: async (path: string) => existingPaths.includes(path),
+            loadSkillFn: async () => "# Approve Prototype",
+            invokeAgentFn: async () => ({ exitCode: 0, stdout: "", stderr: "" }),
+            readChangedFilesFn: async () => ["PROJECT_CONTEXT.md"],
+            promptGitOpsConfirmationFn: async () => true,
+            gitAddAndCommitFn: async () => {},
+            getCurrentBranchFn: async () => "feature/it_000027",
+            gitPushFn: async () => {},
+            checkGhAvailableFn: async () => false,
+            createPullRequestFn: async () => {
+              createPrCalled = true;
+              return { exitCode: 0, stderr: "" };
+            },
+            warnFn: (msg: string) => {
+              warnings.push(msg);
+            },
+          },
+        ),
+      ).resolves.toBeUndefined();
+
+      expect(createPrCalled).toBe(false);
+      expect(warnings).toContain(
+        "GitHub CLI (gh) not found. Skipping PR creation. Push was successful.",
+      );
+    });
+
+    test("US-005-AC04: gh pr create failures are reported as non-fatal warnings containing stderr", async () => {
+      const projectRoot = "/project";
+      const iteration = "000027";
+      const flowDir = join(projectRoot, FLOW_REL_DIR);
+      const refactorReportPath = join(flowDir, `it_${iteration}_refactor-report.md`);
+
+      const existingPaths = [refactorReportPath];
+      const warnings: string[] = [];
+
+      await expect(
+        runApprovePrototype(
+          { force: false },
+          {
+            readStateFn: async () => makeState({ current_iteration: iteration }),
+            existsFn: async (path: string) => existingPaths.includes(path),
+            loadSkillFn: async () => "# Approve Prototype",
+            invokeAgentFn: async () => ({ exitCode: 0, stdout: "", stderr: "" }),
+            readChangedFilesFn: async () => ["PROJECT_CONTEXT.md"],
+            promptGitOpsConfirmationFn: async () => true,
+            gitAddAndCommitFn: async () => {},
+            getCurrentBranchFn: async () => "feature/it_000027",
+            gitPushFn: async () => {},
+            checkGhAvailableFn: async () => true,
+            createPullRequestFn: async () => ({
+              exitCode: 1,
+              stderr: "validation failed: already has an open pull request",
+            }),
+            warnFn: (msg: string) => {
+              warnings.push(msg);
+            },
+          },
+        ),
+      ).resolves.toBeUndefined();
+
+      expect(warnings).toHaveLength(1);
+      expect(warnings[0]).toContain("gh pr create failed (non-fatal)");
+      expect(warnings[0]).toContain("validation failed: already has an open pull request");
+    });
+  });
 });
