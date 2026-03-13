@@ -17,7 +17,7 @@ import { runSyncAgentSkills } from "./commands/sync-agent-skills";
 import { runWriteJson } from "./commands/write-json";
 import { runWriteTechnicalDebt } from "./commands/write-technical-debt";
 
-function extractFlagValue(args: string[], flag: string): { value: string | null; remainingArgs: string[] } {
+export function extractFlagValue(args: string[], flag: string): { value: string | null; remainingArgs: string[] } {
   const idx = args.indexOf(flag);
   if (idx === -1) {
     return { value: null, remainingArgs: args };
