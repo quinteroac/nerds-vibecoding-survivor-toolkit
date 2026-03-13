@@ -139,6 +139,20 @@ describe("refactor prototype command", () => {
     expect(invoked[0].interactive).toBe(true);
   });
 
+  test("US-003-AC03: throws when agent invocation returns non-zero exit code", async () => {
+    await expect(
+      runRefactorPrototype(
+        { provider: "ide" },
+        {
+          readStateFn: async () => makeState(),
+          existsFn: async () => true,
+          loadSkillFn: async () => "# Refactor Skill",
+          invokeAgentFn: async () => ({ exitCode: 1, stdout: "", stderr: "Agent failed" }),
+        },
+      ),
+    ).rejects.toThrow("Agent invocation failed with exit code 1");
+  });
+
   test("builds and invokes full prompt for ide provider when audit file exists", async () => {
     const prompts: string[] = [];
 
@@ -161,6 +175,30 @@ describe("refactor prototype command", () => {
     expect(prompts[0]).toContain("# Refactor Skill");
     expect(prompts[0]).toContain("### iteration");
     expect(prompts[0]).toContain("000026");
+  });
+
+  describe("US-003: Single agent performs the refactor", () => {
+    test("US-003-AC01: SKILL.md instructs to read plan, apply all changes, run quality checks, and report completion", async () => {
+      const skillPath = join(process.cwd(), ".agents", "skills", "refactor-prototype", "SKILL.md");
+      const content = await readFile(skillPath, "utf8");
+
+      expect(content).toMatch(/read.*audit json|audit json.*read/i);
+      expect(content).toMatch(/refactor plan/i);
+      expect(content).toMatch(/apply all recommended code changes|apply the refactor plan/i);
+      expect(content).toMatch(/run the quality checks defined in the refactor plan|quality checks/i);
+      expect(content).toMatch(/typecheck.*bun run typecheck/i);
+      expect(content).toMatch(/test suite.*bun test/i);
+    });
+
+    test("US-003-AC02: SKILL.md instructs to perform full refactor autonomously in one session without mid-way questions", async () => {
+      const skillPath = join(process.cwd(), ".agents", "skills", "refactor-prototype", "SKILL.md");
+      const content = await readFile(skillPath, "utf8");
+
+      expect(content).toMatch(/single.*autonomous agent session|single, autonomous agent session/i);
+      expect(content).toMatch(/full refactor autonomously|perform the full refactor autonomously/i);
+      expect(content).toMatch(/do not stop mid-way|do not stop midway|do not stop mid way/i);
+      expect(content).toMatch(/do not.*ask the user|without asking the user/i);
+    });
   });
 
   describe("US-001: State guard — command only runs after audit is complete", () => {
