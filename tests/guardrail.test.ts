@@ -109,7 +109,7 @@ describe("assertGuardrail", () => {
     ]);
     expect(process.exitCode).toBe(1);
 
-    process.exitCode = originalExitCode;
+    process.exitCode = originalExitCode ?? 0;
   });
 
   it('in relaxed mode without force returns when user inputs "y"', async () => {

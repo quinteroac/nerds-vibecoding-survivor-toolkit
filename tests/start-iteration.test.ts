@@ -121,5 +121,5 @@ describe("runStartIteration", () => {
 
     await rm(projectRoot, { recursive: true, force: true });
   });
-}
+});
 

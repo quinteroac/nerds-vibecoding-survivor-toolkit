@@ -48,7 +48,7 @@ describe("runWriteJson", () => {
   beforeEach(() => {
     originalCwd = process.cwd();
     originalExitCode = process.exitCode;
-    process.exitCode = undefined;
+    process.exitCode = 0;
 
     loggedMessages = [];
     errorMessages = [];
@@ -66,7 +66,7 @@ describe("runWriteJson", () => {
 
   afterEach(async () => {
     process.chdir(originalCwd);
-    process.exitCode = originalExitCode;
+    process.exitCode = originalExitCode ?? 0;
     console.log = originalLog;
     console.error = originalError;
   });
@@ -89,7 +89,7 @@ describe("runWriteJson", () => {
     expect(parsed.current_phase).toBe(payload.current_phase);
     expect(parsed.phases).toEqual(payload.phases);
     expect(typeof parsed.last_updated).toBe("string");
-    expect(process.exitCode).toBeUndefined();
+    expect(process.exitCode).toBe(0);
     expect(loggedMessages.some((msg) => msg.includes(`Written: ${outPath}`))).toBe(true);
 
     await rm(projectRoot, { recursive: true, force: true });
