@@ -22,83 +22,61 @@ The framework is built on the following principles:
 
 nerds-vst is a package that provides:
 
-- **Scaffold tool** — Running `bun nvst init` copies the template from this repo’s `scaffold/` directory into the target project, creating the following structure:
+- **Scaffold tool** — Running `nvst init` initializes the framework by copying the template to the target project, creating the core structure:
 
   ```
-  AGENTS.md
-  .agents/
+  AGENTS.md         # Entry point for agents
+  .agents/          # Workflow state and artifacts
+    state.json      # Current iteration state
     PROJECT_CONTEXT.md
-    state_rules.md
-    state.example.json
-    skills/
-      approve-prototype/SKILL.md
-      audit-prototype/SKILL.md
-      create-pr-document/SKILL.md
-      implement-user-story/SKILL.md
-      refactor-prototype/SKILL.md
-      refine-pr-document/SKILL.md
-    flow/
-      it_000001_progress.example.json
-      archived/
-  docs/
-    nvst-flow/
-      COMMANDS.md
-      QUICK_USE.md
-      templates/
-        CHANGELOG.md
-        TECHNICAL_DEBT.md
-        it_000001_product-requirement-document.md
-        it_000001_test-plan.md
-        it_000001_evaluation-report.md
-        it_000001_refactor_plan.md
-  schemas/
-    node-shims.d.ts
-    state.ts
-    audit.ts
-    compliance-report.ts
-    prd.ts
-    progress.ts
-    issues.ts
-    prototype-progress.ts
-    validate-state.ts
-    validate-progress.ts
+    skills/         # Specialized agent skills
+    flow/           # Iteration artifacts (PRDs, etc.)
   ```
 
-  Template files in this repository live under [`scaffold/`](scaffold/) with a `tmpl_` prefix (e.g. `tmpl_AGENTS.md`, `tmpl_state.ts`); `bun nvst init` copies them into the target project and writes them without the prefix to avoid naming conflicts when the toolkit is integrated elsewhere. The `state.json` file is created and managed by the toolkit at runtime. To keep the scaffold in sync with the runtime skills, run `bun nvst sync skills` after changing any file under `.agents/skills/`.
+  Template files live under [`scaffold/`](scaffold/) and are synced to the target project.
 
 - **Command-line tool** — Prompts and orchestrates the development loop, keeping state in sync. Instead of internally calling an agent within the commands, it outputs instructions as prompts to be executed by your preferred AI environment (e.g., Cursor, Antigravity, Claude Code Web, GitHub Copilot).
 
   **Command summary** (see [docs/nvst-flow/COMMANDS.md](docs/nvst-flow/COMMANDS.md) for the full reference):
 
-  `[Start Iteration] → Define/Refine/Approve Requirement → Create Prototype → Audit Prototype → Refactor Prototype → Approve Prototype`
+  `nvst start iteration` → `nvst define requirement` → `nvst refine requirement` → `nvst approve requirement` → `nvst create prototype` → `nvst audit prototype` → `nvst refactor prototype` → `nvst approve prototype`
 
   | Group | Commands |
   |-------|----------|
-  | **Main loop** | `bun nvst define requirement` → `bun nvst refine requirement` (optional) → `bun nvst approve requirement` → `bun nvst create prototype` → `bun nvst audit prototype` → `bun nvst refactor prototype` → `bun nvst approve prototype` |
-  | **Utilities** | `bun nvst init`, `bun nvst destroy [--clean]`, `bun nvst sync skills`, `bun nvst write-json --schema <name> --out <path> [--data '<json>']`, `bun nvst write-technical-debt [--out <path>] [--data '<json>']` |
+  | **Main loop** | `nvst start iteration`, `nvst define requirement`, `nvst refine requirement` (optional), `nvst approve requirement`, `nvst create prototype`, `nvst audit prototype`, `nvst refactor prototype`, `nvst approve prototype` |
+  | **Utilities** | `nvst init`, `nvst destroy [--clean]`, `nvst sync skills`, `nvst write-json`, `nvst write-technical-debt` |
 
   **Agent providers:** `claude`, `codex`, `gemini`, `cursor`, `copilot`, `ide` — where `ide` prints skill prompts to stdout instead of invoking an agent subprocess.
 
   **Typical iteration example**:
 
   ```bash
-  bun nvst define requirement --agent ide
-  bun nvst refine requirement --agent ide --challenge   # optional
-  bun nvst approve requirement
-  bun nvst create prototype --agent ide --iterations 5
-  bun nvst audit prototype --agent ide
-  bun nvst refactor prototype --agent ide
-  bun nvst approve prototype
+  nvst start iteration
+  nvst define requirement --agent [claude|gemini|codex]
+  nvst refine requirement --agent [claude|gemini|codex] --challenge # optional
+  nvst approve requirement
+  nvst create prototype --agent [claude|gemini|codex] 
+  nvst audit prototype --agent [claude|gemini|codex]
+  nvst refactor prototype --agent [claude|gemini|codex]
+  nvst approve prototype
   ```
 
-  _Note: Commands output instructions as prompts to be used in modern IDEs and web environments (e.g., Cursor, Antigravity, Claude Code Web, GitHub Copilot) rather than calling agents internally._
+  _Note: Using CLI-based agents (claude, gemini, codex) is the recommended way to run NVST for a fully automated experience. You can also use `--agent ide` to output skill prompts directly to the terminal, which you can then copy into web-based agents or IDE tools (Cursor, Antigravity, ChatGPT)._
 
 
 ## Installation
 
 **Prerequisites:** [Bun](https://bun.sh/) v1 or later must be installed.
 
-You can install the toolkit from the local file system or from a registry (when published).
+You can install the toolkit via standalone binaries (recommended for quick use), from the local file system, or from a registry.
+
+### Standalone Binaries (Recommended)
+
+The easiest way to get started is to download the pre-compiled binary for your platform from the [GitHub Releases](https://github.com/quinteroac/nerds-vibecoding-survivor-toolkit/releases):
+
+1.  Download the binary for your OS (e.g., `nvst-linux-x64`).
+2.  Make it executable: `chmod +x nvst-linux-x64`.
+3.  Move it to your path: `sudo mv nvst-linux-x64 /usr/local/bin/nvst`.
 
 ### From local file system
 
@@ -112,19 +90,19 @@ bun add /path/to/nerds-vibecoding-survivor-toolkit
 bun add ./quinteroac-agents-coding-toolkit-<version>.tgz
 ```
 
-### From npm
-
-When the package is published to npm:
-
-```bash
-bun add @quinteroac/agents-coding-toolkit
-# or
-npm install @quinteroac/agents-coding-toolkit
-```
 
 ### Verify installation
 
-After installation, the `nvst` command should be available. Prefer `bun nvst` so Bun resolves the binary from the local package:
+After installation, the `nvst` command should be available.
+
+**If you installed the standalone binary:**
+```bash
+nvst --version
+nvst --help
+```
+
+**If you installed via Bun (local or npm):**
+Prefer `bun nvst` so Bun resolves the binary from the local package:
 
 ```bash
 # Check that the command works

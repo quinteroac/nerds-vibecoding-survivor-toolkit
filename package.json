@@ -1,9 +1,5 @@
 {
   "name": "@quinteroac/agents-coding-toolkit",
-  "publishConfig": {
-    "registry": "https://registry.npmjs.org",
-    "access": "public"
-  },
   "version": "0.4.1-1",
   "repository": {
     "type": "git",
@@ -25,7 +21,6 @@
     "typecheck": "bun tsc --noEmit",
     "build:binary": "bun run src/scripts/build-binary.ts",
     "build:binaries": "bun run src/scripts/build-binaries.ts",
-    "package": "npm pack",
     "bump": "npm version && git push --follow-tags",
     "bump:patch": "npm version patch && git push --follow-tags",
     "bump:minor": "npm version minor && git push --follow-tags",
