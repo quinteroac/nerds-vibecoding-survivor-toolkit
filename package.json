@@ -4,7 +4,7 @@
     "registry": "https://registry.npmjs.org",
     "access": "public"
   },
-  "version": "0.4.1-0",
+  "version": "0.4.1-1",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/quinteroac/nerds-vibecoding-survivor-toolkit.git"
