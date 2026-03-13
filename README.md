@@ -145,6 +145,34 @@ nvst --help
 ./node_modules/.bin/nvst --help
 ```
 
+### Build standalone binary
+
+Build a single platform binary from this repository:
+
+```bash
+bun run build:binary
+```
+
+Optional flags:
+
+```bash
+bun run build:binary --target bun-linux-x64 --outdir dist --name nvst
+```
+
+Build all release binaries (macOS, Linux, Windows x64):
+
+```bash
+bun run build:binaries
+```
+
+The produced executables are standalone artifacts built with `bun build --compile`. They are intended to run on target machines without Bun or Node.js installed.
+
+Quick verification for Linux in a clean environment (no Bun/Node installed in the container):
+
+```bash
+docker run --rm -v "$PWD/dist:/dist" debian:stable-slim /dist/nvst-linux-x64 --help
+```
+
 ## Acknowledgement
 
 Acknowledgements and credits will be added after the initial release.

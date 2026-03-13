@@ -17,6 +17,8 @@ import { runSyncAgentSkills } from "./commands/sync-agent-skills";
 import { runWriteJson } from "./commands/write-json";
 import { runWriteTechnicalDebt } from "./commands/write-technical-debt";
 
+declare const NVST_COMPILED_VERSION: string;
+
 export function extractFlagValue(args: string[], flag: string): { value: string | null; remainingArgs: string[] } {
   const idx = args.indexOf(flag);
   if (idx === -1) {
@@ -110,6 +112,11 @@ Examples:
 }
 
 async function printVersion(): Promise<void> {
+  if (typeof NVST_COMPILED_VERSION === "string" && NVST_COMPILED_VERSION.length > 0) {
+    console.log(NVST_COMPILED_VERSION);
+    return;
+  }
+
   const pkgPath = join(import.meta.dir, "..", "package.json");
   try {
     const pkg = (await Bun.file(pkgPath).json()) as { version?: string };
