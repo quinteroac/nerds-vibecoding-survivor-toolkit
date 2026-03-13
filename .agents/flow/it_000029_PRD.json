@@ -1,0 +1,146 @@
+{
+  "goals": [
+    "Distribute NVST as standalone executables (no Node/npm/Bun required on the user machine).",
+    "Simplify installation and updates via a single executable per platform.",
+    "Produce and publish binaries for macOS, Linux, and Windows when a release (tag) is created, matching the current tag-based release flow."
+  ],
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Build produces one binary per target platform",
+      "description": "As a maintainer, I want to build a single executable with Bun for a given platform so that I can ship one file per OS.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-001-AC01",
+          "text": "A Bun build (or equivalent) produces one binary (e.g. `nvst` or `nvst.exe`) for the current or specified platform."
+        },
+        {
+          "id": "US-001-AC02",
+          "text": "Build is reproducible from the repo (documented script or command, e.g. `bun run build:binary` or `bun build src/cli.ts --outdir=dist`)."
+        },
+        {
+          "id": "US-001-AC03",
+          "text": "Typecheck / lint passes."
+        },
+        {
+          "id": "US-001-AC04",
+          "text": "**[UI stories only]** N/A (CLI only)."
+        }
+      ]
+    },
+    {
+      "id": "US-002",
+      "title": "Built binary behaves like `bun nvst`",
+      "description": "As an end user, I want the downloaded binary to behave like `bun nvst` so that I get the same CLI and behavior without Bun.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-002-AC01",
+          "text": "Running the binary (e.g. `./nvst --help` or `nvst.exe --help`) shows the same help and subcommands as `bun nvst`."
+        },
+        {
+          "id": "US-002-AC02",
+          "text": "At least one non-trivial command (e.g. `nvst define requirement` or `nvst --version`) runs successfully when invoked via the binary."
+        },
+        {
+          "id": "US-002-AC03",
+          "text": "Typecheck / lint passes."
+        },
+        {
+          "id": "US-002-AC04",
+          "text": "**[UI stories only]** N/A (CLI only)."
+        }
+      ]
+    },
+    {
+      "id": "US-003",
+      "title": "Single entry point to build all three platform binaries",
+      "description": "As a maintainer, I want one script or command that produces binaries for macOS, Linux, and Windows so that releases can be built consistently.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-003-AC01",
+          "text": "One script or command (e.g. `bun run build:binaries` or a small script in `scripts/`) builds executables for mac, linux, and windows (e.g. from a single runner using Bun’s target or matrix)."
+        },
+        {
+          "id": "US-003-AC02",
+          "text": "Output is predictable (e.g. `dist/nvst-darwin-*`, `dist/nvst-linux-*`, `dist/nvst-windows-*` or similar)."
+        },
+        {
+          "id": "US-003-AC03",
+          "text": "Typecheck / lint passes."
+        },
+        {
+          "id": "US-003-AC04",
+          "text": "**[UI stories only]** N/A (CLI only)."
+        }
+      ]
+    },
+    {
+      "id": "US-004",
+      "title": "Binary is self-contained (no Bun/Node on target machine)",
+      "description": "As an end user, I want to run the binary on a machine without Bun or Node installed so that I can use NVST with a single download.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-004-AC01",
+          "text": "The built binary runs on a clean macOS, Linux, or Windows system without Bun or Node.js installed (e.g. verified in a minimal container or VM, or documented as a requirement of the build)."
+        },
+        {
+          "id": "US-004-AC02",
+          "text": "No runtime error due to missing Bun/Node when invoking the binary."
+        },
+        {
+          "id": "US-004-AC03",
+          "text": "Typecheck / lint passes."
+        },
+        {
+          "id": "US-004-AC04",
+          "text": "**[UI stories only]** N/A (CLI only)."
+        }
+      ]
+    },
+    {
+      "id": "US-005",
+      "title": "GitHub Actions workflow builds and publishes binaries on release",
+      "description": "As a maintainer, I want a GitHub Actions workflow that builds and publishes the three binaries when a release is created so that distribution stays aligned with the current tag-based release flow.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-005-AC01",
+          "text": "A workflow (new or updated) runs when a GitHub Release is published (same trigger as current publish flow, e.g. `release: types: [published]`)."
+        },
+        {
+          "id": "US-005-AC02",
+          "text": "The workflow builds binaries for macOS, Linux, and Windows (e.g. via matrix or Bun native targets)."
+        },
+        {
+          "id": "US-005-AC03",
+          "text": "The resulting binaries are attached to the GitHub Release as assets (e.g. `nvst-darwin-amd64`, `nvst-linux-amd64`, `nvst-windows-amd64.exe` or similar)."
+        },
+        {
+          "id": "US-005-AC04",
+          "text": "Typecheck / lint passes."
+        },
+        {
+          "id": "US-005-AC05",
+          "text": "**[UI stories only]** N/A (CLI only)."
+        }
+      ]
+    }
+  ],
+  "functionalRequirements": [
+    {
+      "id": "FR-1",
+      "description": "The CLI entry point remains `src/cli.ts`; the Bun build compiles it (and its dependencies) into a single executable."
+    },
+    {
+      "id": "FR-2",
+      "description": "Binaries are produced for at least: macOS (darwin), Linux (linux), Windows (windows), with architecture (e.g. x64) implied or explicit as needed."
+    },
+    {
+      "id": "FR-3",
+      "description": "Release artifacts (binaries) are generated only when a release is published (tag/release trigger), not on every push."
+    },
+    {
+      "id": "FR-4",
+      "description": "The project remains CLI-only; no change to the set of commands or to AGENTS.md/PROJECT_CONTEXT.md beyond distribution and release steps."
+    }
+  ]
+}

@@ -9,7 +9,7 @@
 
 ## Version Control & Collaboration Features
 - **Prototyping Branches:** Automatically create branches in the format `feature/it_XXXXXX-[Req-Description]` during the "create prototype" phase.
-- **Team-based Naming Conventions:** Manage different naming conventions for iterations based on GitHub usernames to seamlessly support team development.
+- **Team-based Naming Conventions:** Manage different naming conventions for iterations based on git usernames to seamlessly support team development.
 
 ## Post-Iteration Automation
-- **Prototype Approval Cycle:** During the "approve prototype" phase, automatically update `PROJECT_CONTEXT.md` and `ROADMAP.md`, push changes to git, and create a Pull Request.
+- [DONE] **Prototype Approval Cycle:** During the "approve prototype" phase, automatically update `PROJECT_CONTEXT.md` and `ROADMAP.md`, push changes to git, and create a Pull Request.
