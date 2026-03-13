@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 
 import type { State } from "../../scaffold/schemas/tmpl_state";
+import type { AgentInvokeOptions } from "../agent";
 import { FLOW_REL_DIR } from "../state";
 import { runApprovePrototype } from "./approve-prototype";
 
@@ -104,14 +105,15 @@ describe("approve prototype command", () => {
       );
     });
 
-    test("US-001-AC04: proceeds when audit.md exists and audit.json does not (nothing to refactor path)", async () => {
+    test("US-001-AC04: proceeds when audit.md exists and audit.json does not (nothing to refactor path) and invokes approve-prototype skill", async () => {
       const projectRoot = "/project";
       const iteration = "000027";
       const flowDir = join(projectRoot, FLOW_REL_DIR);
       const auditMdPath = join(flowDir, `it_${iteration}_audit.md`);
 
       const existingPaths = [auditMdPath];
-      const logs: string[] = [];
+      const prompts: string[] = [];
+      const skills: string[] = [];
 
       await expect(
         runApprovePrototype(
@@ -119,24 +121,34 @@ describe("approve prototype command", () => {
           {
             readStateFn: async () => makeState({ current_iteration: iteration }),
             existsFn: makeExistsForPaths(existingPaths),
-            logFn: (msg) => {
-              logs.push(msg);
+            loadSkillFn: async (_root, skillName) => {
+              skills.push(skillName);
+              return "# Approve Prototype";
+            },
+            invokeAgentFn: async (options) => {
+              prompts.push(options.prompt);
+              return { exitCode: 0, stdout: "", stderr: "" };
             },
           },
         ),
       ).resolves.toBeUndefined();
 
-      expect(logs).toEqual(["nvst approve prototype is not implemented yet."]);
+      expect(skills).toEqual(["approve-prototype"]);
+      expect(prompts).toHaveLength(1);
+      expect(prompts[0]).toContain("# Approve Prototype");
+      expect(prompts[0]).toContain("### iteration");
+      expect(prompts[0]).toContain(iteration);
     });
 
-    test("US-001-AC05: proceeds when refactor-report.md exists (refactor done path)", async () => {
+    test("US-001-AC05: proceeds when refactor-report.md exists (refactor done path) and invokes approve-prototype skill", async () => {
       const projectRoot = "/project";
       const iteration = "000027";
       const flowDir = join(projectRoot, FLOW_REL_DIR);
       const refactorReportPath = join(flowDir, `it_${iteration}_refactor-report.md`);
 
       const existingPaths = [refactorReportPath];
-      const logs: string[] = [];
+      const prompts: string[] = [];
+      const skills: string[] = [];
 
       await expect(
         runApprovePrototype(
@@ -144,24 +156,34 @@ describe("approve prototype command", () => {
           {
             readStateFn: async () => makeState({ current_iteration: iteration }),
             existsFn: makeExistsForPaths(existingPaths),
-            logFn: (msg) => {
-              logs.push(msg);
+            loadSkillFn: async (_root, skillName) => {
+              skills.push(skillName);
+              return "# Approve Prototype";
+            },
+            invokeAgentFn: async (options) => {
+              prompts.push(options.prompt);
+              return { exitCode: 0, stdout: "", stderr: "" };
             },
           },
         ),
       ).resolves.toBeUndefined();
 
-      expect(logs).toEqual(["nvst approve prototype is not implemented yet."]);
+      expect(skills).toEqual(["approve-prototype"]);
+      expect(prompts).toHaveLength(1);
+      expect(prompts[0]).toContain("# Approve Prototype");
+      expect(prompts[0]).toContain("### iteration");
+      expect(prompts[0]).toContain(iteration);
     });
 
-    test("US-001-AC06: guardrail respects --force via assertGuardrail (force bypasses failures)", async () => {
+    test("US-001-AC06: guardrail respects --force via assertGuardrail (force bypasses failures) and still invokes approve-prototype skill", async () => {
       const projectRoot = "/project";
       const iteration = "000027";
       const flowDir = join(projectRoot, FLOW_REL_DIR);
       const auditJsonPath = join(flowDir, `it_${iteration}_audit.json`);
 
       const existingPaths = [auditJsonPath];
-      const logs: string[] = [];
+      const prompts: string[] = [];
+      const skills: string[] = [];
 
       await expect(
         runApprovePrototype(
@@ -173,14 +195,101 @@ describe("approve prototype command", () => {
                 flow_guardrail: "relaxed",
               }),
             existsFn: makeExistsForPaths(existingPaths),
-            logFn: (msg) => {
-              logs.push(msg);
+            loadSkillFn: async (_root, skillName) => {
+              skills.push(skillName);
+              return "# Approve Prototype";
+            },
+            invokeAgentFn: async (options) => {
+              prompts.push(options.prompt);
+              return { exitCode: 0, stdout: "", stderr: "" };
             },
           },
         ),
       ).resolves.toBeUndefined();
 
-      expect(logs).toEqual(["nvst approve prototype is not implemented yet."]);
+      expect(skills).toEqual(["approve-prototype"]);
+      expect(prompts).toHaveLength(1);
+      expect(prompts[0]).toContain("# Approve Prototype");
+      expect(prompts[0]).toContain("### iteration");
+      expect(prompts[0]).toContain(iteration);
+    });
+  });
+
+  describe("US-002: Agent updates context files interactively", () => {
+    test("US-002-AC01/AC04: loads approve-prototype skill, builds prompt with iteration, invokes agent with interactive: true and throws on non-zero exit", async () => {
+      const projectRoot = "/project";
+      const iteration = "000027";
+      const flowDir = join(projectRoot, FLOW_REL_DIR);
+      const refactorReportPath = join(flowDir, `it_${iteration}_refactor-report.md`);
+
+      const existingPaths = [refactorReportPath];
+      const calls: AgentInvokeOptions[] = [];
+      const skills: string[] = [];
+
+      await expect(
+        runApprovePrototype(
+          { force: false },
+          {
+            readStateFn: async () => makeState({ current_iteration: iteration }),
+            existsFn: makeExistsForPaths(existingPaths),
+            loadSkillFn: async (_root, skillName) => {
+              skills.push(skillName);
+              return "# Approve Prototype Skill Body";
+            },
+            invokeAgentFn: async (options) => {
+              calls.push(options);
+              return { exitCode: 0, stdout: "", stderr: "" };
+            },
+          },
+        ),
+      ).resolves.toBeUndefined();
+
+      expect(skills).toEqual(["approve-prototype"]);
+      expect(calls).toHaveLength(1);
+      expect(calls[0].interactive).toBe(true);
+      expect(calls[0].prompt).toContain("# Approve Prototype Skill Body");
+      expect(calls[0].prompt).toContain("### iteration");
+      expect(calls[0].prompt).toContain(iteration);
+
+      await expect(
+        runApprovePrototype(
+          { force: false },
+          {
+            readStateFn: async () => makeState({ current_iteration: iteration }),
+            existsFn: makeExistsForPaths(existingPaths),
+            loadSkillFn: async () => "# Skill",
+            invokeAgentFn: async () => ({ exitCode: 1, stdout: "", stderr: "Agent failed" }),
+          },
+        ),
+      ).rejects.toThrow("Agent invocation failed with exit code 1");
+    });
+
+    test("US-002-AC02/AC03: SKILL.md instructs reading iteration artifacts, updating context/roadmap, and presenting per-file plan before edits", async () => {
+      const skillPath = join(
+        process.cwd(),
+        ".agents",
+        "skills",
+        "approve-prototype",
+        "SKILL.md",
+      );
+      const content = await readFile(skillPath, "utf8");
+
+      expect(content).toContain(".agents/flow/it_{iteration}_PRD.json");
+      expect(content).toContain("it_{iteration}_refactor-report.md");
+      expect(content).toContain("it_{iteration}_progress.json");
+      expect(content).toContain(".agents/PROJECT_CONTEXT.md");
+      expect(content).toContain("ROADMAP.md");
+      expect(content).toContain("AGENTS.md");
+      expect(content).toContain("README.md");
+
+      expect(content).toMatch(/Plan and present changes/i);
+      expect(content).toMatch(/before editing anything/i);
+      expect(content).toMatch(/summary of the current state/i);
+      expect(content).toMatch(/summary of the proposed changes/i);
+      expect(content).toMatch(/Planned updates/i);
+
+      expect(content).toMatch(/Update `PROJECT_CONTEXT\.md` and `ROADMAP\.md`/i);
+      expect(content).toMatch(/Optionally update `AGENTS\.md` and `README\.md` when stale/i);
     });
   });
 });

@@ -1,6 +1,13 @@
 import { join } from "node:path";
 
 import type { State } from "../../scaffold/schemas/tmpl_state";
+import {
+  buildPrompt,
+  invokeAgent,
+  loadSkill,
+  type AgentInvokeOptions,
+  type AgentResult,
+} from "../agent";
 import { assertGuardrail } from "../guardrail";
 import { exists, FLOW_REL_DIR, readState } from "../state";
 
@@ -12,12 +19,16 @@ interface ApprovePrototypeDeps {
   existsFn: (path: string) => Promise<boolean>;
   logFn: (message: string) => void;
   readStateFn: (projectRoot: string) => Promise<State>;
+   loadSkillFn: (projectRoot: string, skillName: string) => Promise<string>;
+  invokeAgentFn: (options: AgentInvokeOptions) => Promise<AgentResult>;
 }
 
 const defaultDeps: ApprovePrototypeDeps = {
   existsFn: exists,
   logFn: console.warn,
   readStateFn: readState,
+  loadSkillFn: loadSkill,
+  invokeAgentFn: invokeAgent,
 };
 
 const AUDIT_MISSING_MESSAGE =
@@ -61,5 +72,17 @@ export async function runApprovePrototype(
 
   await assertGuardrail(state, violated, message, { force });
 
-  mergedDeps.logFn("nvst approve prototype is not implemented yet.");
+  const skillBody = await mergedDeps.loadSkillFn(projectRoot, "approve-prototype");
+  const prompt = buildPrompt(skillBody, {
+    iteration,
+  });
+  const result = await mergedDeps.invokeAgentFn({
+    provider: "ide",
+    prompt,
+    cwd: projectRoot,
+    interactive: true,
+  });
+  if (result.exitCode !== 0) {
+    throw new Error(`Agent invocation failed with exit code ${result.exitCode}.`);
+  }
 }

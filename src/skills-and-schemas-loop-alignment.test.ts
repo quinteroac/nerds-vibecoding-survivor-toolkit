@@ -57,16 +57,18 @@ describe("US-004: Skills and schemas align to the new loop", () => {
       expect(content).toContain(".agents/flow/it_{iteration}_progress.json");
     }
 
-    const stubSkills = [
+    // Refactor and approve-prototype skills are now fully implemented,
+    // so there should be no remaining "stub" wording in the loop skills.
+    const noStubSkills = [
       ".agents/skills/refactor-prototype/SKILL.md",
       ".agents/skills/approve-prototype/SKILL.md",
       "scaffold/.agents/skills/refactor-prototype/tmpl_SKILL.md",
       "scaffold/.agents/skills/approve-prototype/tmpl_SKILL.md",
     ];
 
-    for (const relativePath of stubSkills) {
+    for (const relativePath of noStubSkills) {
       const content = await readFile(join(PROJECT_ROOT, relativePath), "utf8");
-      expect(content).toContain("currently a stub command");
+      expect(content).not.toContain("currently a stub command");
     }
   });
 
