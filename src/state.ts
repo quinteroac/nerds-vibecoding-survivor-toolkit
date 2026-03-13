@@ -48,5 +48,9 @@ export async function readState(projectRoot: string): Promise<State> {
 
 export async function writeState(projectRoot: string, state: State): Promise<void> {
   const statePath = join(projectRoot, STATE_REL_PATH);
-  await writeFile(statePath, `${JSON.stringify(state, null, 2)}\n`, "utf8");
+  const nextState: State = {
+    ...state,
+    last_updated: new Date().toISOString(),
+  };
+  await writeFile(statePath, `${JSON.stringify(nextState, null, 2)}\n`, "utf8");
 }
