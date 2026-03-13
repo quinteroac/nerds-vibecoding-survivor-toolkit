@@ -153,7 +153,11 @@ docker run --rm -v "$PWD/dist:/dist" debian:stable-slim /dist/nvst-linux-x64 --h
 
 ## Acknowledgement
 
-Acknowledgements and credits will be added after the initial release.
+This toolkit draws inspiration from other excellent projects in the specification-driven development space. Special thanks to the following libraries for their contribution to the agentic coding ecosystem:
+
+- **[Ralph Loop](https://github.com/mizchi/ralph-loop)**
+- **[GSD](https://github.com/gsd-build/get-shit-done)**
+- **[spec-kit](https://github.com/spec-kit/spec-kit)**
 
 ## References
 
