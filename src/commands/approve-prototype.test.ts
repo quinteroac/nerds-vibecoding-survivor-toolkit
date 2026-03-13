@@ -1,11 +1,15 @@
-import { describe, expect, test } from "bun:test";
+import { afterEach, describe, expect, test } from "bun:test";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 
 import type { State } from "../../scaffold/schemas/tmpl_state";
 import type { AgentInvokeOptions } from "../agent";
 import { FLOW_REL_DIR } from "../state";
-import { runApprovePrototype } from "./approve-prototype";
+import {
+  buildGitOpsConfirmationPrompt,
+  promptForGitOperationsConfirmation,
+  runApprovePrototype,
+} from "./approve-prototype";
 
 function makeState(overrides?: Partial<State>): State {
   return {
@@ -39,6 +43,10 @@ function makeState(overrides?: Partial<State>): State {
     ...overrides,
   } as State;
 }
+
+afterEach(() => {
+  process.exitCode = 0;
+});
 
 describe("approve prototype command", () => {
   test("registers approve prototype command in CLI dispatch", async () => {
@@ -290,6 +298,129 @@ describe("approve prototype command", () => {
 
       expect(content).toMatch(/Update `PROJECT_CONTEXT\.md` and `ROADMAP\.md`/i);
       expect(content).toMatch(/Optionally update `AGENTS\.md` and `README\.md` when stale/i);
+    });
+  });
+
+  describe("US-003: User confirms updates before git operations", () => {
+    test("US-003-AC01: builds confirmation prompt listing updated files and including commit/push/PR question", () => {
+      const prompt = buildGitOpsConfirmationPrompt(["PROJECT_CONTEXT.md", "ROADMAP.md"]);
+      expect(prompt).toBe(
+        "The agent updated: PROJECT_CONTEXT.md, ROADMAP.md. Proceed with commit, push, and PR creation? [y/N]",
+      );
+    });
+
+    test("US-003-AC02: prompt helper treats 'n' or empty input as abort, prints aborted message, and does not set exit code", async () => {
+      const messages: string[] = [];
+      const writeFn = (msg: string): void => {
+        messages.push(msg);
+      };
+
+      const files = ["PROJECT_CONTEXT.md", "ROADMAP.md"];
+
+      const resultEmpty = await promptForGitOperationsConfirmation(
+        files,
+        async () => "",
+        writeFn,
+        () => true,
+      );
+      expect(resultEmpty).toBe(false);
+
+      const resultNo = await promptForGitOperationsConfirmation(
+        files,
+        async () => "n",
+        writeFn,
+        () => true,
+      );
+      expect(resultNo).toBe(false);
+
+      expect(messages).toContain(
+        "The agent updated: PROJECT_CONTEXT.md, ROADMAP.md. Proceed with commit, push, and PR creation? [y/N]",
+      );
+      expect(messages).toContain("Aborted. No git operations performed.");
+      expect(process.exitCode).toBe(0);
+    });
+
+    test("US-003-AC03: when user confirms, prompt helper returns true and does not print aborted message", async () => {
+      const messages: string[] = [];
+      const writeFn = (msg: string): void => {
+        messages.push(msg);
+      };
+
+      const files = ["PROJECT_CONTEXT.md", "ROADMAP.md"];
+
+      const resultYes = await promptForGitOperationsConfirmation(
+        files,
+        async () => "y",
+        writeFn,
+        () => true,
+      );
+
+      expect(resultYes).toBe(true);
+      expect(messages).toContain(
+        "The agent updated: PROJECT_CONTEXT.md, ROADMAP.md. Proceed with commit, push, and PR creation? [y/N]",
+      );
+      expect(messages).not.toContain("Aborted. No git operations performed.");
+      expect(process.exitCode).toBe(0);
+    });
+
+    test("US-003-AC02/AC04: runApprovePrototype logs abort message and exits cleanly when user declines git operations", async () => {
+      const projectRoot = "/project";
+      const iteration = "000027";
+      const flowDir = join(projectRoot, FLOW_REL_DIR);
+      const refactorReportPath = join(flowDir, `it_${iteration}_refactor-report.md`);
+
+      const existingPaths = [refactorReportPath];
+      const logs: string[] = [];
+
+      await expect(
+        runApprovePrototype(
+          { force: false },
+          {
+            readStateFn: async () => makeState({ current_iteration: iteration }),
+            existsFn: async (path: string) => existingPaths.includes(path),
+            loadSkillFn: async () => "# Approve Prototype",
+            invokeAgentFn: async () => ({ exitCode: 0, stdout: "", stderr: "" }),
+            readChangedFilesFn: async () => ["PROJECT_CONTEXT.md", "ROADMAP.md"],
+            promptGitOpsConfirmationFn: async () => false,
+            logFn: (msg: string) => {
+              logs.push(msg);
+            },
+          },
+        ),
+      ).resolves.toBeUndefined();
+
+      expect(logs).toContain("Aborted. No git operations performed.");
+      expect(process.exitCode).toBe(0);
+    });
+
+    test("US-003-AC03: when user confirms, runApprovePrototype returns successfully without logging abort message", async () => {
+      const projectRoot = "/project";
+      const iteration = "000027";
+      const flowDir = join(projectRoot, FLOW_REL_DIR);
+      const refactorReportPath = join(flowDir, `it_${iteration}_refactor-report.md`);
+
+      const existingPaths = [refactorReportPath];
+      const logs: string[] = [];
+
+      await expect(
+        runApprovePrototype(
+          { force: false },
+          {
+            readStateFn: async () => makeState({ current_iteration: iteration }),
+            existsFn: async (path: string) => existingPaths.includes(path),
+            loadSkillFn: async () => "# Approve Prototype",
+            invokeAgentFn: async () => ({ exitCode: 0, stdout: "", stderr: "" }),
+            readChangedFilesFn: async () => ["PROJECT_CONTEXT.md", "ROADMAP.md"],
+            promptGitOpsConfirmationFn: async () => true,
+            logFn: (msg: string) => {
+              logs.push(msg);
+            },
+          },
+        ),
+      ).resolves.toBeUndefined();
+
+      expect(logs).not.toContain("Aborted. No git operations performed.");
+      expect(process.exitCode).toBe(0);
     });
   });
 });

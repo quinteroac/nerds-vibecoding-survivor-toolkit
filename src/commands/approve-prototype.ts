@@ -1,4 +1,5 @@
 import { join } from "node:path";
+import { $ as dollar } from "bun";
 
 import type { State } from "../../scaffold/schemas/tmpl_state";
 import {
@@ -9,6 +10,7 @@ import {
   type AgentResult,
 } from "../agent";
 import { assertGuardrail } from "../guardrail";
+import { defaultReadLine } from "../readline";
 import { exists, FLOW_REL_DIR, readState } from "../state";
 
 export interface ApprovePrototypeOptions {
@@ -19,8 +21,10 @@ interface ApprovePrototypeDeps {
   existsFn: (path: string) => Promise<boolean>;
   logFn: (message: string) => void;
   readStateFn: (projectRoot: string) => Promise<State>;
-   loadSkillFn: (projectRoot: string, skillName: string) => Promise<string>;
+  loadSkillFn: (projectRoot: string, skillName: string) => Promise<string>;
   invokeAgentFn: (options: AgentInvokeOptions) => Promise<AgentResult>;
+  readChangedFilesFn: (projectRoot: string) => Promise<string[]>;
+  promptGitOpsConfirmationFn: (files: string[]) => Promise<boolean>;
 }
 
 const defaultDeps: ApprovePrototypeDeps = {
@@ -29,7 +33,81 @@ const defaultDeps: ApprovePrototypeDeps = {
   readStateFn: readState,
   loadSkillFn: loadSkill,
   invokeAgentFn: invokeAgent,
+  readChangedFilesFn: readChangedFiles,
+  promptGitOpsConfirmationFn: (files) =>
+    promptForGitOperationsConfirmation(files, defaultReadLine, defaultStdoutWrite, defaultIsTTY),
 };
+
+type ReadLineFn = () => Promise<string | null>;
+type WriteFn = (message: string) => void;
+type IsTTYFn = () => boolean;
+
+function defaultStdoutWrite(message: string): void {
+  process.stdout.write(`${message}\n`);
+}
+
+function defaultIsTTY(): boolean {
+  return process.stdin.isTTY === true;
+}
+
+export function buildGitOpsConfirmationPrompt(files: string[]): string {
+  const fileList = files.join(", ");
+  return `The agent updated: ${fileList}. Proceed with commit, push, and PR creation? [y/N]`;
+}
+
+export async function promptForGitOperationsConfirmation(
+  files: string[],
+  readLineFn: ReadLineFn,
+  writeFn: WriteFn,
+  isTTYFn: IsTTYFn,
+): Promise<boolean> {
+  if (!isTTYFn()) {
+    return false;
+  }
+
+  const prompt = buildGitOpsConfirmationPrompt(files);
+  writeFn(prompt);
+
+  let line: string | null;
+  try {
+    line = await readLineFn();
+  } catch {
+    line = null;
+  }
+
+  if (line === null) {
+    return false;
+  }
+
+  const trimmed = line.trim();
+  if (trimmed === "y" || trimmed === "Y") {
+    return true;
+  }
+
+  writeFn("Aborted. No git operations performed.");
+  return false;
+}
+
+async function readChangedFiles(projectRoot: string): Promise<string[]> {
+  const result = await dollar`git status --porcelain`
+    .cwd(projectRoot)
+    .nothrow()
+    .quiet();
+
+  if (result.exitCode !== 0) {
+    return [];
+  }
+
+  const stdout = result.stdout.toString().trim();
+  if (!stdout) {
+    return [];
+  }
+
+  return stdout
+    .split("\n")
+    .map((line) => line.slice(3).trim())
+    .filter((path) => path.length > 0);
+}
 
 const AUDIT_MISSING_MESSAGE =
   "Cannot approve prototype: audit prototype has not been run for this iteration.";
@@ -84,5 +162,16 @@ export async function runApprovePrototype(
   });
   if (result.exitCode !== 0) {
     throw new Error(`Agent invocation failed with exit code ${result.exitCode}.`);
+  }
+
+  const changedFiles = await mergedDeps.readChangedFilesFn(projectRoot);
+  if (changedFiles.length === 0) {
+    return;
+  }
+
+  const shouldProceed = await mergedDeps.promptGitOpsConfirmationFn(changedFiles);
+  if (!shouldProceed) {
+    mergedDeps.logFn("Aborted. No git operations performed.");
+    return;
   }
 }
