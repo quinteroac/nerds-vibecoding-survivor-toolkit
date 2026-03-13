@@ -24,6 +24,7 @@
     "test": "bun test src tests schemas",
     "typecheck": "bun tsc --noEmit",
     "build:binary": "bun run src/scripts/build-binary.ts",
+    "build:binaries": "bun run src/scripts/build-binaries.ts",
     "package": "npm pack",
     "bump": "npm version && git push --follow-tags",
     "bump:patch": "npm version patch && git push --follow-tags",
