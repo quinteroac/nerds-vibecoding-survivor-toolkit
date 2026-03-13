@@ -164,3 +164,7 @@ This toolkit draws inspiration from other excellent projects in the specificatio
 - [docs/nvst-flow/COMMANDS.md](docs/nvst-flow/COMMANDS.md) — Full CLI command reference.
 - [docs/nvst-flow/QUICK_USE.md](docs/nvst-flow/QUICK_USE.md) — Quick start and common workflows.
 - [process_design.md](process_design.md) — Full process specification.
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
