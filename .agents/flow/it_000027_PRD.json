@@ -1,0 +1,226 @@
+{
+  "goals": [
+    "Guard the command so it only runs after the refactor phase is complete for the current iteration.",
+    "Spawn an interactive agent that updates `PROJECT_CONTEXT.md`, `ROADMAP.md` (and optionally `AGENTS.md`, `README.md`) based on the iteration artifacts.",
+    "Prompt the user to review and confirm the updates before committing.",
+    "Commit the updated files, push the feature branch, and create a GitHub Pull Request automatically.",
+    "Mark `prototype_approval.status` as `\"completed\"` in `state.json` so downstream commands and future iterations can detect the approved state."
+  ],
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Guardrail — command only runs after audit is done and refactor path is resolved",
+      "description": "As a developer using the NVST CLI, I want `nvst approve prototype` to refuse to run if neither the audit nor the refactor has been executed for the current iteration so that the approval always works from a validated, stable codebase. Background — known gap in upstream commands: `audit-prototype.ts` and `refactor-prototype.ts` currently do not write `state.json` after completing. Both `prototype_audit.status` and `prototype_refactor.status` remain `\"pending\"` regardless of execution. Relying solely on these status fields would permanently block `approve-prototype`. Therefore the guardrail must use file-system evidence instead of (or in addition to) status fields. Two valid paths to approval: | Path | Condition | Meaning | |------|-----------|---------| | A — Refactor was run | `it_{iteration}_refactor-report.md` exists in `.agents/flow/` | Refactor phase completed | | B — Nothing to refactor | `it_{iteration}_audit.md` exists and `it_{iteration}_audit.json` does not exist | Audit ran; user chose \"leave as is\" (no refactor needed) |",
+      "acceptanceCriteria": [
+        {
+          "id": "US-001-AC01",
+          "text": "The command resolves `it_{iteration}_audit.md` and `it_{iteration}_refactor-report.md` paths under `.agents/flow/`."
+        },
+        {
+          "id": "US-001-AC02",
+          "text": "If neither `it_{iteration}_audit.md` nor `it_{iteration}_refactor-report.md` exists, the command fails with: _\"Cannot approve prototype: audit prototype has not been run for this iteration.\"_"
+        },
+        {
+          "id": "US-001-AC03",
+          "text": "If `it_{iteration}_audit.json` exists (refactor was planned) but `it_{iteration}_refactor-report.md` does not, the command fails with: _\"Cannot approve prototype: a refactor plan exists but refactor prototype has not been run. Run `nvst refactor prototype` first.\"_"
+        },
+        {
+          "id": "US-001-AC04",
+          "text": "If `it_{iteration}_audit.md` exists and `it_{iteration}_audit.json` does **not** exist, the command proceeds (path B — nothing to refactor)."
+        },
+        {
+          "id": "US-001-AC05",
+          "text": "If `it_{iteration}_refactor-report.md` exists, the command proceeds (path A — refactor done)."
+        },
+        {
+          "id": "US-001-AC06",
+          "text": "All guardrail failures respect `--force` and `flow_guardrail` mode via `assertGuardrail`."
+        },
+        {
+          "id": "US-001-AC07",
+          "text": "Typecheck / lint passes."
+        }
+      ]
+    },
+    {
+      "id": "US-002",
+      "title": "Agent updates context files interactively",
+      "description": "As a developer using the NVST CLI, I want the command to spawn an interactive agent that reads the iteration artifacts and proposes updates to `PROJECT_CONTEXT.md` and `ROADMAP.md` (and optionally `AGENTS.md` and `README.md`) so that project documentation stays in sync after each iteration.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-002-AC01",
+          "text": "The command loads the skill from `.agents/skills/approve-prototype/` via `loadSkill`, builds the prompt via `buildPrompt` (injecting `iteration` at minimum), and invokes the agent via `invokeAgent` with `interactive: true`."
+        },
+        {
+          "id": "US-002-AC02",
+          "text": "The `SKILL.md` instructs the agent to: (a) read `it_{iteration}_PRD.json`, `it_{iteration}_refactor-report.md`, and `PROJECT_CONTEXT.md`; (b) propose and apply updates to `PROJECT_CONTEXT.md` and `ROADMAP.md`; (c) optionally update `AGENTS.md` and `README.md` when content is stale."
+        },
+        {
+          "id": "US-002-AC03",
+          "text": "The `SKILL.md` instructs the agent to present a summary of each file it will modify and what it will change **before** making any edits, so the user can review the plan."
+        },
+        {
+          "id": "US-002-AC04",
+          "text": "If the agent exits with a non-zero code the command throws `new Error(...)` with a descriptive message (same pattern as `refactor-prototype.ts`)."
+        },
+        {
+          "id": "US-002-AC05",
+          "text": "Typecheck / lint passes."
+        }
+      ]
+    },
+    {
+      "id": "US-003",
+      "title": "User confirms updates before git operations",
+      "description": "As a developer using the NVST CLI, I want to be prompted to confirm the file updates before any git operations are performed so that I can review and reject changes if something looks wrong.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-003-AC01",
+          "text": "After the agent finishes, the command prompts the user with a message listing the files that were modified (e.g. _\"The agent updated: PROJECT_CONTEXT.md, ROADMAP.md. Proceed with commit, push, and PR creation? [y/N]\"_)."
+        },
+        {
+          "id": "US-003-AC02",
+          "text": "If the user answers `n` (or presses Enter without typing `y`), the command prints _\"Aborted. No git operations performed.\"_ and exits cleanly without setting a non-zero exit code."
+        },
+        {
+          "id": "US-003-AC03",
+          "text": "If the user answers `y`, the command proceeds to US-004 and US-005."
+        },
+        {
+          "id": "US-003-AC04",
+          "text": "Typecheck / lint passes."
+        }
+      ]
+    },
+    {
+      "id": "US-004",
+      "title": "Commit and push the feature branch",
+      "description": "As a developer using the NVST CLI, I want the command to stage all changed files, create a conventional commit, and push the current branch so that the iteration work is preserved in version control.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-004-AC01",
+          "text": "The command runs `git add -A` and `git commit -m \"feat: approve iteration {iteration} prototype\"` (using the same `gitAddAndCommitFn` injectable dep pattern as `create-prototype.ts`)."
+        },
+        {
+          "id": "US-004-AC02",
+          "text": "The command pushes the current branch to `origin` using `git push --set-upstream origin <branch>` (or equivalent)."
+        },
+        {
+          "id": "US-004-AC03",
+          "text": "If the `git push` fails, the command throws `new Error(...)` with a descriptive message indicating the branch name and the error."
+        },
+        {
+          "id": "US-004-AC04",
+          "text": "Typecheck / lint passes."
+        }
+      ]
+    },
+    {
+      "id": "US-005",
+      "title": "Create a GitHub Pull Request",
+      "description": "As a developer using the NVST CLI, I want the command to automatically open a Pull Request on GitHub after pushing so that the iteration work is ready for review without any manual steps.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-005-AC01",
+          "text": "The command checks whether `gh` CLI is available (same `checkGhAvailableFn` injectable dep pattern as `create-prototype.ts`)."
+        },
+        {
+          "id": "US-005-AC02",
+          "text": "If `gh` is available, the command creates a PR with title `\"feat: it_{iteration} — [requirement name from PRD]\"` and a body summarising the iteration (PRD title + link to refactor report)."
+        },
+        {
+          "id": "US-005-AC03",
+          "text": "If `gh` is not available, the command prints a warning _\"GitHub CLI (gh) not found. Skipping PR creation. Push was successful.\"_ and continues without error."
+        },
+        {
+          "id": "US-005-AC04",
+          "text": "If the `gh pr create` call fails, the command prints a warning with the stderr output and continues (same non-fatal pattern as `create-prototype.ts`)."
+        },
+        {
+          "id": "US-005-AC05",
+          "text": "Typecheck / lint passes."
+        }
+      ]
+    },
+    {
+      "id": "US-006",
+      "title": "Mark prototype_approval as completed in state.json",
+      "description": "As a developer using the NVST CLI, I want `state.json` to reflect that the approval phase is done after the command succeeds so that the iteration can be archived and downstream checks detect the correct state.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-006-AC01",
+          "text": "After the git + PR steps succeed, the command calls `writeState` to set `phases.prototype.prototype_approval.status = \"completed\"` and `phases.prototype.prototype_approval.file = null` (no artifact file for this phase)."
+        },
+        {
+          "id": "US-006-AC02",
+          "text": "The `state.json` on disk reflects the updated status immediately after the command exits."
+        },
+        {
+          "id": "US-006-AC03",
+          "text": "Typecheck / lint passes."
+        }
+      ]
+    },
+    {
+      "id": "US-007",
+      "title": "Runtime skill and scaffold template updated",
+      "description": "As a developer scaffolding a new NVST project, I want the `approve-prototype` skill to be a full implementation in both the runtime directory and the scaffold template so that projects initialised with `nvst init` have the complete approve behaviour out of the box.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-007-AC01",
+          "text": "`.agents/skills/approve-prototype/SKILL.md` is replaced with the full implementation (no longer a placeholder)."
+        },
+        {
+          "id": "US-007-AC02",
+          "text": "`scaffold/.agents/skills/approve-prototype/tmpl_SKILL.md` is updated to match the runtime skill (no longer a placeholder)."
+        },
+        {
+          "id": "US-007-AC03",
+          "text": "Both files share the same content (modulo any `{variable}` template syntax that applies only to the scaffold copy)."
+        },
+        {
+          "id": "US-007-AC04",
+          "text": "Typecheck / lint passes."
+        }
+      ]
+    }
+  ],
+  "functionalRequirements": [
+    {
+      "id": "FR-1",
+      "description": "** `nvst approve prototype` must use **file-system evidence** to determine whether the preconditions are met, since upstream commands do not update `state.json` status fields. The logic is:"
+    },
+    {
+      "id": "FR-2",
+      "description": "** The command must load the skill from `.agents/skills/approve-prototype/` via `loadSkill`, build the prompt via `buildPrompt` (injecting `iteration`), and invoke the agent via `invokeAgent` with `interactive: true` — exactly the same pattern as `refactor-prototype.ts`."
+    },
+    {
+      "id": "FR-3",
+      "description": "** The `approve-prototype` SKILL.md must instruct the agent to: (a) read `it_{iteration}_PRD.json`, `it_{iteration}_refactor-report.md`, and `PROJECT_CONTEXT.md`; (b) summarise what it will change in `PROJECT_CONTEXT.md`, `ROADMAP.md`, and optionally `AGENTS.md` / `README.md` before making edits; (c) apply the updates."
+    },
+    {
+      "id": "FR-4",
+      "description": "** After the agent returns, the command must prompt the user for confirmation before performing any git operations (see US-003)."
+    },
+    {
+      "id": "FR-5",
+      "description": "** On user confirmation, the command must: stage all changes (`git add -A`), commit with message `\"feat: approve iteration {iteration} prototype\"`, and push the current branch to `origin`."
+    },
+    {
+      "id": "FR-6",
+      "description": "** After a successful push, the command must attempt to create a GitHub PR via `gh pr create`. If `gh` is unavailable or fails, this is a non-fatal warning (matching the pattern in `create-prototype.ts`)."
+    },
+    {
+      "id": "FR-7",
+      "description": "** On full success (agent + confirmation + git + PR), the command must call `writeState` setting `phases.prototype.prototype_approval.status = \"completed\"`."
+    },
+    {
+      "id": "FR-8",
+      "description": "** Both `.agents/skills/approve-prototype/SKILL.md` and `scaffold/.agents/skills/approve-prototype/tmpl_SKILL.md` must be upgraded from placeholder to the full implementation."
+    },
+    {
+      "id": "FR-9",
+      "description": "** The existing `approve-prototype.test.ts` must be updated to reflect the new behaviour (removing the \"not implemented\" stub assertion and adding guardrail + state-update tests)."
+    }
+  ]
+}

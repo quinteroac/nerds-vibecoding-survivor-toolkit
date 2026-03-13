@@ -57,17 +57,39 @@ describe("US-004: Skills and schemas align to the new loop", () => {
       expect(content).toContain(".agents/flow/it_{iteration}_progress.json");
     }
 
-    const stubSkills = [
+    // Refactor and approve-prototype skills are now fully implemented,
+    // so there should be no remaining "stub" wording in the loop skills.
+    const noStubSkills = [
       ".agents/skills/refactor-prototype/SKILL.md",
       ".agents/skills/approve-prototype/SKILL.md",
       "scaffold/.agents/skills/refactor-prototype/tmpl_SKILL.md",
       "scaffold/.agents/skills/approve-prototype/tmpl_SKILL.md",
     ];
 
-    for (const relativePath of stubSkills) {
+    for (const relativePath of noStubSkills) {
       const content = await readFile(join(PROJECT_ROOT, relativePath), "utf8");
-      expect(content).toContain("currently a stub command");
+      expect(content).not.toContain("currently a stub command");
     }
+  });
+
+  test("US-007-AC02/AC03: approve-prototype runtime and scaffold skills stay in sync", async () => {
+    const runtimeSkill = await readFile(
+      join(PROJECT_ROOT, ".agents", "skills", "approve-prototype", "SKILL.md"),
+      "utf8",
+    );
+    const scaffoldSkill = await readFile(
+      join(
+        PROJECT_ROOT,
+        "scaffold",
+        ".agents",
+        "skills",
+        "approve-prototype",
+        "tmpl_SKILL.md",
+      ),
+      "utf8",
+    );
+
+    expect(runtimeSkill).toBe(scaffoldSkill);
   });
 
   test("US-004-AC03: write-json schemas support only current loop/core artifacts", async () => {
