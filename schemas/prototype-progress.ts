@@ -13,6 +13,8 @@ const PrototypeProgressEntrySchema = z.object({
   ),
   last_error_summary: z.string(),
   updated_at: z.string(),
+  audit_artifact_path: z.string().optional(),
+  refactor_report_path: z.string().optional(),
 });
 
 export const PrototypeProgressSchema = z.object({
