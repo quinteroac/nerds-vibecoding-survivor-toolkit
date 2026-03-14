@@ -6,7 +6,7 @@ import { join } from "node:path";
 
 const PROJECT_ROOT = join(import.meta.dir, "..");
 const CLI_PATH = join(PROJECT_ROOT, "src", "cli.ts");
-const RECOVERED_SKILL_HASH = "243b71d95fb8b92b1cd0b1fe9c3b09c4ed60be4f3eb10bebde8cfec96da8a64f";
+const RECOVERED_SKILL_HASH = "1a6a93a8f20dd63e09e0b3cebf029b1872eb638df98998b2112ab7d788b10237";
 
 function sha256(content: string): string {
   return createHash("sha256").update(content, "utf8").digest("hex");
@@ -41,7 +41,7 @@ function createBaseState(): Record<string, unknown> {
   };
 }
 
-async function createTempProjectWithRecoveredSkill(): Promise<string> {
+async function createTempProjectWithRecoveredSkill(opts?: { includeAgentsMd?: boolean }): Promise<string> {
   const projectRoot = await mkdtemp(join(tmpdir(), "nvst-create-project-context-"));
   await mkdir(join(projectRoot, ".agents", "flow"), { recursive: true });
   await mkdir(join(projectRoot, ".agents", "skills", "create-project-context"), {
@@ -66,6 +66,13 @@ async function createTempProjectWithRecoveredSkill(): Promise<string> {
     recoveredSkill,
     "utf8",
   );
+  if (opts?.includeAgentsMd) {
+    await writeFile(
+      join(projectRoot, "AGENTS.md"),
+      "# Agent Entry Point\n\nAlways keep project context aligned.\n",
+      "utf8",
+    );
+  }
 
   return projectRoot;
 }
@@ -76,6 +83,7 @@ describe("create-project-context skill recovery", () => {
     const content = await readFile(skillPath, "utf8");
 
     expect(content.length).toBeGreaterThan(0);
+    expect(content).toContain("`AGENTS.md` (if present)");
     expect(sha256(content)).toBe(RECOVERED_SKILL_HASH);
   });
 
@@ -121,7 +129,30 @@ describe("create-project-context skill recovery", () => {
 
       expect(proc.exitCode).toBe(0);
       expect(stderr).not.toContain("Skill 'create-project-context' not found");
+      expect(stdout).not.toContain("### agents_md");
       expect(stdout).toContain("Project context generated and marked as pending approval.");
+    } finally {
+      await rm(projectRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("includes AGENTS.md content in prompt context when AGENTS.md exists", async () => {
+    const projectRoot = await createTempProjectWithRecoveredSkill({ includeAgentsMd: true });
+
+    try {
+      const proc = Bun.spawn([process.argv[0], CLI_PATH, "create", "project-context", "--agent", "ide"], {
+        cwd: projectRoot,
+        stdout: "pipe",
+        stderr: "pipe",
+      });
+
+      await proc.exited;
+      const stdout = await new Response(proc.stdout).text();
+
+      expect(proc.exitCode).toBe(0);
+      expect(stdout).toContain("### agents_md");
+      expect(stdout).toContain("# Agent Entry Point");
+      expect(stdout).toContain("Always keep project context aligned.");
     } finally {
       await rm(projectRoot, { recursive: true, force: true });
     }
