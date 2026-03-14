@@ -69,7 +69,7 @@ async function removeEmptyDirectories(directories: string[]): Promise<void> {
 
 export async function runDestroy(options: DestroyOptions): Promise<void> {
   const projectRoot = process.cwd();
-  const entries = await getScaffoldEntries(projectRoot);
+  const entries = getScaffoldEntries(projectRoot);
 
   const filesToDelete = entries
     .map((entry) => entry.destinationPath)

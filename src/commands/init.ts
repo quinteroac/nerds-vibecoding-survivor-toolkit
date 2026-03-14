@@ -1,11 +1,11 @@
-import { access, mkdir, readdir } from "node:fs/promises";
-import { basename, dirname, join, relative } from "node:path";
+import { access, mkdir } from "node:fs/promises";
+import { basename, dirname, join } from "node:path";
+import { SCAFFOLD_FILES } from "../scaffold-manifest";
 
 const TEMPLATE_PREFIX = "tmpl_";
-const SCAFFOLD_ROOT = join(import.meta.dir, "..", "..", "scaffold");
 
 export interface ScaffoldEntry {
-  sourcePath: string;
+  content: string;
   destinationPath: string;
   relativeDestinationPath: string;
 }
@@ -14,40 +14,21 @@ function stripTemplatePrefix(fileName: string): string {
   return fileName.startsWith(TEMPLATE_PREFIX) ? fileName.slice(TEMPLATE_PREFIX.length) : fileName;
 }
 
-async function walkFiles(directoryPath: string): Promise<string[]> {
-  const entries = await readdir(directoryPath, { withFileTypes: true });
-  const filePaths: string[] = [];
+export function getScaffoldEntries(projectRoot: string): ScaffoldEntry[] {
+  return SCAFFOLD_FILES.filter(({ relativePath }) => !relativePath.startsWith("schemas/")).map(
+    ({ relativePath, content }) => {
+      const sourceDir = dirname(relativePath);
+      const targetFileName = stripTemplatePrefix(basename(relativePath));
+      const relativeDestinationPath =
+        sourceDir === "." ? targetFileName : join(sourceDir, targetFileName);
 
-  for (const entry of entries) {
-    const entryPath = join(directoryPath, entry.name);
-    if (entry.isDirectory()) {
-      filePaths.push(...(await walkFiles(entryPath)));
-      continue;
-    }
-    if (entry.isFile()) {
-      filePaths.push(entryPath);
-    }
-  }
-
-  return filePaths;
-}
-
-export async function getScaffoldEntries(projectRoot: string): Promise<ScaffoldEntry[]> {
-  const sourceFiles = await walkFiles(SCAFFOLD_ROOT);
-
-  return sourceFiles.map((sourcePath) => {
-    const relativeFromScaffold = relative(SCAFFOLD_ROOT, sourcePath);
-    const sourceDir = dirname(relativeFromScaffold);
-    const targetFileName = stripTemplatePrefix(basename(relativeFromScaffold));
-    const relativeDestinationPath =
-      sourceDir === "." ? targetFileName : join(sourceDir, targetFileName);
-
-    return {
-      sourcePath,
-      destinationPath: join(projectRoot, relativeDestinationPath),
-      relativeDestinationPath,
-    };
-  });
+      return {
+        content,
+        destinationPath: join(projectRoot, relativeDestinationPath),
+        relativeDestinationPath,
+      };
+    },
+  );
 }
 
 async function exists(filePath: string): Promise<boolean> {
@@ -61,7 +42,7 @@ async function exists(filePath: string): Promise<boolean> {
 
 export async function runInit(): Promise<void> {
   const projectRoot = process.cwd();
-  const entries = await getScaffoldEntries(projectRoot);
+  const entries = getScaffoldEntries(projectRoot);
 
   const created: string[] = [];
   const skipped: string[] = [];
@@ -74,7 +55,7 @@ export async function runInit(): Promise<void> {
     }
 
     await mkdir(dirname(entry.destinationPath), { recursive: true });
-    await Bun.write(entry.destinationPath, Bun.file(entry.sourcePath));
+    await Bun.write(entry.destinationPath, entry.content);
     created.push(entry.relativeDestinationPath);
     console.log(`Created: ${entry.relativeDestinationPath}`);
   }

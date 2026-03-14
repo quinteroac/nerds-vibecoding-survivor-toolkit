@@ -20,8 +20,9 @@
   "scripts": {
     "test": "bun test src tests schemas",
     "typecheck": "bun tsc --noEmit",
-    "build:binary": "bun run src/scripts/build-binary.ts",
-    "build:binaries": "bun run src/scripts/build-binaries.ts",
+    "generate:scaffold": "bun run src/scripts/generate-scaffold-manifest.ts",
+    "build:binary": "bun run src/scripts/generate-scaffold-manifest.ts && bun run src/scripts/build-binary.ts",
+    "build:binaries": "bun run src/scripts/generate-scaffold-manifest.ts && bun run src/scripts/build-binaries.ts",
     "bump": "npm version && git push --follow-tags",
     "bump:patch": "npm version patch && git push --follow-tags",
     "bump:minor": "npm version minor && git push --follow-tags",

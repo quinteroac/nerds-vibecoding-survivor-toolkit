@@ -1,0 +1,19 @@
+{
+  "current_iteration": "000001",
+  "current_phase": "define",
+  "phases": {
+    "define": {
+      "requirement_definition": { "status": "pending", "file": null },
+      "prd_generation": { "status": "pending", "file": null }
+    },
+    "prototype": {
+      "prototype_creation": { "status": "pending", "file": null },
+      "prototype_audit": { "status": "pending", "file": null },
+      "prototype_refactor": { "status": "pending", "file": null },
+      "prototype_approval": { "status": "pending", "file": null }
+    },
+    "refactor": {}
+  },
+  "last_updated": "2026-01-01T00:00:00.000Z",
+  "history": []
+}
