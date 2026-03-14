@@ -6,12 +6,15 @@ import { runStartIteration } from "./commands/start-iteration";
 import { runAuditPrototype } from "./commands/audit-prototype";
 import { GuardrailAbortError } from "./guardrail";
 import { runApprovePrototype } from "./commands/approve-prototype";
+import { runApproveProjectContext } from "./commands/approve-project-context";
 import { runApproveRequirement } from "./commands/approve-requirement";
+import { runCreateProjectContext } from "./commands/create-project-context";
 import { runCreatePrototype } from "./commands/create-prototype";
 import { runDefineRequirement } from "./commands/define-requirement";
 import { runDestroy } from "./commands/destroy";
 import { runInit } from "./commands/init";
 import { runRefactorPrototype } from "./commands/refactor-prototype";
+import { runRefineProjectContext } from "./commands/refine-project-context";
 import { runRefineRequirement } from "./commands/refine-requirement";
 import { runSyncAgentSkills } from "./commands/sync-agent-skills";
 import { runWriteJson } from "./commands/write-json";
@@ -56,6 +59,23 @@ function parseOptionalIntegerFlag(
   return { value: parsed, remainingArgs };
 }
 
+function parseProjectContextMode(
+  args: string[],
+): { mode: "strict" | "yolo"; remainingArgs: string[] } {
+  const { value, remainingArgs } = extractFlagValue(args, "--mode");
+  if (value === null) {
+    return { mode: "strict", remainingArgs };
+  }
+
+  if (value !== "strict" && value !== "yolo") {
+    throw new Error(
+      `Invalid --mode value '${value}'. Expected one of: strict, yolo.`,
+    );
+  }
+
+  return { mode: value, remainingArgs };
+}
+
 function parseForce(args: string[]): { force: boolean; remainingArgs: string[] } {
   const force = args.includes("--force");
   return {
@@ -75,6 +95,12 @@ Primary workflow:
                      Refine requirement document via agent
   approve requirement [--force]
                      Mark requirement definition as approved
+  create project-context --agent <provider> [--mode <strict|yolo>] [--force]
+                     Generate PROJECT_CONTEXT.md via agent
+  refine project-context --agent <provider> [--challenge] [--force]
+                     Refine PROJECT_CONTEXT.md via agent
+  approve project-context [--force]
+                     Mark project context as approved
   create prototype --agent <provider> [--iterations <N>] [--retry-on-fail <N>] [--stop-on-critical] [--force]
                      Initialize prototype build for current iteration
   audit prototype --agent <provider> [--force]
@@ -102,12 +128,14 @@ Options:
   --stop-on-critical Stop execution after critical failures
   --force            Bypass flow guardrail confirmation
   --challenge        Run requirement refine in challenger mode
+  --mode             Project-context generation mode: strict or yolo (default: strict)
   --clean            When used with destroy, also removes .agents/flow/archived
   -h, --help         Show this help message
   -v, --version      Print version and exit
 
 Examples:
   nvst define requirement --agent ide
+  nvst create project-context --agent ide
   nvst create prototype --agent ide --iterations 1`);
 }
 
@@ -219,7 +247,9 @@ async function main() {
 
   if (command === "refine") {
     if (args.length === 0) {
-      console.error("Usage for refine: nvst refine requirement --agent <provider> [--challenge]");
+      console.error(
+        "Usage for refine: nvst refine <requirement|project-context> --agent <provider> [--challenge] [--force]",
+      );
       printUsage();
       process.exitCode = 1;
       return;
@@ -250,6 +280,30 @@ async function main() {
       }
     }
 
+    if (subcommand === "project-context") {
+      try {
+        const { provider, remainingArgs: postAgentArgs } = parseAgentArg(args.slice(1));
+        const { force, remainingArgs: postForceArgs } = parseForce(postAgentArgs);
+        const challenge = postForceArgs.includes("--challenge");
+        const unknownArgs = postForceArgs.filter((arg) => arg !== "--challenge");
+
+        if (unknownArgs.length > 0) {
+          console.error(`Unknown option(s) for refine project-context: ${unknownArgs.join(" ")}`);
+          printUsage();
+          process.exitCode = 1;
+          return;
+        }
+
+        await runRefineProjectContext({ provider, challenge, force });
+        return;
+      } catch (error) {
+        console.error(error instanceof Error ? error.message : String(error));
+        printUsage();
+        process.exitCode = 1;
+        return;
+      }
+    }
+
     console.error(`Unknown refine subcommand: ${subcommand}`);
     printUsage();
     process.exitCode = 1;
@@ -259,7 +313,7 @@ async function main() {
   if (command === "create") {
     if (args.length === 0) {
       console.error(
-        "Usage for create: nvst create prototype --agent <provider> [--iterations <N>] [--retry-on-fail <N>] [--stop-on-critical] [--force]",
+        "Usage for create: nvst create <prototype|project-context> ...",
       );
       printUsage();
       process.exitCode = 1;
@@ -291,6 +345,28 @@ async function main() {
         }
 
         await runCreatePrototype({ provider, iterations, retryOnFail, stopOnCritical, force });
+        return;
+      } catch (error) {
+        console.error(error instanceof Error ? error.message : String(error));
+        printUsage();
+        process.exitCode = 1;
+        return;
+      }
+    }
+
+    if (subcommand === "project-context") {
+      try {
+        const { provider, remainingArgs: postAgentArgs } = parseAgentArg(args.slice(1));
+        const { mode, remainingArgs: postModeArgs } = parseProjectContextMode(postAgentArgs);
+        const { force, remainingArgs: postForceArgs } = parseForce(postModeArgs);
+        if (postForceArgs.length > 0) {
+          console.error(`Unknown option(s) for create project-context: ${postForceArgs.join(" ")}`);
+          printUsage();
+          process.exitCode = 1;
+          return;
+        }
+
+        await runCreateProjectContext({ provider, mode, force });
         return;
       } catch (error) {
         console.error(error instanceof Error ? error.message : String(error));
@@ -380,7 +456,7 @@ async function main() {
 
   if (command === "approve") {
     if (args.length === 0) {
-      console.error("Usage for approve: nvst approve <requirement|prototype> [--force]");
+      console.error("Usage for approve: nvst approve <requirement|project-context|prototype> [--force]");
       printUsage();
       process.exitCode = 1;
       return;
@@ -402,6 +478,11 @@ async function main() {
 
     if (subcommand === "prototype") {
       await runApprovePrototype({ force });
+      return;
+    }
+
+    if (subcommand === "project-context") {
+      await runApproveProjectContext({ force });
       return;
     }
 
