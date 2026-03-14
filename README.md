@@ -151,10 +151,11 @@ Quick verification for Linux in a clean environment (no Bun/Node installed in th
 docker run --rm -v "$PWD/dist:/dist" debian:stable-slim /dist/nvst-linux-x64 --help
 ```
 
-## Acknowledgement
+## Acknowledgements
 
-This toolkit draws inspiration from other excellent projects in the specification-driven development space. Special thanks to the following libraries for their contribution to the agentic coding ecosystem:
+This toolkit draws inspiration from other excellent projects in the specification-driven development space. Special thanks to the following libraries and projects for their contribution to the agentic coding ecosystem:
 
+- **[Impeccable](https://github.com/pbakaus/impeccable)** (skills licensed under Apache 2.0)
 - **[Ralph Loop](https://github.com/mizchi/ralph-loop)**
 - **[GSD](https://github.com/gsd-build/get-shit-done)**
 - **[spec-kit](https://github.com/spec-kit/spec-kit)**
