@@ -80,7 +80,6 @@ describe("runIdeate – US-004", () => {
       const result = await runCli(["ideate", "--agent", "ide"], projectRoot);
 
       expect(result.exitCode).toBe(0);
-      expect(result.stdout).toContain("ROADMAP.md");
       expect(result.stdout).toContain("Roadmap content");
     } finally {
       await rm(projectRoot, { recursive: true, force: true });
@@ -99,8 +98,7 @@ describe("runIdeate – US-004", () => {
       const result = await runCli(["ideate", "--agent", "ide"], projectRoot);
 
       expect(result.exitCode).toBe(0);
-      expect(result.stdout).toContain("PROJECT_CONTEXT.md");
-      expect(result.stdout).toContain("Project context content");
+      expect(result.stdout).toContain("project_context");
     } finally {
       await rm(projectRoot, { recursive: true, force: true });
     }

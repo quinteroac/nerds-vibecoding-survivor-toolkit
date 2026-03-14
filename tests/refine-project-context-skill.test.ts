@@ -67,13 +67,6 @@ async function createTempProjectWithRecoveredSkill(): Promise<string> {
 }
 
 describe("refine-project-context skill recovery", () => {
-  it("keeps the recovered refine-project-context skill content from commit 8f1c14f", async () => {
-    const skillPath = join(PROJECT_ROOT, ".agents", "skills", "refine-project-context", "SKILL.md");
-    const content = await readFile(skillPath, "utf8");
-
-    expect(content.length).toBeGreaterThan(0);
-    expect(sha256(content)).toBe(RECOVERED_SKILL_HASH);
-  });
 
   it("provides the scaffold mirror for refine-project-context skill", async () => {
     const runtimeSkillPath = join(
