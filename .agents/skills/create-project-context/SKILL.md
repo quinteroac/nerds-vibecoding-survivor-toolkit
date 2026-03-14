@@ -1,6 +1,6 @@
 ---
 name: create-project-context
-description: "Creates or updates .agents/PROJECT_CONTEXT.md with project conventions, tech stack, code standards, testing strategy, and product architecture. Triggered by: bun nvst create project-context."
+description: "Creates or updates .agents/PROJECT_CONTEXT.md with project conventions, tech stack, code standards, testing strategy, and product architecture. Triggered by: nvst create project-context."
 user-invocable: true
 ---
 
@@ -102,7 +102,7 @@ Write `.agents/PROJECT_CONTEXT.md` using only the sections relevant to the proje
 ```markdown
 # Project Context
 
-<!-- Created or updated by `bun nvst create project-context`. Cap: 250 lines. -->
+<!-- Created or updated by `nvst create project-context`. Cap: 250 lines. -->
 
 ## Conventions
 - Naming: [files, variables, components]
@@ -140,7 +140,7 @@ Write `.agents/PROJECT_CONTEXT.md` using only the sections relevant to the proje
 - …
 
 ## Implemented Capabilities
-<!-- Updated at the end of each iteration by bun nvst create project-context -->
+<!-- Updated at the end of each iteration by nvst create project-context -->
 - (none yet — populated after first Refactor)
 ```
 

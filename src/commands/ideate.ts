@@ -13,26 +13,27 @@ export async function runIdeate(opts: IdeateOptions): Promise<void> {
   const { provider, force = false } = opts;
   const projectRoot = process.cwd();
 
+  // AC07: Read state early (needed for guardrail and current_iteration)
+  const state = await readState(projectRoot).catch(() => null);
+
   // AC02: Read ROADMAP.md and .agents/PROJECT_CONTEXT.md if they exist
   const roadmapPath = join(projectRoot, "ROADMAP.md");
   const projectContextPath = join(projectRoot, ".agents", "PROJECT_CONTEXT.md");
 
-  const context: Record<string, string> = {};
-  if (await exists(roadmapPath)) {
-    context["ROADMAP.md"] = await readFile(roadmapPath, "utf8");
-  }
-  if (await exists(projectContextPath)) {
-    context["PROJECT_CONTEXT.md"] = await readFile(projectContextPath, "utf8");
-  }
+  const roadmap = (await exists(roadmapPath)) ? await readFile(roadmapPath, "utf8") : "";
+  const project_context = (await exists(projectContextPath)) ? await readFile(projectContextPath, "utf8") : "";
 
   // AC03: Load skill
   const skillBody = await loadSkill(projectRoot, "ideate");
 
-  // Build prompt with context (AC02)
-  const prompt = buildPrompt(skillBody, context);
+  // Build prompt with context (AC02, FR-3)
+  const prompt = buildPrompt(skillBody, {
+    current_iteration: state?.current_iteration ?? "",
+    roadmap,
+    project_context,
+  });
 
   // AC07: Guardrail – warns (does not hard-block) if wrong phase or already completed
-  const state = await readState(projectRoot).catch(() => null);
   if (state) {
     const wrongPhase = state.current_phase !== "define";
     const alreadyCompleted = state.phases.define.ideation?.status === "completed";

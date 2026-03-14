@@ -111,7 +111,7 @@ After writing `ROADMAP.md`, check whether the ideation session revealed informat
 
 If any of these changed, tell the developer:
 
-> "The ideation session revealed [what changed]. You may want to run `bun nvst create project-context` to update `PROJECT_CONTEXT.md`."
+> "The ideation session revealed [what changed]. You may want to run `nvst create project-context` to update `PROJECT_CONTEXT.md`."
 
 If nothing changed, no action is needed.
 
