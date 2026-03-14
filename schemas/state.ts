@@ -10,6 +10,10 @@ const statusFile = z.object({
 });
 
 const definePhase = z.object({
+  ideation: z.object({
+    status: z.enum(["pending", "completed"]),
+    file: z.string().nullable(),
+  }).optional(),
   requirement_definition: z.object({
     status: z.enum(["pending", "in_progress", "approved"]),
     file: z.string().nullable(),
