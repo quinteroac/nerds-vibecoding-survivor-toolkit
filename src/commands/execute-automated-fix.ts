@@ -11,7 +11,7 @@ import {
   type AgentResult,
 } from "../agent";
 import { exists, FLOW_REL_DIR, readState } from "../state";
-import { type Issue, IssuesSchema } from "../../scaffold/schemas/tmpl_issues";
+import { type Issue, IssuesSchema } from "../schemas/tmpl_issues";
 import { writeJsonArtifact, type WriteJsonArtifactFn } from "../write-json-artifact";
 
 export interface ExecuteAutomatedFixOptions {

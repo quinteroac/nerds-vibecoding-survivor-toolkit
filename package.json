@@ -28,8 +28,8 @@
     "bump:minor": "npm version minor && git push --follow-tags",
     "bump:major": "npm version major && git push --follow-tags",
     "bump:preview": "npm version prerelease && git push --follow-tags",
-    "validate:state": "bun run scaffold/schemas/tmpl_validate-state.ts",
-    "validate:progress": "bun run scaffold/schemas/tmpl_validate-progress.ts",
+    "validate:state": "bun run src/schemas/tmpl_validate-state.ts",
+    "validate:progress": "bun run src/schemas/tmpl_validate-progress.ts",
     "sync-check": "bun run scripts/sync-check.ts"
   },
   "dependencies": {

@@ -2,11 +2,11 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import type { ZodSchema } from "zod";
 
-import { AuditSchema } from "../../scaffold/schemas/tmpl_audit";
-import { StateSchema } from "../../scaffold/schemas/tmpl_state";
-import { PrdSchema } from "../../scaffold/schemas/tmpl_prd";
-import { PrototypeProgressSchema } from "../../scaffold/schemas/tmpl_prototype-progress";
-import { IssuesSchema } from "../../scaffold/schemas/tmpl_issues";
+import { AuditSchema } from "../schemas/tmpl_audit";
+import { StateSchema } from "../schemas/tmpl_state";
+import { PrdSchema } from "../schemas/tmpl_prd";
+import { PrototypeProgressSchema } from "../schemas/tmpl_prototype-progress";
+import { IssuesSchema } from "../schemas/tmpl_issues";
 
 // ---------------------------------------------------------------------------
 // Schema registry — maps CLI name → Zod schema

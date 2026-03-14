@@ -9,8 +9,8 @@ import {
   type AgentResult,
 } from "../agent";
 import { exists, FLOW_REL_DIR, readState } from "../state";
-import { IssuesSchema, type Issue } from "../../scaffold/schemas/tmpl_issues";
-import type { State } from "../../scaffold/schemas/tmpl_state";
+import { IssuesSchema, type Issue } from "../schemas/tmpl_issues";
+import type { State } from "../schemas/tmpl_state";
 
 export interface ExecuteManualFixOptions {
   provider: AgentProvider;

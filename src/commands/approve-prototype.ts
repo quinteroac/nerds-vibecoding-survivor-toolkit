@@ -2,8 +2,8 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { $ as dollar } from "bun";
 
-import type { State } from "../../scaffold/schemas/tmpl_state";
-import { PrdSchema } from "../../scaffold/schemas/tmpl_prd";
+import type { State } from "../schemas/tmpl_state";
+import { PrdSchema } from "../schemas/tmpl_prd";
 import {
   buildPrompt,
   invokeAgent,

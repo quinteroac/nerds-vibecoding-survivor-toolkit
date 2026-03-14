@@ -1,7 +1,7 @@
 import { describe, expect, it } from "bun:test";
 
 import { GuardrailAbortError, assertGuardrail } from "../src/guardrail";
-import type { State } from "../scaffold/schemas/tmpl_state";
+import type { State } from "../src/schemas/tmpl_state";
 
 function createState(overrides: Partial<State> = {}): State {
   const base: State = {

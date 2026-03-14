@@ -6,7 +6,7 @@ import {
   type AgentProvider,
   type AgentResult,
 } from "../agent";
-import type { State } from "../../scaffold/schemas/tmpl_state";
+import type { State } from "../schemas/tmpl_state";
 import { assertGuardrail } from "../guardrail";
 import { readState } from "../state";
 

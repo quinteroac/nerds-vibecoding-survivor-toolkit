@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 
 import { STATE_REL_PATH, exists, readState, writeState } from "../src/state";
-import type { State } from "../scaffold/schemas/tmpl_state";
+import type { State } from "../src/schemas/tmpl_state";
 
 async function createTempProjectRoot(): Promise<string> {
   return mkdtemp(join(tmpdir(), "nvst-state-test-"));

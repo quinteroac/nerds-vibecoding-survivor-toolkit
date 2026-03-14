@@ -2,11 +2,11 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { $ as dollar } from "bun";
 
-import { PrdSchema } from "../../scaffold/schemas/tmpl_prd";
+import { PrdSchema } from "../schemas/tmpl_prd";
 import {
   PrototypeProgressSchema,
   type PrototypeProgress,
-} from "../../scaffold/schemas/tmpl_prototype-progress";
+} from "../schemas/tmpl_prototype-progress";
 import {
   buildPrompt,
   invokeAgent,

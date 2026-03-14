@@ -1,10 +1,10 @@
 import {
   ComplianceReportSchema,
   type ComplianceReport,
-} from "../scaffold/schemas/tmpl_compliance-report";
+} from "./schemas/tmpl_compliance-report";
 
-export { ComplianceReportSchema, type ComplianceReport } from "../scaffold/schemas/tmpl_compliance-report";
-export type { ComplianceAssessment } from "../scaffold/schemas/tmpl_compliance-report";
+export { ComplianceReportSchema, type ComplianceReport } from "./schemas/tmpl_compliance-report";
+export type { ComplianceAssessment } from "./schemas/tmpl_compliance-report";
 
 /**
  * Validates that data conforms to the mandatory compliance report structure (US-002).

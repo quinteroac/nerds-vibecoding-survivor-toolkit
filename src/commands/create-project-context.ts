@@ -28,10 +28,10 @@ export async function runCreateProjectContext(opts: CreateProjectContextOptions)
     { force },
   );
 
-  const projectContext = state.phases.prototype.project_context;
-  if (!projectContext) {
-    throw new Error("Cannot create project context: project_context phase is missing from state.");
+  if (!state.phases.prototype.project_context) {
+    state.phases.prototype.project_context = { status: "pending", file: null };
   }
+  const projectContext = state.phases.prototype.project_context;
   await assertGuardrail(
     state,
     projectContext.status === "pending_approval",
@@ -85,6 +85,26 @@ export async function runCreateProjectContext(opts: CreateProjectContextOptions)
   }
   if (agentsMdContent) {
     context.agents_md = agentsMdContent;
+  }
+
+  // Include the previous iteration's artifacts so the agent can update AGENTS.md
+  // based on what was actually delivered.
+  const history = state.history ?? [];
+  if (history.length > 0) {
+    const lastEntry = history[history.length - 1];
+    const prevIteration = lastEntry.iteration;
+    const prevArchivedPath = join(projectRoot, lastEntry.archived_path);
+    context.previous_iteration = prevIteration;
+
+    const prevPrdMdPath = join(prevArchivedPath, `it_${prevIteration}_product-requirement-document.md`);
+    if (await exists(prevPrdMdPath)) {
+      context.previous_iteration_prd = await readFile(prevPrdMdPath, "utf8");
+    }
+
+    const prevProgressPath = join(prevArchivedPath, `it_${prevIteration}_progress.json`);
+    if (await exists(prevProgressPath)) {
+      context.previous_iteration_progress = await readFile(prevProgressPath, "utf8");
+    }
   }
 
   const prompt = buildPrompt(skillBody, context);

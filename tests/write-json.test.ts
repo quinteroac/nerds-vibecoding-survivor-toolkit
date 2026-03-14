@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { runWriteJson } from "../src/commands/write-json";
-import type { State } from "../scaffold/schemas/tmpl_state";
+import type { State } from "../src/schemas/tmpl_state";
 
 async function createTempProjectRoot(): Promise<string> {
   return mkdtemp(join(tmpdir(), "nvst-write-json-test-"));

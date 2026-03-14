@@ -1,4 +1,12 @@
 import { join } from "node:path";
 
-/** Path to the CLI entrypoint. Resolves correctly when the package is installed as a dependency. */
-export const CLI_PATH = join(import.meta.dir, "cli.ts");
+const isCompiled = import.meta.path.startsWith("/$bunfs");
+
+/**
+ * Command prefix to invoke the CLI as a subprocess.
+ * When running as a compiled binary: [execPath] (the binary itself).
+ * When running from source: ["bun", "path/to/cli.ts"].
+ */
+export const CLI_COMMAND: string[] = isCompiled
+  ? [process.execPath]
+  : ["bun", join(import.meta.dir, "cli.ts")];

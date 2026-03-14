@@ -1,7 +1,7 @@
 import { mkdir, readdir, rename } from "node:fs/promises";
 import { join } from "node:path";
 
-import type { State } from "../../scaffold/schemas/tmpl_state";
+import type { State } from "../schemas/tmpl_state";
 import { exists, readState, writeState, STATE_REL_PATH, FLOW_REL_DIR } from "../state";
 
 const ARCHIVED_DIR = join(FLOW_REL_DIR, "archived");

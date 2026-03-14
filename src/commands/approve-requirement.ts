@@ -2,9 +2,9 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { $ } from "bun";
 
-import { CLI_PATH } from "../cli-path";
+import { CLI_COMMAND } from "../cli-path";
 import { assertGuardrail } from "../guardrail";
-import type { Prd } from "../../scaffold/schemas/tmpl_prd";
+import type { Prd } from "../schemas/tmpl_prd";
 import { exists, readState, writeState, FLOW_REL_DIR } from "../state";
 
 // ---------------------------------------------------------------------------
@@ -179,7 +179,7 @@ async function runWriteJsonCommand(
   data: string,
 ): Promise<WriteJsonResult> {
   const result =
-    await $`bun ${CLI_PATH} write-json --schema ${schemaName} --out ${outPath} --data ${data}`
+    await $`${CLI_COMMAND} write-json --schema ${schemaName} --out ${outPath} --data ${data}`
       .cwd(projectRoot)
       .nothrow()
       .quiet();

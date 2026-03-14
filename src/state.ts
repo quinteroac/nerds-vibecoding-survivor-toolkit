@@ -1,7 +1,7 @@
 import { access, mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 
-import { StateSchema, type State } from "../scaffold/schemas/tmpl_state";
+import { StateSchema, type State } from "./schemas/tmpl_state";
 
 export const STATE_REL_PATH = join(".agents", "state.json");
 export const FLOW_REL_DIR = join(".agents", "flow");

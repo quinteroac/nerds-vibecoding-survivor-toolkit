@@ -8,9 +8,9 @@ import {
   loadSkill,
   type AgentProvider,
 } from "../agent";
-import { CLI_PATH } from "../cli-path";
+import { CLI_COMMAND } from "../cli-path";
 import { readState, exists, FLOW_REL_DIR } from "../state";
-import { IssuesSchema, type Issue } from "../../scaffold/schemas/tmpl_issues";
+import { IssuesSchema, type Issue } from "../schemas/tmpl_issues";
 
 // ---------------------------------------------------------------------------
 // Agent output schema — agent produces title+description only
@@ -138,8 +138,7 @@ export async function runCreateIssue(opts: CreateIssueOptions): Promise<void> {
   const dataStr = JSON.stringify(validationResult.data);
   const proc = Bun.spawn(
     [
-      "bun",
-      CLI_PATH,
+      ...CLI_COMMAND,
       "write-json",
       "--schema",
       "issues",
@@ -297,8 +296,7 @@ export async function runCreateIssueFromTestReport(): Promise<void> {
 
   const proc = Bun.spawn(
     [
-      "bun",
-      CLI_PATH,
+      ...CLI_COMMAND,
       "write-json",
       "--schema",
       "issues",

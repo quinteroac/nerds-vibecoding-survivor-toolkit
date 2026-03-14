@@ -5,7 +5,7 @@ import { join, dirname } from "node:path";
 
 import { runStartIteration, nextIteration } from "../src/commands/start-iteration";
 import { FLOW_REL_DIR, STATE_REL_PATH, readState } from "../src/state";
-import type { State } from "../scaffold/schemas/tmpl_state";
+import type { State } from "../src/schemas/tmpl_state";
 
 async function createTempProjectRoot(): Promise<string> {
   return mkdtemp(join(tmpdir(), "nvst-start-iteration-test-"));

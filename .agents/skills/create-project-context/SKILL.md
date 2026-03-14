@@ -18,6 +18,7 @@ Create or update `.agents/PROJECT_CONTEXT.md` so the agent has a single, stable 
 2. Produce or update the document following the Output Structure.
 3. Enforce the **250-line cap** (see Cap Rule).
 4. Write the result to `.agents/PROJECT_CONTEXT.md`.
+5. **Update `AGENTS.md`** if the previous iteration introduced changes that make its description stale (see "Updating AGENTS.md" below).
 
 ---
 
@@ -29,6 +30,7 @@ Create or update `.agents/PROJECT_CONTEXT.md` so the agent has a single, stable 
 | `it_{iteration}_PRD.json` | Use cases and scope of the current iteration |
 | `AGENTS.md` (if present) | Agent entry-point guidance that should align with project context |
 | `.agents/PROJECT_CONTEXT.md` (if present) | Existing content to preserve or update |
+| Previous iteration PRD and progress (if present) | Understanding what was delivered last iteration to update `AGENTS.md` |
 | User answers (interactive mode) | Filling in sections that cannot be inferred |
 
 ---
@@ -157,6 +159,22 @@ Before writing the file, count projected line count.
 
 ---
 
+## Updating AGENTS.md
+
+When `previous_iteration` and `previous_iteration_prd` (or `previous_iteration_progress`) are provided, review `AGENTS.md` against what was delivered in that iteration:
+
+1. **Read the previous iteration artifacts** (`previous_iteration_prd`, `previous_iteration_progress`) to understand what features, commands, or conventions were added or changed.
+2. **Compare with the current `AGENTS.md`**: identify any descriptions of workflow, commands, phases, or capabilities that no longer reflect reality.
+3. **Apply targeted updates** — only modify entries that have a concrete mismatch or are missing information; do not rewrite the whole file.
+   - Update command names, phase descriptions, or tool references that changed.
+   - Add newly introduced commands or capabilities to the relevant bullet points.
+   - Remove or correct references to deprecated flows if they are misleading.
+4. **Do not update `AGENTS.md`** if it already accurately reflects the state; a short confirmation message in the session output is sufficient.
+
+In `--mode yolo`, apply these updates silently without prompting the user.
+
+---
+
 ## Checklist
 
 Before saving the file:
@@ -166,4 +184,5 @@ Before saving the file:
 - [ ] Tech stack lists exact versions where relevant
 - [ ] Testing strategy matches what the PRD implies
 - [ ] File does not exceed 250 lines
+- [ ] `AGENTS.md` reviewed against previous iteration artifacts and updated if stale
 - [ ] `state.json` → `project_context.status` set to `"pending_approval"` and `project_context.file` set to `".agents/PROJECT_CONTEXT.md"` after writing
