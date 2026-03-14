@@ -78,6 +78,37 @@ describe("runStartIteration", () => {
     await rm(projectRoot, { recursive: true, force: true });
   });
 
+  it("initialises phases.define.ideation as { status: 'pending', file: null } (US-005-AC02)", async () => {
+    const projectRoot = await createTempProjectRoot();
+    process.chdir(projectRoot);
+
+    await runStartIteration();
+
+    const state = await readState(projectRoot);
+    expect(state.phases.define.ideation).toEqual({ status: "pending", file: null });
+
+    await rm(projectRoot, { recursive: true, force: true });
+  });
+
+  it("parses state without ideation field without error (US-005-AC03)", async () => {
+    const projectRoot = await createTempProjectRoot();
+    process.chdir(projectRoot);
+
+    // State without ideation field (legacy format)
+    const stateWithoutIdeation = createValidState({ current_iteration: "000001" });
+    const statePath = await ensureStateDir(projectRoot);
+    await writeFile(statePath, `${JSON.stringify(stateWithoutIdeation, null, 2)}\n`, "utf8");
+
+    await runStartIteration();
+
+    const updatedState = await readState(projectRoot);
+    expect(updatedState.current_iteration).toBe("000002");
+    // ideation should be initialised fresh since previous had none
+    expect(updatedState.phases.define.ideation).toEqual({ status: "pending", file: null });
+
+    await rm(projectRoot, { recursive: true, force: true });
+  });
+
   it("increments current_iteration and archives previous flow artifacts", async () => {
     const projectRoot = await createTempProjectRoot();
     process.chdir(projectRoot);
