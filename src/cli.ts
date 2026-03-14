@@ -19,6 +19,7 @@ import { runRefineRequirement } from "./commands/refine-requirement";
 import { runSyncAgentSkills } from "./commands/sync-agent-skills";
 import { runWriteJson } from "./commands/write-json";
 import { runWriteTechnicalDebt } from "./commands/write-technical-debt";
+import { runIdeate } from "./commands/ideate";
 
 declare const NVST_COMPILED_VERSION: string;
 
@@ -88,6 +89,8 @@ function printUsage() {
   console.log(`Usage: nvst <command> [options]
 
 Primary workflow:
+  ideate --agent <provider> [--force]
+                     Start an ideation session via agent (optional preliminary step)
   start iteration    Start a new iteration, archiving flow files
   define requirement --agent <provider> [--force]
                      Create requirement document via agent
@@ -207,6 +210,27 @@ async function main() {
     }
     await runStartIteration();
     return;
+  }
+
+  if (command === "ideate") {
+    try {
+      const { provider, remainingArgs: postAgentArgs } = parseAgentArg(args);
+      const { force, remainingArgs: postForceArgs } = parseForce(postAgentArgs);
+      if (postForceArgs.length > 0) {
+        console.error(`Unknown option(s) for ideate: ${postForceArgs.join(" ")}`);
+        printUsage();
+        process.exitCode = 1;
+        return;
+      }
+
+      await runIdeate({ provider, force });
+      return;
+    } catch (error) {
+      console.error(error instanceof Error ? error.message : String(error));
+      printUsage();
+      process.exitCode = 1;
+      return;
+    }
   }
 
   if (command === "define") {

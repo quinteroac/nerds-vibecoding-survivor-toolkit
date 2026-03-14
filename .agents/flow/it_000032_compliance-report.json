@@ -1,0 +1,86 @@
+{
+  "iteration": "000032",
+  "generatedAt": "2026-03-13T00:00:00Z",
+  "executiveSummary": "Iteration 000032 is largely compliant. All five user stories are fully met at the acceptance-criteria level. Nine of ten functional requirements are satisfied; FR-3 is partially non-compliant because `src/commands/ideate.ts` passes context to `buildPrompt` with key names `\"ROADMAP.md\"` and `\"PROJECT_CONTEXT.md\"` instead of the PRD-specified `\"roadmap\"` and `\"project_context\"`, omits the required `current_iteration` key entirely, and excludes absent files rather than passing them as empty strings. The practical impact is low (the agent still receives file content in context), but it deviates from the explicit contract in FR-3.",
+  "verificationByFR": [
+    {
+      "frId": "FR-1",
+      "assessment": "comply",
+      "notes": "`cli.ts` imports `runIdeate` from `./commands/ideate` (line 22) and routes the `ideate` command with `--agent`/`--force` flags to it (lines 215–234)."
+    },
+    {
+      "frId": "FR-2",
+      "assessment": "comply",
+      "notes": "`printUsage()` lists `ideate --agent <provider> [--force]` with a description under the 'Primary workflow' section (lines 92–93 of cli.ts)."
+    },
+    {
+      "frId": "FR-3",
+      "assessment": "partially_comply",
+      "notes": "Context is passed to `buildPrompt` but with keys `\"ROADMAP.md\"` and `\"PROJECT_CONTEXT.md\"` instead of the PRD-specified `\"roadmap\"` and `\"project_context\"`. The `current_iteration` key is absent entirely. Absent files are omitted from context rather than passed as empty strings. Functional impact is minimal because `buildPrompt` renders keys as section headers and `SKILL.md` does not use substitution variables, but the interface contract of FR-3 is not met."
+    },
+    {
+      "frId": "FR-4",
+      "assessment": "comply",
+      "notes": "SKILL.md (Step 2) explicitly instructs a strict one-question-at-a-time interview with Q1–Q5, matching the `create-pr-document` UX pattern."
+    },
+    {
+      "frId": "FR-5",
+      "assessment": "comply",
+      "notes": "SKILL.md (Step 3) instructs the agent to propose 2–4 concrete ideas each with title, description, rationale, effort estimate (S/M/L), and differentiation."
+    },
+    {
+      "frId": "FR-6",
+      "assessment": "comply",
+      "notes": "SKILL.md (Step 4) instructs the agent to write selected items to `ROADMAP.md` under a `## Candidates` section tagged `[candidate]`."
+    },
+    {
+      "frId": "FR-7",
+      "assessment": "comply",
+      "notes": "`definePhase` in `tmpl_state.ts` (lines 12–25) includes `ideation` as an optional object with `status: z.enum([\"pending\", \"in_progress\", \"completed\"])` and `file: z.string().nullable()`."
+    },
+    {
+      "frId": "FR-8",
+      "assessment": "comply",
+      "notes": "`scaffold/.agents/skills/ideate/tmpl_SKILL.md` is byte-for-byte identical to `.agents/skills/ideate/SKILL.md`. Both are present in the scaffold manifest, so `nvst init` will produce the file."
+    },
+    {
+      "frId": "FR-9",
+      "assessment": "comply",
+      "notes": "No new `npm`/`bun` runtime dependencies were introduced. `ideate.ts` uses only existing imports (`node:fs/promises`, `node:path`, and internal modules)."
+    }
+  ],
+  "verificationByUS": [
+    {
+      "usId": "US-001",
+      "assessment": "comply",
+      "notes": "All 6 ACs met. `ideate --agent ide/claude` routes to `runIdeate` (AC01, AC02). Command appears in `--help` under Primary workflow (AC03). `--force` is parsed and passed (AC04). Missing `--agent` throws 'Missing required --agent <provider> argument.' via `parseAgentArg` (AC05). Typecheck passes structurally (AC06)."
+    },
+    {
+      "usId": "US-002",
+      "assessment": "comply",
+      "notes": "All 8 ACs met. `SKILL.md` exists with valid YAML front matter (name, description, user-invocable) (AC01). Step 1 instructs reading ROADMAP.md and PROJECT_CONTEXT.md (AC02). Step 2 has a 5-question one-at-a-time interview (AC03). Step 3 instructs 2–4 ideas with rationale, effort, and differentiation (AC04). Step 4 instructs writing ROADMAP.md (AC05). Step 5 instructs flagging PROJECT_CONTEXT.md updates (AC06). Skill file exists so no 'not found' error (AC07). No type errors (AC08)."
+    },
+    {
+      "usId": "US-003",
+      "assessment": "comply",
+      "notes": "All 3 ACs met. `scaffold/.agents/skills/ideate/tmpl_SKILL.md` exists with identical content to live SKILL.md (AC01). The file appears in `SCAFFOLD_FILES` in `scaffold-manifest.ts`, so `nvst init` will produce it (AC02). No type errors (AC03)."
+    },
+    {
+      "usId": "US-004",
+      "assessment": "comply",
+      "notes": "All 8 ACs met. `runIdeate(opts: IdeateOptions): Promise<void>` is exported (AC01). ROADMAP.md and PROJECT_CONTEXT.md are read if present and passed to `buildPrompt` (AC02). `loadSkill(projectRoot, 'ideate')` is called (AC03). `invokeAgent` is called with `interactive: true` (AC04). After success, `ideation.status` is set to `\"completed\"` and `writeState` auto-refreshes `last_updated` (AC05). Non-zero exit code throws an Error (AC06). Guardrail warns (does not block) for wrong phase or already-completed, respecting `--force` (AC07). No type errors (AC08)."
+    },
+    {
+      "usId": "US-005",
+      "assessment": "comply",
+      "notes": "All 5 ACs met. `definePhase` in `tmpl_state.ts` includes optional `ideation` with `status` enum and nullable `file` (AC01). `createInitialState` in `start-iteration.ts` initialises `phases.define.ideation` as `{ status: 'pending', file: null }` (AC02). Field is `.optional()` in Zod schema so old states parse without error (AC03). No schema validation error expected on `start-iteration` + `ideate` flow (AC04). No type errors (AC05)."
+    }
+  ],
+  "minorObservations": [
+    "FR-3 key naming mismatch: `ideate.ts` uses `\"ROADMAP.md\"` / `\"PROJECT_CONTEXT.md\"` as `buildPrompt` context keys instead of `\"roadmap\"` / `\"project_context\"`. Because `buildPrompt` renders keys as section headers (not template variables), the functional impact is negligible today, but if future skills use `{roadmap}` / `{project_context}` substitution the handler will need to be updated.",
+    "FR-3 missing `current_iteration` key: `ideate.ts` does not pass `current_iteration` to `buildPrompt`. Other command handlers (e.g. `define-requirement.ts`) include it to anchor the session to the active iteration. Its absence is harmless for the skill's current logic but deviates from the PRD contract.",
+    "FR-3 empty-string fallback absent: absent context files are omitted from the context map rather than passed as empty strings. The skill handles missing files gracefully via its own instructions, so there is no observable regression.",
+    "US-004-AC02 / FR-3 alignment gap: the acceptance criterion wording ('passes their content as context to buildPrompt') is satisfied at a content level; only the FR-3 key naming contract is violated. The two specifications are slightly inconsistent, which is a PRD authoring note."
+  ],
+  "conclusionsAndRecommendations": "The implementation is high quality and satisfies all user stories and all functional requirements except FR-3. The single gap in FR-3 (wrong context key names and missing `current_iteration`) is a low-risk deviation with no user-visible regression today. Recommended action: update `src/commands/ideate.ts` to pass `{ current_iteration: state?.current_iteration ?? \"\", roadmap: <content or \"\">, project_context: <content or \"\"> }` to `buildPrompt`, aligning with the PRD contract and with the pattern used by other command handlers. No other changes are needed to reach full compliance."
+}

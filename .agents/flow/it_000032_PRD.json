@@ -1,0 +1,204 @@
+{
+  "goals": [
+    "Provide a CLI-native ideation workflow via `bun nvst ideate --agent <provider>`.",
+    "Follow the existing prompt-output architecture (no internal agent calls; output is a skill prompt consumed by the IDE/AI environment).",
+    "Support both new projects and feature ideation for ongoing projects.",
+    "Track ideation state in `state.json` so it is visible in the workflow history.",
+    "Add the skill template to `scaffold/` so new projects get it on `nvst init`."
+  ],
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Wire `nvst ideate` command in CLI",
+      "description": "As a developer, I want `bun nvst ideate --agent <provider>` to be a recognised CLI command so that I can start an ideation session without getting an \"Unknown command\" error.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-001-AC01",
+          "text": "`bun nvst ideate --agent ide` routes to `runIdeate` without error."
+        },
+        {
+          "id": "US-001-AC02",
+          "text": "`bun nvst ideate --agent claude` routes to `runIdeate` without error."
+        },
+        {
+          "id": "US-001-AC03",
+          "text": "The command appears in `bun nvst --help` output under the workflow section."
+        },
+        {
+          "id": "US-001-AC04",
+          "text": "`--force` flag is accepted and passed through to the guardrail."
+        },
+        {
+          "id": "US-001-AC05",
+          "text": "Passing `nvst ideate` without `--agent` throws a clear \"Missing --agent\" error (consistent with other commands)."
+        },
+        {
+          "id": "US-001-AC06",
+          "text": "Typecheck passes (`bun tsc --noEmit`)."
+        }
+      ]
+    },
+    {
+      "id": "US-002",
+      "title": "Create `ideate` skill (SKILL.md)",
+      "description": "As a developer, I want `.agents/skills/ideate/SKILL.md` to exist with a structured interview guide so that the agent can lead a focused ideation conversation and produce actionable ROADMAP.md updates.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-002-AC01",
+          "text": "`.agents/skills/ideate/SKILL.md` exists with valid YAML front matter (`name`, `description`, `user-invocable`)."
+        },
+        {
+          "id": "US-002-AC02",
+          "text": "The skill instructs the agent to read `ROADMAP.md` and `PROJECT_CONTEXT.md` from context (if provided) before starting the interview."
+        },
+        {
+          "id": "US-002-AC03",
+          "text": "The skill follows a one-question-at-a-time interview with at minimum these steps:"
+        },
+        {
+          "id": "US-002-AC04",
+          "text": "After the interview, the skill instructs the agent to propose 2–4 concrete feature/project ideas with rationale, effort estimate (S/M/L), and differentiation notes."
+        },
+        {
+          "id": "US-002-AC05",
+          "text": "The skill ends by instructing the agent to write or update `ROADMAP.md` with the proposed items marked as new candidates."
+        },
+        {
+          "id": "US-002-AC06",
+          "text": "The skill optionally instructs the agent to flag if `PROJECT_CONTEXT.md` needs updating (e.g. new stack or audience shift)."
+        },
+        {
+          "id": "US-002-AC07",
+          "text": "Running `bun nvst ideate --agent ide` does not throw \"Skill 'ideate' not found\"."
+        },
+        {
+          "id": "US-002-AC08",
+          "text": "Typecheck passes."
+        }
+      ]
+    },
+    {
+      "id": "US-003",
+      "title": "Add ideation scaffold template",
+      "description": "As a developer using `nvst init` on a new project, I want `scaffold/.agents/skills/ideate/tmpl_SKILL.md` to exist so that new projects get the ideation skill out of the box.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-003-AC01",
+          "text": "`scaffold/.agents/skills/ideate/tmpl_SKILL.md` exists and mirrors `.agents/skills/ideate/SKILL.md` (same content, `tmpl_` prefix convention)."
+        },
+        {
+          "id": "US-003-AC02",
+          "text": "Running `bun nvst init` on a fresh directory produces `.agents/skills/ideate/SKILL.md` from the template."
+        },
+        {
+          "id": "US-003-AC03",
+          "text": "Typecheck passes."
+        }
+      ]
+    },
+    {
+      "id": "US-004",
+      "title": "Implement `runIdeate` command handler",
+      "description": "As a developer, I want `src/commands/ideate.ts` to orchestrate the ideation skill so that the command reads context files, builds the prompt, and invokes the agent correctly.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-004-AC01",
+          "text": "`src/commands/ideate.ts` exports `runIdeate(opts: IdeateOptions): Promise<void>`."
+        },
+        {
+          "id": "US-004-AC02",
+          "text": "The handler reads `ROADMAP.md` and `.agents/PROJECT_CONTEXT.md` from the project root (if they exist) and passes their content as context to `buildPrompt`."
+        },
+        {
+          "id": "US-004-AC03",
+          "text": "The handler loads the skill via `loadSkill(projectRoot, \"ideate\")`."
+        },
+        {
+          "id": "US-004-AC04",
+          "text": "The handler uses `invokeAgent` with `interactive: true`."
+        },
+        {
+          "id": "US-004-AC05",
+          "text": "After successful invocation, `state.phases.define.ideation.status` is set to `\"completed\"` and `state.last_updated` is refreshed before writing state."
+        },
+        {
+          "id": "US-004-AC06",
+          "text": "If the agent exits with a non-zero code, an Error is thrown."
+        },
+        {
+          "id": "US-004-AC07",
+          "text": "Guardrail: warns (does not hard-block) if `current_phase !== \"define\"` or `ideation.status === \"completed\"`, respecting `--force`."
+        },
+        {
+          "id": "US-004-AC08",
+          "text": "Typecheck passes."
+        }
+      ]
+    },
+    {
+      "id": "US-005",
+      "title": "Add `ideation` field to state schema and `createInitialState`",
+      "description": "As a developer, I want `state.json` to track ideation status so that the workflow history reflects whether ideation was done for each iteration.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-005-AC01",
+          "text": "`src/schemas/tmpl_state.ts` includes an optional `ideation` field inside `definePhase` with `status` enum `[\"pending\", \"in_progress\", \"completed\"]` and a nullable `file` field."
+        },
+        {
+          "id": "US-005-AC02",
+          "text": "`src/commands/start-iteration.ts` → `createInitialState` initialises `phases.define.ideation` as `{ status: \"pending\", file: null }`."
+        },
+        {
+          "id": "US-005-AC03",
+          "text": "Existing iterations without the `ideation` field continue to parse without error (field is optional in Zod schema)."
+        },
+        {
+          "id": "US-005-AC04",
+          "text": "`bun nvst start-iteration` followed by `bun nvst ideate --agent ide` does not throw a schema validation error."
+        },
+        {
+          "id": "US-005-AC05",
+          "text": "Typecheck passes."
+        }
+      ]
+    }
+  ],
+  "functionalRequirements": [
+    {
+      "id": "FR-1",
+      "description": "`src/cli.ts` must import `runIdeate` from `./commands/ideate` and route `ideate [--agent <provider>] [--force]` to it."
+    },
+    {
+      "id": "FR-2",
+      "description": "`printUsage()` in `cli.ts` must list `ideate --agent <provider>` with a one-line description under the workflow section."
+    },
+    {
+      "id": "FR-3",
+      "description": "`src/commands/ideate.ts` must pass the following keys to `buildPrompt`: `current_iteration`, `roadmap` (content of `ROADMAP.md` or empty string), `project_context` (content of `.agents/PROJECT_CONTEXT.md` or empty string)."
+    },
+    {
+      "id": "FR-4",
+      "description": "`.agents/skills/ideate/SKILL.md` must instruct the agent to use a strict one-question-at-a-time interview (same UX pattern as `create-pr-document` skill)."
+    },
+    {
+      "id": "FR-5",
+      "description": "`.agents/skills/ideate/SKILL.md` must instruct the agent to propose 2–4 concrete ideas with effort estimates (S/M/L) after the interview."
+    },
+    {
+      "id": "FR-6",
+      "description": "`.agents/skills/ideate/SKILL.md` must instruct the agent to write proposed items to `ROADMAP.md` as new candidate entries."
+    },
+    {
+      "id": "FR-7",
+      "description": "`src/schemas/tmpl_state.ts` `definePhase` must include an optional `ideation` object: `{ status: z.enum([\"pending\", \"in_progress\", \"completed\"]), file: z.string().nullable() }`."
+    },
+    {
+      "id": "FR-8",
+      "description": "`scaffold/.agents/skills/ideate/tmpl_SKILL.md` must mirror the live skill file (same body, `tmpl_` prefix naming only)."
+    },
+    {
+      "id": "FR-9",
+      "description": "No new `npm`/`bun` runtime dependencies may be added."
+    }
+  ]
+}
