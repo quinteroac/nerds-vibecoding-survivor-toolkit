@@ -1,21 +1,25 @@
 {
-  "current_iteration": "000032",
-  "current_phase": "prototype",
+  "current_iteration": "000033",
+  "current_phase": "define",
   "phases": {
     "define": {
+      "ideation": {
+        "status": "pending",
+        "file": null
+      },
       "requirement_definition": {
         "status": "approved",
-        "file": "it_000032_product-requirement-document.md"
+        "file": "it_000033_product-requirement-document.md"
       },
       "prd_generation": {
         "status": "completed",
-        "file": "it_000032_PRD.json"
+        "file": "it_000033_PRD.json"
       }
     },
     "prototype": {
       "prototype_creation": {
-        "status": "completed",
-        "file": "it_000032_progress.json"
+        "status": "pending",
+        "file": null
       },
       "prototype_audit": {
         "status": "pending",
@@ -26,7 +30,7 @@
         "file": null
       },
       "prototype_approval": {
-        "status": "completed",
+        "status": "pending",
         "file": null
       },
       "project_context": {
@@ -70,8 +74,8 @@
       }
     }
   },
-  "last_updated": "2026-03-14T03:39:44.056Z",
-  "updated_by": "nvst:approve-prototype",
+  "last_updated": "2026-03-14T22:56:42.752Z",
+  "updated_by": "nvst:approve-requirement",
   "history": [
     {
       "iteration": "000001",
@@ -102,6 +106,11 @@
       "iteration": "000031",
       "archived_at": "2026-03-14T02:55:23.882Z",
       "archived_path": ".agents/flow/archived/000031"
+    },
+    {
+      "iteration": "000032",
+      "archived_at": "2026-03-14T22:29:32.339Z",
+      "archived_path": ".agents/flow/archived/000032"
     }
   ]
 }
