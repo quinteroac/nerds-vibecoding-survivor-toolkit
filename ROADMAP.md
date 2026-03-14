@@ -4,7 +4,7 @@
 - [DONE] **Command implementation** Create command *Create Project Context* that generates/update AGENTS.md and PROJECT_CONTEXT.md
 - [DONE] **Process Refactor:** Update the main development loop to follow this sequence: *Define/Refine/Approve Requirement* ➔ *Create Prototype* ➔ *Audit Prototype* ➔ *Refactor Prototype* ➔ *Approve Prototype*.
 - [DONE] **Command Implementation** Implement Audit Prototype command, Implement Refactor Prototype
-- **Ideation Phase:** Add an optional "Ideation" phase before each iteration. This phase will output updates to `ROADMAP.md`, `PROJECT_CONTEXT.md`.
+- [DONE] **Ideation Phase:** Add an optional "Ideation" phase before each iteration. This phase will output updates to `ROADMAP.md`, `PROJECT_CONTEXT.md`.
 - [DONE] **Prompt-Based Execution:** Instead of internally calling an agent within the commands, output the instructions as prompts. This will improve compatibility with IDEs and Web environments (Cursor, Antigravity, Claude Code Web, GitHub Copilot).
 - [DONE] **Interactive Requirements:** During the "define requirement" phase, proactively ask the user to clarify any open questions instead of leaving them unresolved.
 
@@ -14,3 +14,6 @@
 
 ## Post-Iteration Automation
 - [DONE] **Prototype Approval Cycle:** During the "approve prototype" phase, automatically update `PROJECT_CONTEXT.md` and `ROADMAP.md`, push changes to git, and create a Pull Request.
+
+## Refactors, changes and issues
+- **Roadmap generation** Strong structure following the preexisting iterations in the project.
