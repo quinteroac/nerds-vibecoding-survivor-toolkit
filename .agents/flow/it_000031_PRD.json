@@ -1,0 +1,144 @@
+{
+  "goals": [
+    "Make `bun nvst create project-context --agent <provider>` fully operational.",
+    "Make `bun nvst approve project-context` and `bun nvst refine project-context --agent <provider>` fully operational.",
+    "Ensure the `create project-context` skill prompt includes `AGENTS.md` content alongside `PROJECT_CONTEXT.md`.",
+    "Restore skill templates to the scaffold so new projects get them on `nvst init`."
+  ],
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Wire project-context commands in CLI",
+      "description": "As a developer, I want `bun nvst create project-context`, `bun nvst approve project-context`, and `bun nvst refine project-context` to be recognised by the CLI so that I can run the project context workflow without getting \"Unknown command\" errors.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-001-AC01",
+          "text": "`bun nvst create project-context --agent ide` routes to `runCreateProjectContext` without error."
+        },
+        {
+          "id": "US-001-AC02",
+          "text": "`bun nvst approve project-context` routes to `runApproveProjectContext` without error."
+        },
+        {
+          "id": "US-001-AC03",
+          "text": "`bun nvst refine project-context --agent ide` routes to `runRefineProjectContext` without error."
+        },
+        {
+          "id": "US-001-AC04",
+          "text": "All three commands appear in `bun nvst --help` output under the primary workflow section."
+        },
+        {
+          "id": "US-001-AC05",
+          "text": "Passing an unknown subcommand to `create`, `approve`, or `refine` still prints a usage error (no regression)."
+        },
+        {
+          "id": "US-001-AC06",
+          "text": "Typecheck passes (`bun tsc --noEmit`)."
+        }
+      ]
+    },
+    {
+      "id": "US-002",
+      "title": "Restore `create-project-context` skill",
+      "description": "As a developer, I want `.agents/skills/create-project-context/SKILL.md` to exist so that `bun nvst create project-context` can load the skill and build a valid agent prompt.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-002-AC01",
+          "text": "`.agents/skills/create-project-context/SKILL.md` exists and contains the full skill recovered from commit `8f1c14f`."
+        },
+        {
+          "id": "US-002-AC02",
+          "text": "`scaffold/.agents/skills/create-project-context/tmpl_SKILL.md` exists (scaffold template mirror)."
+        },
+        {
+          "id": "US-002-AC03",
+          "text": "Running `bun nvst create project-context --agent ide` does not throw \"Skill 'create-project-context' not found\"."
+        },
+        {
+          "id": "US-002-AC04",
+          "text": "Typecheck passes."
+        }
+      ]
+    },
+    {
+      "id": "US-003",
+      "title": "Restore `refine-project-context` skill",
+      "description": "As a developer, I want `.agents/skills/refine-project-context/SKILL.md` to exist so that `bun nvst refine project-context` can load the skill and build a valid agent prompt.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-003-AC01",
+          "text": "`.agents/skills/refine-project-context/SKILL.md` exists and contains the full skill recovered from commit `8f1c14f`."
+        },
+        {
+          "id": "US-003-AC02",
+          "text": "`scaffold/.agents/skills/refine-project-context/tmpl_SKILL.md` exists (scaffold template mirror)."
+        },
+        {
+          "id": "US-003-AC03",
+          "text": "Running `bun nvst refine project-context --agent ide` does not throw \"Skill 'refine-project-context' not found\"."
+        },
+        {
+          "id": "US-003-AC04",
+          "text": "Typecheck passes."
+        }
+      ]
+    },
+    {
+      "id": "US-004",
+      "title": "Include `AGENTS.md` in create-project-context prompt context",
+      "description": "As a developer, I want the `create project-context` command to read `AGENTS.md` and pass it as context to the agent prompt so that the agent can produce a `PROJECT_CONTEXT.md` that is consistent with the project's agent entry point.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-004-AC01",
+          "text": "`src/commands/create-project-context.ts` reads `AGENTS.md` from the project root if it exists."
+        },
+        {
+          "id": "US-004-AC02",
+          "text": "When `AGENTS.md` exists, its content is included in the prompt context under the key `agents_md`."
+        },
+        {
+          "id": "US-004-AC03",
+          "text": "When `AGENTS.md` is absent, the command proceeds without error (graceful skip, same pattern as `existing_project_context`)."
+        },
+        {
+          "id": "US-004-AC04",
+          "text": "The `create-project-context` skill (`SKILL.md`) documents `AGENTS.md` as an input source in its Inputs table."
+        },
+        {
+          "id": "US-004-AC05",
+          "text": "Running `bun nvst create project-context --agent ide` outputs a prompt that contains the `AGENTS.md` content when the file is present."
+        },
+        {
+          "id": "US-004-AC06",
+          "text": "Typecheck passes."
+        }
+      ]
+    }
+  ],
+  "functionalRequirements": [
+    {
+      "id": "FR-1",
+      "description": "`src/cli.ts` must import `runCreateProjectContext`, `runApproveProjectContext`, and `runRefineProjectContext` and route the following command patterns:"
+    },
+    {
+      "id": "FR-2",
+      "description": "`printUsage()` in `cli.ts` must list all three project-context commands with their flags."
+    },
+    {
+      "id": "FR-3",
+      "description": "`.agents/skills/create-project-context/SKILL.md` must be restored from git history (commit `8f1c14f`) and updated to list `AGENTS.md` as an input."
+    },
+    {
+      "id": "FR-4",
+      "description": "`.agents/skills/refine-project-context/SKILL.md` must be restored from git history (commit `8f1c14f`), unchanged."
+    },
+    {
+      "id": "FR-5",
+      "description": "`scaffold/.agents/skills/create-project-context/tmpl_SKILL.md` and `scaffold/.agents/skills/refine-project-context/tmpl_SKILL.md` must mirror the restored skill files."
+    },
+    {
+      "id": "FR-6",
+      "description": "`src/commands/create-project-context.ts` must read `AGENTS.md` from `process.cwd()` (if it exists) and add it to the `context` object as `agents_md` before calling `buildPrompt`."
+    }
+  ]
+}

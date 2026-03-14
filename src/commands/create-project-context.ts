@@ -71,6 +71,8 @@ export async function runCreateProjectContext(opts: CreateProjectContextOptions)
   const projectContextPath = join(projectRoot, ".agents", "PROJECT_CONTEXT.md");
   const existingProjectContext =
     (await exists(projectContextPath)) ? await readFile(projectContextPath, "utf8") : "";
+  const agentsMdPath = join(projectRoot, "AGENTS.md");
+  const agentsMdContent = (await exists(agentsMdPath)) ? await readFile(agentsMdPath, "utf8") : "";
 
   const context: Record<string, string> = {
     mode,
@@ -80,6 +82,9 @@ export async function runCreateProjectContext(opts: CreateProjectContextOptions)
 
   if (existingProjectContext) {
     context.existing_project_context = existingProjectContext;
+  }
+  if (agentsMdContent) {
+    context.agents_md = agentsMdContent;
   }
 
   const prompt = buildPrompt(skillBody, context);
