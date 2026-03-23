@@ -1,0 +1,41 @@
+{
+  "iteration": "000036",
+  "executiveSummary": "All four user stories and all three functional requirements are fully implemented. Skill directories have been renamed (create-pr-document → define-requirement, refine-pr-document → refine-requirement, implement-user-story → create-prototype), all loadSkill() calls in command handlers updated, tests migrated, and the manifest regenerated. TypeScript compilation is clean. The 17 failing tests in the test suite are pre-existing failures unrelated to this iteration's changes. One minor documentation artifact remains inside the refine-requirement SKILL.md body text.",
+  "verificationByFR": [
+    {
+      "frId": "FR-1",
+      "assessment": "comply"
+    },
+    {
+      "frId": "FR-2",
+      "assessment": "comply"
+    },
+    {
+      "frId": "FR-3",
+      "assessment": "comply"
+    }
+  ],
+  "verificationByUS": [
+    {
+      "usId": "US-001",
+      "assessment": "comply"
+    },
+    {
+      "usId": "US-002",
+      "assessment": "comply"
+    },
+    {
+      "usId": "US-003",
+      "assessment": "comply"
+    },
+    {
+      "usId": "US-004",
+      "assessment": "comply"
+    }
+  ],
+  "minorObservations": [
+    "nvst-skills/refine-requirement/SKILL.md (and the embedded copy in src/nvst-skills-manifest.ts) references 'create-pr-document' in a prose sentence: 'following the same Output Structure as `create-pr-document`'. This is a stale documentation reference — it should read 'define-requirement'.",
+    "17 pre-existing test failures exist in the suite (audit-prototype-skill.test.ts × 7, ideate-skill.test.ts × 5, refine-project-context-skill.test.ts × 3, refactor-prototype-skill.test.ts × 2). None are caused by this iteration's changes, but they leave the suite in a non-green state."
+  ],
+  "conclusionsAndRecommendations": "The iteration is complete and compliant. The only actionable follow-up is updating the prose reference in nvst-skills/refine-requirement/SKILL.md from 'create-pr-document' to 'define-requirement' and regenerating the manifest afterward. The 17 pre-existing test failures should be tracked as technical debt and addressed in a dedicated iteration."
+}

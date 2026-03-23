@@ -23,7 +23,7 @@ Update `it_{current_iteration}_product-requirement-document.md` in place based o
 3. **Open by asking:** _"Would you like me to challenge the existing document as an independent reviewer, or would you prefer to tell me what to change?"_
    - Answer → **challenge**: run Challenger Mode (see below).
    - Answer → **edit**: run Editor Mode (see Questions Flow).
-4. Apply changes to the document following the same Output Structure as `create-pr-document`.
+4. Apply changes to the document following the same Output Structure as `define-requirement`.
 5. Re-enforce MVP constraint: remove any user stories not explicitly listed by the user; do not add new ones without confirmation.
 6. Write the updated file back to the same path.
 7. Do **not** update `state.json` — `requirement_definition.status` stays `"in_progress"`.
@@ -91,7 +91,7 @@ Ask only what is needed to understand the requested change.
 
 - **MVP constraint holds:** do not add user stories unless the user explicitly requests them and confirms they are MVP-necessary.
 - **Preserve numbering:** renumber `US-NNN` and `FR-N` entries only if a story is removed; otherwise keep existing IDs stable.
-- **Verifiable criteria:** any new or edited acceptance criterion must be concrete and testable (same standard as `create-pr-document`).
+- **Verifiable criteria:** any new or edited acceptance criterion must be concrete and testable (same standard as `define-requirement`).
 - **UI stories:** if a new or edited story touches the UI, "visually verified in browser" must be an acceptance criterion.
 
 ---
