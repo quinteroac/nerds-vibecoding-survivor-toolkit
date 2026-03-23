@@ -158,3 +158,103 @@ describe("runInit – US-002", () => {
     expect(process.exitCode).toBe(0);
   });
 });
+
+describe("runInit – US-003", () => {
+  let tmpDir: string;
+  let originalCwd: string;
+  let originalExitCode: number | undefined;
+
+  beforeEach(async () => {
+    tmpDir = await makeTempDir();
+    originalCwd = process.cwd();
+    process.chdir(tmpDir);
+    originalExitCode = process.exitCode as number | undefined;
+    process.exitCode = 0;
+  });
+
+  afterEach(async () => {
+    process.chdir(originalCwd);
+    process.exitCode = originalExitCode;
+    await rm(tmpDir, { recursive: true, force: true });
+  });
+
+  it("US-003-AC01: after a successful run, the skills installer is invoked and process.exitCode is 0", async () => {
+    let installerCallCount = 0;
+    let installerReceivedSkillsPath: string | undefined;
+
+    const deps: InitDeps = {
+      skillsInstallerFn: async (_projectRoot, nvstSkillsPath) => {
+        installerCallCount++;
+        installerReceivedSkillsPath = nvstSkillsPath;
+        return 0;
+      },
+    };
+
+    await runInit(deps);
+
+    // Installer was invoked exactly once with the bundled nvst-skills path
+    expect(installerCallCount).toBe(1);
+    expect(installerReceivedSkillsPath).toBe(NVST_SKILLS_PATH);
+    expect(process.exitCode).toBe(0);
+  });
+
+  it("US-003-AC02: 'Init complete' is printed only after the skill installation step finishes", async () => {
+    const events: string[] = [];
+    const originalLog = console.log;
+    console.log = (msg: string) => events.push(`log:${msg}`);
+
+    const deps: InitDeps = {
+      skillsInstallerFn: async () => {
+        events.push("installer:done");
+        return 0;
+      },
+    };
+
+    await runInit(deps);
+    console.log = originalLog;
+
+    const installerIdx = events.indexOf("installer:done");
+    const completionIdx = events.findIndex((e) => e.includes("Init complete"));
+
+    expect(installerIdx).toBeGreaterThanOrEqual(0);
+    expect(completionIdx).toBeGreaterThanOrEqual(0);
+    // Success message must come AFTER installer resolves
+    expect(completionIdx).toBeGreaterThan(installerIdx);
+  });
+
+  it("US-003-AC03: when installer fails on an existing project, process.exitCode is non-zero and no success message is printed", async () => {
+    // First run — scaffold all files successfully
+    await runInit({ skillsInstallerFn: async () => 0 });
+    process.exitCode = 0;
+
+    // Second run — all scaffold files already exist; installer fails
+    const logMessages: string[] = [];
+    const originalLog = console.log;
+    console.log = (msg: string) => logMessages.push(msg);
+
+    await runInit({ skillsInstallerFn: async () => 1 });
+    console.log = originalLog;
+
+    expect(process.exitCode).not.toBe(0);
+    expect(logMessages.some((m) => m.includes("Init complete"))).toBe(false);
+  });
+
+  it("US-003-AC04: running init twice calls the installer both times (skills package handles idempotency)", async () => {
+    let installerCallCount = 0;
+    const deps: InitDeps = {
+      skillsInstallerFn: async () => {
+        installerCallCount++;
+        return 0;
+      },
+    };
+
+    // First run: creates scaffold files
+    await runInit(deps);
+    // Second run: scaffold files already exist (skipped), but installer is still called
+    await runInit(deps);
+
+    // Both runs invoke the installer — idempotency is delegated to the skills package
+    expect(installerCallCount).toBe(2);
+    expect(process.exitCode).toBe(0);
+  });
+});

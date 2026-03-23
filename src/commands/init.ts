@@ -83,12 +83,16 @@ export async function runInit(deps: InitDeps = defaultInitDeps): Promise<void> {
     console.log(`Created: ${entry.relativeDestinationPath}`);
   }
 
+  // Run skill installation before reporting success (US-003-AC02)
+  const exitCode = await deps.skillsInstallerFn(projectRoot, NVST_SKILLS_PATH);
+  if (exitCode !== 0) {
+    // Installer failed or was aborted — do not report overall success (US-003-AC03)
+    process.exitCode = exitCode ?? 1;
+    return;
+  }
+
+  // Report success only after skills installation has finished successfully (US-003-AC02)
   console.log(
     `\nInit complete. Created ${created.length} file(s), skipped ${skipped.length} existing file(s).`,
   );
-
-  const exitCode = await deps.skillsInstallerFn(projectRoot, NVST_SKILLS_PATH);
-  if (exitCode !== 0) {
-    process.exitCode = exitCode ?? 1;
-  }
 }
