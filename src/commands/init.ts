@@ -40,7 +40,27 @@ async function exists(filePath: string): Promise<boolean> {
   }
 }
 
-export async function runInit(): Promise<void> {
+export interface InitDeps {
+  /** Runs the interactive skills installer and returns its exit code. */
+  skillsInstallerFn: (projectRoot: string) => Promise<number | null>;
+}
+
+export const defaultInitDeps: InitDeps = {
+  skillsInstallerFn: async (projectRoot: string): Promise<number | null> => {
+    if (!process.stdin.isTTY) {
+      return 0;
+    }
+    const proc = Bun.spawn(["npx", "skills", "add"], {
+      cwd: projectRoot,
+      stdin: "inherit",
+      stdout: "inherit",
+      stderr: "inherit",
+    });
+    return proc.exited;
+  },
+};
+
+export async function runInit(deps: InitDeps = defaultInitDeps): Promise<void> {
   const projectRoot = process.cwd();
   const entries = getScaffoldEntries(projectRoot);
 
@@ -63,4 +83,9 @@ export async function runInit(): Promise<void> {
   console.log(
     `\nInit complete. Created ${created.length} file(s), skipped ${skipped.length} existing file(s).`,
   );
+
+  const exitCode = await deps.skillsInstallerFn(projectRoot);
+  if (exitCode !== 0) {
+    process.exitCode = exitCode ?? 1;
+  }
 }
