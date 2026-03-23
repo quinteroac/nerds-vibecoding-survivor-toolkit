@@ -1,5 +1,7 @@
-import { access, mkdir } from "node:fs/promises";
-import { basename, dirname, join, resolve } from "node:path";
+import { access, mkdir, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { basename, dirname, join } from "node:path";
+import { NVST_SKILLS_FILES } from "../nvst-skills-manifest";
 import { SCAFFOLD_FILES } from "../scaffold-manifest";
 
 const TEMPLATE_PREFIX = "tmpl_";
@@ -40,13 +42,24 @@ async function exists(filePath: string): Promise<boolean> {
   }
 }
 
+/**
+ * Writes the embedded nvst-skills manifest to a temporary directory and returns
+ * its path. The caller is responsible for deleting the directory when done.
+ */
+export async function writeNvstSkillsToTemp(): Promise<string> {
+  const tempDir = join(tmpdir(), `nvst-skills-${Date.now()}`);
+  for (const { relativePath, content } of NVST_SKILLS_FILES) {
+    const dest = join(tempDir, relativePath);
+    await mkdir(dirname(dest), { recursive: true });
+    await writeFile(dest, content, "utf8");
+  }
+  return tempDir;
+}
+
 export interface InitDeps {
   /** Runs the interactive skills installer and returns its exit code. */
   skillsInstallerFn: (projectRoot: string, nvstSkillsPath: string) => Promise<number | null>;
 }
-
-/** Absolute path to the bundled `nvst-skills` directory shipped with this package. */
-export const NVST_SKILLS_PATH: string = resolve(import.meta.dir, "../../nvst-skills");
 
 export const defaultInitDeps: InitDeps = {
   skillsInstallerFn: async (projectRoot: string, nvstSkillsPath: string): Promise<number | null> => {
@@ -83,12 +96,20 @@ export async function runInit(deps: InitDeps = defaultInitDeps): Promise<void> {
     console.log(`Created: ${entry.relativeDestinationPath}`);
   }
 
-  // Run skill installation before reporting success (US-003-AC02)
-  const exitCode = await deps.skillsInstallerFn(projectRoot, NVST_SKILLS_PATH);
-  if (exitCode !== 0) {
-    // Installer failed or was aborted — do not report overall success (US-003-AC03)
-    process.exitCode = exitCode ?? 1;
-    return;
+  // Materialize bundled nvst-skills to a temp directory so the path always
+  // exists regardless of whether nvst is running from source or as a binary.
+  const tempSkillsDir = await writeNvstSkillsToTemp();
+
+  try {
+    // Run skill installation before reporting success (US-003-AC02)
+    const exitCode = await deps.skillsInstallerFn(projectRoot, tempSkillsDir);
+    if (exitCode !== 0) {
+      // Installer failed or was aborted — do not report overall success (US-003-AC03)
+      process.exitCode = exitCode ?? 1;
+      return;
+    }
+  } finally {
+    await rm(tempSkillsDir, { recursive: true, force: true });
   }
 
   // Report success only after skills installation has finished successfully (US-003-AC02)

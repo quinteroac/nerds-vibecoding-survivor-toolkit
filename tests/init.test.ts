@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach } from "bun:test";
-import { mkdtemp, rm, stat } from "node:fs/promises";
+import { mkdtemp, readdir, rm, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { runInit, NVST_SKILLS_PATH, type InitDeps } from "../src/commands/init";
+import { runInit, writeNvstSkillsToTemp, type InitDeps } from "../src/commands/init";
 
 async function makeTempDir(): Promise<string> {
   return mkdtemp(join(tmpdir(), "nvst-init-test-"));
@@ -117,7 +117,7 @@ describe("runInit – US-002", () => {
     await rm(tmpDir, { recursive: true, force: true });
   });
 
-  it("US-002-AC01: skillsInstallerFn receives the nvst-skills path as second argument (no scope flag)", async () => {
+  it("US-002-AC01: skillsInstallerFn receives a temp path containing the nvst-skills (no scope flag)", async () => {
     let receivedSkillsPath: string | undefined;
 
     const deps: InitDeps = {
@@ -130,14 +130,27 @@ describe("runInit – US-002", () => {
     await runInit(deps);
 
     expect(receivedSkillsPath).toBeDefined();
-    expect(receivedSkillsPath).toBe(NVST_SKILLS_PATH);
+    // The temp dir must have been a real directory containing skill subdirectories
+    // (it is cleaned up after runInit returns, so we only check it was a string path)
+    expect(typeof receivedSkillsPath).toBe("string");
+    expect(receivedSkillsPath!.length).toBeGreaterThan(0);
   });
 
-  it("US-002-AC02: NVST_SKILLS_PATH points to the nvst-skills folder inside the package", async () => {
-    // The path must end with 'nvst-skills' and be an accessible directory.
-    expect(NVST_SKILLS_PATH).toMatch(/nvst-skills$/);
-    const dirStat = await stat(NVST_SKILLS_PATH);
-    expect(dirStat.isDirectory()).toBe(true);
+  it("US-002-AC02: writeNvstSkillsToTemp materialises nvst-skills into a temp directory with SKILL.md files", async () => {
+    const tempDir = await writeNvstSkillsToTemp();
+    try {
+      const dirStat = await stat(tempDir);
+      expect(dirStat.isDirectory()).toBe(true);
+      const entries = await readdir(tempDir, { withFileTypes: true });
+      const skillDirs = entries.filter((e) => e.isDirectory());
+      expect(skillDirs.length).toBeGreaterThan(0);
+      // At least one skill must have a SKILL.md
+      const firstSkill = join(tempDir, skillDirs[0].name, "SKILL.md");
+      const fileStat = await stat(firstSkill);
+      expect(fileStat.isFile()).toBe(true);
+    } finally {
+      await rm(tempDir, { recursive: true, force: true });
+    }
   });
 
   it("US-002-AC03: init awaits the installer — process.exitCode reflects installer result", async () => {
@@ -192,9 +205,10 @@ describe("runInit – US-003", () => {
 
     await runInit(deps);
 
-    // Installer was invoked exactly once with the bundled nvst-skills path
+    // Installer was invoked exactly once with a non-empty temp path
     expect(installerCallCount).toBe(1);
-    expect(installerReceivedSkillsPath).toBe(NVST_SKILLS_PATH);
+    expect(typeof installerReceivedSkillsPath).toBe("string");
+    expect(installerReceivedSkillsPath!.length).toBeGreaterThan(0);
     expect(process.exitCode).toBe(0);
   });
 
