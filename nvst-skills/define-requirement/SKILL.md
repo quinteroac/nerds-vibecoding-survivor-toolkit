@@ -20,7 +20,7 @@ Produce `it_{current_iteration}_product-requirement-document.md` in `.agents/flo
 3. Ask 3–5 clarifying questions (see Questions Flow).
 4. Generate the document following the Output Structure.
 5. Write to `.agents/flow/it_{current_iteration}_product-requirement-document.md`.
-6. Update `state.json`: `requirement_definition.status` = `"in_progress"`, `requirement_definition.file` = filename. (Skip this step if `state.json` was absent.)
+6. If `.agents/state.json` exists, update it: `requirement_definition.status` = `"in_progress"`, `requirement_definition.file` = filename. If it does not exist (standalone mode), skip this step and notify the user: "Running standalone — state.json not found, skipping state update."
 
 ---
 
@@ -124,7 +124,7 @@ Each story must be small enough to implement in one focused session.
 2. **Ask the open questions one by one.** For each open question (in order), ask the user that question. **When asking each open question, always include valid suggestions or inferred options** (e.g. lettered choices A, B, C, or "Other: [specify]") so the user has helpful context to provide an answer. Infer options from the PRD context when possible; if none fit, offer at least 2–3 plausible options plus "Other".
 3. **Wait for the user's answer before proceeding.** After asking a question, wait for the user to respond. Only then ask the next question (or, if there are no more, proceed to update `state.json` and finish).
 
-If there are no open questions (section missing or only placeholders), skip this block and go straight to updating `state.json`.
+If there are no open questions (section missing or only placeholders), skip this block and go straight to the state update step (step 6).
 
 ---
 
@@ -138,4 +138,4 @@ Before saving:
 - [ ] Non-goals define clear scope boundaries
 - [ ] File written to `.agents/flow/it_{current_iteration}_product-requirement-document.md`
 - [ ] **Open questions (if any) asked one by one with suggestions/options per question, and user answers collected**
-- [ ] `state.json` → `requirement_definition.status` = `"in_progress"`, `requirement_definition.file` set
+- [ ] If `.agents/state.json` exists: `requirement_definition.status` = `"in_progress"`, `requirement_definition.file` set. If absent (standalone): user notified "Running standalone — state.json not found, skipping state update."

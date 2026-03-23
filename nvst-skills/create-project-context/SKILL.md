@@ -21,6 +21,7 @@ Create or update `.agents/PROJECT_CONTEXT.md` so the agent has a single, stable 
 3. Produce or update the document following the Output Structure.
 4. Enforce the **250-line cap** (see Cap Rule).
 5. Write the result to `.agents/PROJECT_CONTEXT.md`.
+6. If `.agents/state.json` exists, update it: `project_context.status` = `"pending_approval"`, `project_context.file` = `".agents/PROJECT_CONTEXT.md"`. If it does not exist (standalone mode), skip this step and notify the user: "Running standalone — state.json not found, skipping state update."
 
 ---
 
@@ -169,4 +170,4 @@ Before saving the file:
 - [ ] Tech stack lists exact versions where relevant
 - [ ] Testing strategy matches what the PRD implies
 - [ ] File does not exceed 250 lines
-- [ ] `state.json` → `project_context.status` set to `"pending_approval"` and `project_context.file` set to `".agents/PROJECT_CONTEXT.md"` after writing
+- [ ] If `.agents/state.json` exists: `project_context.status` = `"pending_approval"` and `project_context.file` = `".agents/PROJECT_CONTEXT.md"`. If absent (standalone): user notified "Running standalone — state.json not found, skipping state update."
