@@ -14,12 +14,13 @@ Produce `it_{current_iteration}_product-requirement-document.md` in `.agents/flo
 
 ## The Job
 
-1. **Understand the project first.** Read `AGENTS.md`, `.agents/PROJECT_CONTEXT.md`, and explore the codebase structure (main entry points, conventions, existing features) before starting the interview. This context will make your questions more relevant and the PRD better aligned with the project.
-2. Read `state.json` to get `current_iteration` (6-digit string, e.g. `"000001"`).
+1. Check if `.agents/state.json` exists. If it does, read it to obtain `current_iteration` (and any other required fields). If it does not exist, ask the user to provide the required information:
+   - A. Enter the 6-digit iteration number (e.g. `000037`)
+2. **Understand the project first.** Read `AGENTS.md`, `.agents/PROJECT_CONTEXT.md`, and explore the codebase structure (main entry points, conventions, existing features) before starting the interview. This context will make your questions more relevant and the PRD better aligned with the project.
 3. Ask 3–5 clarifying questions (see Questions Flow).
 4. Generate the document following the Output Structure.
 5. Write to `.agents/flow/it_{current_iteration}_product-requirement-document.md`.
-6. Update `state.json`: `requirement_definition.status` = `"in_progress"`, `requirement_definition.file` = filename.
+6. Update `state.json`: `requirement_definition.status` = `"in_progress"`, `requirement_definition.file` = filename. (Skip this step if `state.json` was absent.)
 
 ---
 

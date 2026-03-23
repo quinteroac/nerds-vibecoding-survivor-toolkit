@@ -12,12 +12,15 @@ Create or update `.agents/PROJECT_CONTEXT.md` so the agent has a single, stable 
 
 ## The Job
 
-1. Check whether `.agents/PROJECT_CONTEXT.md` already exists.
+1. Check if `.agents/state.json` exists. If it does, read it to obtain `current_iteration` (and any other required fields). If it does not exist, ask the user to provide the required information:
+   - A. Enter the 6-digit iteration number (e.g. `000037`)
+   - B. Skip — no current iteration (creating context from scratch)
+2. Check whether `.agents/PROJECT_CONTEXT.md` already exists.
    - **First iteration (file absent or empty):** run the Questions flow below.
    - **Subsequent iterations (file present):** ask the user what to add or change; skip questions for sections already covered. In `--mode yolo` skip all questions and infer from the codebase and the current iteration's PRD.
-2. Produce or update the document following the Output Structure.
-3. Enforce the **250-line cap** (see Cap Rule).
-4. Write the result to `.agents/PROJECT_CONTEXT.md`.
+3. Produce or update the document following the Output Structure.
+4. Enforce the **250-line cap** (see Cap Rule).
+5. Write the result to `.agents/PROJECT_CONTEXT.md`.
 
 ---
 

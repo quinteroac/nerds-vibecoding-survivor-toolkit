@@ -18,7 +18,8 @@ Update `it_{current_iteration}_product-requirement-document.md` in place based o
 
 ## The Job
 
-1. Read `state.json` → get `requirement_definition.file` (e.g. `it_000001_product-requirement-document.md`).
+1. Check if `.agents/state.json` exists. If it does, read it to obtain `requirement_definition.file` (e.g. `it_000001_product-requirement-document.md`). If it does not exist, ask the user to provide the required information:
+   - A. Enter the path to the existing PRD file (e.g. `it_000037_product-requirement-document.md`)
 2. Read the current document from `.agents/flow/{file}`.
 3. **Open by asking:** _"Would you like me to challenge the existing document as an independent reviewer, or would you prefer to tell me what to change?"_
    - Answer → **challenge**: run Challenger Mode (see below).
