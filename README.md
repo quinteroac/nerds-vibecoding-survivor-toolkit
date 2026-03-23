@@ -1,5 +1,9 @@
 # Nerds Vibecoding Survivor Toolkit
 
+<p align="center">
+  <img src="docs/assets/nvst-logo.svg" alt="NVST Logo" width="180" />
+</p>
+
 > 🚧 **Work in Progress**: This toolkit is currently under active development.
 
 ## Purpose
