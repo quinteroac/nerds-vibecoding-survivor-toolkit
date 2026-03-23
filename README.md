@@ -63,12 +63,26 @@ nerds-vst is a package that provides:
 
   _Note: Using CLI-based agents (claude, gemini, codex) is the recommended way to run NVST for a fully automated experience. You can also use `--agent ide` to output skill prompts directly to the terminal, which you can then copy into web-based agents or IDE tools (Cursor, Antigravity, ChatGPT)._
 
+- **Standalone skill invocation** — Every NVST workflow skill (`define-requirement`, `refine-requirement`, `create-prototype`, `audit-prototype`, `refactor-prototype`, `approve-prototype`) can be invoked directly from any AI agent CLI that loads skills via `npx skills add`, without needing the `nvst` binary or an active NVST iteration. When invoked standalone, each skill self-detects the absence of NVST state and interactively asks the user for any missing context (e.g. iteration number, PRD file path). See [docs/nvst-flow/QUICK_USE.md](docs/nvst-flow/QUICK_USE.md) for details.
+
 
 ## Installation
 
 **Prerequisites:** [Bun](https://bun.sh/) v1 or later must be installed.
 
-You can install the toolkit via standalone binaries (recommended for quick use), from the local file system, or from a registry.
+You can install the toolkit via standalone binaries (recommended for quick use), from the local file system, or from a registry. If you only want the NVST workflow skills (without the `nvst` CLI), see [Skills only](#skills-only) below.
+
+### Skills only
+
+If you prefer using AI agent CLIs directly (Claude Code, Cursor, etc.) without installing the `nvst` binary, you can add just the skills to your agent:
+
+```bash
+npx skills add nerds-vibecoding-survivor-toolkit
+```
+
+This installs the following slash commands into your agent CLI: `/define-requirement`, `/refine-requirement`, `/create-prototype`, `/audit-prototype`, `/refactor-prototype`, `/approve-prototype`. Each skill auto-detects whether NVST is active and asks for any missing context interactively.
+
+See [Standalone Skill Invocation](docs/nvst-flow/QUICK_USE.md#standalone-skill-invocation) in QUICK_USE.md for details on how the fallback behavior works.
 
 ### Standalone Binaries (Recommended)
 

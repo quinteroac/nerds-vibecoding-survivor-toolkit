@@ -1,101 +1,97 @@
-# Requirement: Standalone Skill Invocation (NVST-agnostic skills)
+# Requirement: Documentation Update for Iterations 036 and 037
 
 ## Context
 
-NVST skills are currently authored for invocation via `nvst <command>`, which injects context variables (iteration, file paths, user story data) and validates `state.json` before and after each step. When a developer invokes a skill directly from an AI agent CLI (e.g. `/define-requirement` in Claude Code, Cursor, or any agent that supports skills installed via `npx skills add`), the skill fails or behaves unexpectedly because it assumes NVST orchestration is active.
+Iterations 036 and 037 introduced two significant changes to the toolkit that are not yet reflected in the existing documentation (`README.md`, `docs/nvst-flow/COMMANDS.md`, `docs/nvst-flow/QUICK_USE.md`):
 
-The fix must live entirely in the skill files (`nvst-skills/*/SKILL.md`). The NVST command handlers and their state validation logic remain unchanged.
+- **it_000036** — Skill directories renamed to align 1:1 with CLI commands (`create-pr-document` → `define-requirement`, `refine-pr-document` → `refine-requirement`, `implement-user-story` → `create-prototype`).
+- **it_000037** — All workflow skills can now be invoked standalone from any AI agent CLI (e.g. `/define-requirement` in Claude Code) without NVST being active. All workflow skills are marked `user-invocable: true`.
+
+Additionally, `CHANGELOG.md` does not exist at the repository root; a new one must be created covering both iterations.
 
 ## Goals
 
-- Any NVST skill can be successfully invoked from any AI agent CLI that supports skills, without NVST being installed or the NVST flow being active.
-- Skills that currently depend on `state.json` or NVST-injected context variables self-detect their absence and prompt the user for the missing information instead.
-- Skills that currently write to `state.json` skip that step when running standalone (state management remains NVST's responsibility).
-- All workflow skills are discoverable by agent CLIs (`user-invocable: true` in frontmatter).
+- `README.md` accurately describes the current skill names, standalone invocation capability, and agent providers.
+- `docs/nvst-flow/COMMANDS.md` reflects all current commands and providers (resolving discrepancies with `README.md`).
+- `docs/nvst-flow/QUICK_USE.md` includes a section explaining standalone skill invocation.
+- A `CHANGELOG.md` exists at the repository root with entries for it_000036 and it_000037.
+- A reviewer can read the docs and understand every NVST command and skill behavior without reading source code.
 
 ## User Stories
 
-### US-001: Skills that read `state.json` detect NVST absence and ask user for required context
+### US-001: Update README.md to reflect it_000036 and it_000037
 
-**As a** developer invoking an NVST skill directly from an agent CLI,
-**I want** the skill to detect whether `state.json` is present and, if not, ask me for the required information (e.g. iteration number, PRD file path),
-**so that** I can complete the skill's job without needing to run `nvst` or have a valid `state.json`.
-
-**Affected skills:** `define-requirement`, `refine-requirement`, `create-project-context`
+**As a** developer using NVST from the CLI,
+**I want** the README to accurately describe the current skill names, standalone invocation capability, and all supported agent providers,
+**so that** I can understand what the toolkit does and how to use it from a single document.
 
 **Acceptance Criteria:**
-- [ ] Each affected skill's "The Job" section is updated so that the first step reads: "Check if `.agents/state.json` exists. If it does, read it to obtain `current_iteration` (and any other required fields). If it does not exist, ask the user to provide the required information (e.g. iteration number as a 6-digit string, or the PRD filename)."
-- [ ] `refine-requirement` specifically: when `state.json` is absent, asks the user for the path to the existing PRD file (e.g. `it_000037_product-requirement-document.md`) instead of reading `requirement_definition.file` from state.
-- [ ] The fallback prompts use the same lettered-options format used in the rest of the skill's Questions Flow.
-- [ ] Typecheck / lint passes (no code changes required; SKILL.md is a markdown file).
+- [ ] The Features section references the new skill names (`define-requirement`, `refine-requirement`, `create-prototype`) — old names (`create-pr-document`, `refine-pr-document`, `implement-user-story`) are removed.
+- [ ] The Features section mentions that NVST workflow skills can be invoked standalone from any AI agent CLI (e.g. Claude Code, Cursor) without needing NVST active.
+- [ ] The agent providers list is consistent with `COMMANDS.md` and includes `ide` and `copilot` if they are implemented; otherwise they are removed.
+- [ ] No other content in README is removed or altered beyond what is necessary for accuracy.
+- [ ] Typecheck / lint passes (markdown file — no code changes).
 
 ---
 
-### US-002: Skills that write to `state.json` skip that step when running standalone
+### US-002: Align `docs/nvst-flow/COMMANDS.md` with current implementation
 
-**As a** developer invoking an NVST skill directly from an agent CLI,
-**I want** the skill to update `state.json` only when it already exists (i.e. NVST is managing the workflow),
-**so that** the skill does not fail or leave a corrupt/unexpected `state.json` behind when run standalone.
-
-**Affected skills:** `define-requirement`, `create-project-context`
+**As a** developer reading the command reference,
+**I want** `COMMANDS.md` to list every current command and option (including those present in README but missing from the reference),
+**so that** the command reference is the single authoritative source and does not contradict the README.
 
 **Acceptance Criteria:**
-- [ ] Each affected skill's final step (state update) is rewritten as: "If `.agents/state.json` exists, update `<field>` = `<value>`. If it does not exist (standalone mode), skip this step and notify the user that state was not persisted."
-- [ ] The notification message is clear and non-blocking (e.g. "Running standalone — state.json not found, skipping state update.").
+- [ ] The Utilities table includes `nvst sync skills`, `nvst write-technical-debt`, and `nvst start iteration` if those commands are implemented in `src/`.
+- [ ] The Global Options table lists `ide` and `copilot` as valid `--agent` values if they are implemented; otherwise the README is corrected to remove them.
+- [ ] No commands listed in COMMANDS.md are stale (i.e. no longer implemented).
 - [ ] Typecheck / lint passes.
 
 ---
 
-### US-003: Skills that receive NVST context variables prompt user for them when invoked standalone
+### US-003: Add standalone skill invocation section to `docs/nvst-flow/QUICK_USE.md`
 
-**As a** developer invoking a workflow skill directly from an agent CLI (without NVST injecting context),
-**I want** the skill to detect that required context variables are missing and ask me for them interactively,
-**so that** I can use the skill without NVST's orchestration layer.
-
-**Affected skills:** `create-prototype`, `refactor-prototype`, `approve-prototype`, `audit-prototype`
+**As a** developer who prefers using AI agent CLIs directly (e.g. Claude Code),
+**I want** `QUICK_USE.md` to explain how to invoke NVST skills standalone without running `nvst`,
+**so that** I can use the workflow without the `nvst` binary.
 
 **Acceptance Criteria:**
-- [ ] Each affected skill's "Context" / "Inputs" section is updated with a standalone fallback that follows the lookup order: (1) injected context variable → (2) `state.json` → (3) artifact files → (4) ask user.
-- [ ] `create-prototype`: when `user_story` or `iteration` are absent, reads `state.json` (if present) to get `current_iteration`, then reads `.agents/flow/it_{iteration}_PRD.json` (preferred) or `.agents/flow/it_{iteration}_product-requirement-document.md` to discover available user stories and asks the user which story to implement. Only asks for the iteration number if neither `state.json` nor any PRD file can be found.
-- [ ] `refactor-prototype`: when `iteration` or `audit_json_path` are absent, reads `state.json` (if present) to get `current_iteration`, then reads `.agents/flow/it_{iteration}_audit.json` or `.agents/flow/it_{iteration}_audit.md` directly. Only asks the user for the iteration number if no artifact can be found.
-- [ ] `approve-prototype`: when `iteration` is absent, reads `state.json` (if present) to get `current_iteration`. Only asks the user if `state.json` is also absent.
-- [ ] `audit-prototype`: when `iteration` is absent, reads `state.json` (if present) to get `current_iteration`, then resolves `.agents/flow/it_{iteration}_PRD.json` or `.agents/flow/it_{iteration}_product-requirement-document.md`. Only asks the user if no artifact can be found.
+- [ ] A new section "Standalone Skill Invocation" is added to `QUICK_USE.md`.
+- [ ] The section explains that NVST skills (e.g. `/define-requirement`, `/create-prototype`) can be invoked directly from any AI agent CLI that loads skills via `npx skills add`.
+- [ ] The section describes the fallback behavior: skill detects NVST absence, reads existing artifacts, and interactively asks the user for any missing context.
 - [ ] Typecheck / lint passes.
 
 ---
 
-### US-004: All workflow skills are marked `user-invocable: true` in frontmatter
+### US-004: Create `CHANGELOG.md` at repository root with entries for it_000036 and it_000037
 
-**As a** developer using an AI agent CLI that loads skills via `npx skills add`,
-**I want** all NVST workflow skills to appear as invocable slash commands in my agent,
-**so that** I can discover and invoke them without knowing they were originally orchestrated by NVST.
-
-**Affected skills:** `audit-prototype`, `create-prototype`, `refactor-prototype`, `approve-prototype` (currently `user-invocable: false`)
+**As a** developer or contributor,
+**I want** a `CHANGELOG.md` at the repository root that records what changed in each iteration,
+**so that** I can understand the evolution of the toolkit without reading individual PRDs.
 
 **Acceptance Criteria:**
-- [ ] The frontmatter field `user-invocable` is set to `true` in all four affected skills.
-- [ ] No other frontmatter fields are modified.
+- [ ] `CHANGELOG.md` is created at the repository root (not under `docs/`).
+- [ ] It follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) format (`## [Unreleased]`, `### Added`, `### Changed`, etc.).
+- [ ] Entry for **it_000036** documents the skill rename: old names → new names, and lists the affected source files.
+- [ ] Entry for **it_000037** documents standalone skill invocation: which skills were updated, the `user-invocable: true` frontmatter change, and the self-detection fallback behavior.
 - [ ] Typecheck / lint passes.
 
 ---
 
 ## Functional Requirements
 
-- FR-1: Each skill that reads `state.json` must first check for the file's existence before attempting to read it.
-- FR-2: When `state.json` is absent, skills must interactively ask the user for any required fields (iteration number, file paths) using the lettered-options format.
-- FR-3: Each skill that writes to `state.json` must wrap that step in a conditional: execute only if `state.json` already exists.
-- FR-4: Skills that receive context variables from NVST must declare a standalone fallback with the following lookup order: (1) injected context variable → (2) `state.json` → (3) artifact files (PRD json/md, audit json/md) → (4) ask user. Skills must not ask the user for information that can be resolved by reading existing files.
-- FR-5: All four workflow skills currently marked `user-invocable: false` must be updated to `user-invocable: true`.
-- FR-6: No changes may be made to `src/` files, NVST command handlers, or `.agents/state.json` schema — only `nvst-skills/*/SKILL.md` files may be modified.
+- FR-1: All documentation changes must accurately reflect the current state of the source code — verify against `src/commands/`, `nvst-skills/`, and `src/nvst-skills-manifest.ts` before writing.
+- FR-2: Changes must be additive or corrective only — do not remove existing content unless it is demonstrably stale or incorrect.
+- FR-3: `CHANGELOG.md` must use Keep a Changelog format; entries must reference iteration IDs (e.g. `it_000036`, `it_000037`).
+- FR-4: No changes may be made to source code (`src/`) — only documentation files.
+- FR-5: All content must be in English (per AGENTS.md rule).
 
 ## Non-Goals (Out of Scope)
 
-- Modifying NVST command handlers (`src/commands/`) or their state validation logic.
-- Changing how `nvst init` installs skills (installation is already multi-agent via `npx skills add`).
-- Adding new NVST commands or CLI flags.
-- Updating design/impeccable skills (adapt, animate, bolder, clarify, colorize, critique, delight, distill, extract, frontend-design, harden, normalize, onboard, optimize, polish, quieter, teach-impeccable) — these are already standalone by nature.
-- Updating `ideate` and `create-project-context` standalone behavior beyond what FR-1 through FR-4 require.
-- Automated testing of skill markdown content.
+- Updating documentation under `.agents/flow/archived/` — historical artifacts are read-only.
+- Rewriting or restructuring `process_design.md`.
+- Updating JSDoc or inline code comments.
+- Updating the `scaffold/` template documents (e.g. `scaffold/.agents/tmpl_PROJECT_CONTEXT.md`).
+- Publishing or releasing the package.
 
 ## Open Questions
 
