@@ -47,6 +47,17 @@ You will receive:
 - `iteration`: current iteration (e.g. `000026`).
 - `audit_json_path`: absolute path to `it_{iteration}_audit.json` in `.agents/flow/`. Read this file to get the refactor plan and quality checks.
 
+### Standalone Fallback
+
+When `iteration` or `audit_json_path` are not injected as context variables, resolve them using the following lookup order before asking the user:
+
+1. **Injected context variable** — use directly if present.
+2. **`state.json`** — read `.agents/state.json` (if it exists) to obtain `current_iteration`.
+3. **Artifact files** — using the resolved iteration, look for:
+   - `.agents/flow/it_{iteration}_audit.json` (preferred) — use this as the `audit_json_path`.
+   - `.agents/flow/it_{iteration}_audit.md` (fallback) — use as the refactor plan source.
+4. **Ask user** — only if neither `state.json` nor any audit artifact can be found, ask the user to provide the 6-digit iteration number (e.g. `000037`). Once known, retry step 3.
+
 From the project root, you must use the following iteration artifacts under `.agents/flow/` as your primary sources of truth:
 
 - `.agents/flow/it_{iteration}_PRD.json` — the approved PRD for this iteration (JSON source of truth).

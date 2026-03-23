@@ -84,6 +84,14 @@ You will receive at least:
 
 - `iteration`: the current iteration identifier (e.g. `000027`).
 
+### Standalone Fallback
+
+When `iteration` is not injected as a context variable, resolve it using the following lookup order before asking the user:
+
+1. **Injected context variable** — use directly if present.
+2. **`state.json`** — read `.agents/state.json` (if it exists) to obtain `current_iteration` and use it as the iteration.
+3. **Ask user** — only if `.agents/state.json` is also absent, ask the user to provide the 6-digit iteration number (e.g. `000027`).
+
 Use this to locate the iteration artifacts under `.agents/flow/`:
 
 - `.agents/flow/it_{iteration}_PRD.json`

@@ -35,6 +35,17 @@ Implement the provided user story by writing production code and tests that sati
 | `project_context` (context variable) | Project conventions, tech stack, code standards, testing strategy, and architecture |
 | `iteration` (context variable) | Current iteration number for file naming and context |
 
+### Standalone Fallback
+
+When `user_story` or `iteration` are not injected as context variables, resolve them using the following lookup order before asking the user:
+
+1. **Injected context variable** — use directly if present.
+2. **`state.json`** — read `.agents/state.json` (if it exists) to obtain `current_iteration`.
+3. **Artifact files** — using the resolved iteration, look for:
+   - `.agents/flow/it_{iteration}_PRD.json` (preferred) — read the `userStories` array and present the available stories to the user, asking which one to implement.
+   - `.agents/flow/it_{iteration}_product-requirement-document.md` (fallback) — read the file, identify the user stories listed, and ask the user which story to implement.
+4. **Ask user** — only if neither `state.json` nor any PRD artifact can be found, ask the user to provide the 6-digit iteration number (e.g. `000037`). Once the iteration is known, retry step 3.
+
 ---
 
 ## UI / Frontend Stories

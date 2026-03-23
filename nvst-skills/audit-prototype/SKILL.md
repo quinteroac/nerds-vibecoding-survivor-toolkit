@@ -15,6 +15,17 @@ Validate the product requirement document (PRD) for the current iteration agains
   - `.agents/flow/it_{iteration}_PRD.json` — PRD (user stories, acceptance criteria, functional requirements)
   - `.agents/flow/it_{iteration}_progress.json` — implementation progress
 
+### Standalone Fallback
+
+When `iteration` is not injected as a context variable, resolve it using the following lookup order before asking the user:
+
+1. **Injected context variable** — use directly if present.
+2. **`state.json`** — read `.agents/state.json` (if it exists) to obtain `current_iteration`.
+3. **Artifact files** — using the resolved iteration, look for:
+   - `.agents/flow/it_{iteration}_PRD.json` (preferred).
+   - `.agents/flow/it_{iteration}_product-requirement-document.md` (fallback).
+4. **Ask user** — only if neither `state.json` nor any PRD artifact can be found, ask the user to provide the 6-digit iteration number (e.g. `000037`). Once known, retry step 3.
+
 ## UI / Frontend Audit
 
 If any audited user story or functional requirement involves UI or frontend work, apply these Impeccable skills during the audit:
