@@ -36,7 +36,15 @@ Command form:
 |---------|-------------|
 | `nvst write-json --schema <name> --out <path> [--data '<json>']` | Write a schema-validated JSON file (payload via --data or stdin) |
 | `nvst write-technical-debt [--out <path>] [--data '<json>']` | Append technical debt items to `.agents/TECHNICAL_DEBT.md` |
-| `nvst sync skills` | Copy `.agents/skills/` to `nvst-skills/` (keep both identical) |
+| `nvst sync skills` | **Maintainers only:** copy `.agents/skills/*/SKILL.md` into `nvst-skills/` in this repo |
+
+### Skill sources in the repository
+
+Skills that ship with the toolkit are authored under **`nvst-skills/`** in the repository. They are embedded (via the generated manifest) into the package and standalone binaries, and `nvst init` writes them to a temporary directory for `npx skills add`.
+
+At **runtime**, `nvst` loads skills from the target project’s `.agents/skills/` (or `~/.agents/skills/`) after the skills installer has copied them there — not directly from `nvst-skills/` in the repo.
+
+**`nvst sync skills`** is not part of normal project setup. Use it when you have edited `.agents/skills/` locally (for example while developing the toolkit) and need to push those files back into `nvst-skills/` before commit or release.
 
 ## Global Options
 

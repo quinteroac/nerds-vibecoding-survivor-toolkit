@@ -15,11 +15,18 @@ async function fileExists(path: string): Promise<boolean> {
 }
 
 /**
- * Syncs agent skill files from runtime `.agents/skills/` to `nvst-skills/`
- * so that the skills package can distribute updated versions. Each
- * `.agents/skills/<name>/SKILL.md` is written to `nvst-skills/<name>/SKILL.md`.
+ * Maintainer-only: copies skill files from `.agents/skills/` into `nvst-skills/`.
  *
- * @param projectRoot - Project root (defaults to process.cwd())
+ * In this repository the **canonical** sources that ship with NVST (and embed in
+ * the compiled binary) live under `nvst-skills/`. Normal `nvst init` does not
+ * use this command — it materializes bundled `nvst-skills/` into a temp path
+ * for `npx skills add`.
+ *
+ * Use `nvst sync skills` when you have edited `.agents/skills/<name>/SKILL.md`
+ * in a working tree (for example after dogfooding in a project) and want to
+ * write those changes back into `nvst-skills/` before committing or releasing.
+ *
+ * @param projectRoot - Repository or project root (defaults to process.cwd())
  */
 export async function runSyncAgentSkills(projectRoot: string = process.cwd()): Promise<void> {
   const runtimeDir = join(projectRoot, RUNTIME_SKILLS_DIR);

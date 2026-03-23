@@ -4,8 +4,8 @@ import { join } from "node:path";
 import { describe, expect, it } from "bun:test";
 
 const PROJECT_ROOT = join(import.meta.dir, "..");
-const RUNTIME_SKILL_PATH = join(PROJECT_ROOT, ".agents", "skills", "audit-prototype", "SKILL.md");
-const NVST_SKILLS_SKILL_PATH = join(PROJECT_ROOT, "nvst-skills", "audit-prototype", "SKILL.md");
+/** Bundled skill shipped under nvst-skills/ (canonical in-repo copy). */
+const BUNDLED_SKILL_PATH = join(PROJECT_ROOT, "nvst-skills", "audit-prototype", "SKILL.md");
 
 // Hashes from upstream pbakaus/impeccable commit 3c3ee6b4f244bf522ecadf2ae9dd0e688d195ed8.
 const EXPECTED_IMPECCABLE_SHA256: Record<string, string> = {
@@ -20,7 +20,7 @@ function sha256(content: string): string {
 
 describe("audit-prototype SKILL.md UI references — US-003", () => {
   it("AC01: includes UI / Frontend Audit section with required Impeccable skills and focus areas", async () => {
-    const content = await readFile(RUNTIME_SKILL_PATH, "utf8");
+    const content = await readFile(BUNDLED_SKILL_PATH, "utf8");
 
     expect(content).toContain("## UI / Frontend Audit");
     expect(content).toContain("`audit`");
@@ -34,7 +34,7 @@ describe("audit-prototype SKILL.md UI references — US-003", () => {
   });
 
   it("AC02: directs UI findings into Minor observations or FR/US assessment notes", async () => {
-    const content = await readFile(RUNTIME_SKILL_PATH, "utf8");
+    const content = await readFile(BUNDLED_SKILL_PATH, "utf8");
 
     expect(content).toContain("Minor observations");
     expect(content).toContain("FR/US assessment notes");
@@ -43,7 +43,7 @@ describe("audit-prototype SKILL.md UI references — US-003", () => {
   });
 
   it("AC03: places UI / Frontend Audit guidance before the Diagnostic Scan section", async () => {
-    const content = await readFile(RUNTIME_SKILL_PATH, "utf8");
+    const content = await readFile(BUNDLED_SKILL_PATH, "utf8");
 
     const uiSectionIndex = content.indexOf("## UI / Frontend Audit");
     const diagnosticScanIndex = content.indexOf("## Diagnostic Scan");
@@ -53,18 +53,14 @@ describe("audit-prototype SKILL.md UI references — US-003", () => {
     expect(uiSectionIndex).toBeLessThan(diagnosticScanIndex);
   });
 
-  it("AC04: keeps Impeccable skill files unchanged and only updates audit-prototype references", async () => {
+  it("AC04: keeps Impeccable skill files unchanged (audit-prototype content lives only under nvst-skills/)", async () => {
     for (const [relativePath, expectedHash] of Object.entries(EXPECTED_IMPECCABLE_SHA256)) {
       const absolutePath = join(PROJECT_ROOT, "nvst-skills", relativePath);
       const content = await readFile(absolutePath, "utf8");
       expect(sha256(content)).toBe(expectedHash);
     }
 
-    const [runtimeSkill, nvstSkill] = await Promise.all([
-      readFile(RUNTIME_SKILL_PATH, "utf8"),
-      readFile(NVST_SKILLS_SKILL_PATH, "utf8"),
-    ]);
-
-    expect(runtimeSkill).toBe(nvstSkill);
+    const bundled = await readFile(BUNDLED_SKILL_PATH, "utf8");
+    expect(bundled.length).toBeGreaterThan(0);
   });
 });

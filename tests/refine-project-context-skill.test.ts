@@ -1,16 +1,16 @@
 import { describe, expect, it } from "bun:test";
-import { createHash } from "node:crypto";
 import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 const PROJECT_ROOT = join(import.meta.dir, "..");
 const CLI_PATH = join(PROJECT_ROOT, "src", "cli.ts");
-const RECOVERED_SKILL_HASH = "92f975bcc3749648788c6f966ed1ac3321f3df4851e9769ddee28d2caa9fd5af";
-
-function sha256(content: string): string {
-  return createHash("sha256").update(content, "utf8").digest("hex");
-}
+const BUNDLED_REFINE_PROJECT_CONTEXT_SKILL = join(
+  PROJECT_ROOT,
+  "nvst-skills",
+  "refine-project-context",
+  "SKILL.md",
+);
 
 function createBaseState(): Record<string, unknown> {
   return {
@@ -52,10 +52,7 @@ async function createTempProjectWithRecoveredSkill(): Promise<string> {
   await writeFile(join(projectRoot, ".agents", "state.json"), JSON.stringify(state, null, 2), "utf8");
   await writeFile(join(projectRoot, ".agents", "PROJECT_CONTEXT.md"), "# Project Context\n", "utf8");
 
-  const recoveredSkill = await readFile(
-    join(PROJECT_ROOT, ".agents", "skills", "refine-project-context", "SKILL.md"),
-    "utf8",
-  );
+  const recoveredSkill = await readFile(BUNDLED_REFINE_PROJECT_CONTEXT_SKILL, "utf8");
 
   await writeFile(
     join(projectRoot, ".agents", "skills", "refine-project-context", "SKILL.md"),
@@ -68,28 +65,11 @@ async function createTempProjectWithRecoveredSkill(): Promise<string> {
 
 describe("refine-project-context skill recovery", () => {
 
-  it("provides the scaffold mirror for refine-project-context skill", async () => {
-    const runtimeSkillPath = join(
-      PROJECT_ROOT,
-      ".agents",
-      "skills",
-      "refine-project-context",
-      "SKILL.md",
-    );
-    const nvstSkillPath = join(
-      PROJECT_ROOT,
-      "nvst-skills",
-      "refine-project-context",
-      "SKILL.md",
-    );
+  it("bundles refine-project-context skill under nvst-skills/", async () => {
+    const skill = await readFile(BUNDLED_REFINE_PROJECT_CONTEXT_SKILL, "utf8");
 
-    const [runtimeSkill, nvstSkill] = await Promise.all([
-      readFile(runtimeSkillPath, "utf8"),
-      readFile(nvstSkillPath, "utf8"),
-    ]);
-
-    expect(nvstSkill.length).toBeGreaterThan(0);
-    expect(nvstSkill).toBe(runtimeSkill);
+    expect(skill.length).toBeGreaterThan(0);
+    expect(skill.toLowerCase()).toContain("project context");
   });
 
   it("runs `nvst refine project-context --agent ide` without missing skill errors", async () => {

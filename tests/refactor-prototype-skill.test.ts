@@ -4,14 +4,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "bun:test";
 
 const PROJECT_ROOT = join(import.meta.dir, "..");
-const RUNTIME_SKILL_PATH = join(
-  PROJECT_ROOT,
-  ".agents",
-  "skills",
-  "refactor-prototype",
-  "SKILL.md",
-);
-const NVST_SKILLS_SKILL_PATH = join(PROJECT_ROOT, "nvst-skills", "refactor-prototype", "SKILL.md");
+const BUNDLED_SKILL_PATH = join(PROJECT_ROOT, "nvst-skills", "refactor-prototype", "SKILL.md");
 
 const UI_KEYWORDS = [
   "UI",
@@ -40,7 +33,7 @@ function sha256(content: string): string {
 
 describe("refactor-prototype SKILL.md UI references — US-004", () => {
   it("AC01: includes UI / Frontend Refactor section with required Impeccable skills in order", async () => {
-    const content = await readFile(RUNTIME_SKILL_PATH, "utf8");
+    const content = await readFile(BUNDLED_SKILL_PATH, "utf8");
 
     expect(content).toContain("## UI / Frontend Refactor");
 
@@ -64,7 +57,7 @@ describe("refactor-prototype SKILL.md UI references — US-004", () => {
   });
 
   it("AC02: defines the same UI-task detection heuristic used in US-002", async () => {
-    const content = await readFile(RUNTIME_SKILL_PATH, "utf8");
+    const content = await readFile(BUNDLED_SKILL_PATH, "utf8");
 
     expect(content).toContain("detect whether any item is a UI task");
     expect(content).toContain(
@@ -75,18 +68,14 @@ describe("refactor-prototype SKILL.md UI references — US-004", () => {
     }
   });
 
-  it("AC03: keeps Impeccable skill files unchanged and only updates refactor-prototype references", async () => {
+  it("AC03: keeps Impeccable skill files unchanged (refactor-prototype content lives only under nvst-skills/)", async () => {
     for (const [relativePath, expectedHash] of Object.entries(EXPECTED_IMPECCABLE_SHA256)) {
       const absolutePath = join(PROJECT_ROOT, "nvst-skills", relativePath);
       const content = await readFile(absolutePath, "utf8");
       expect(sha256(content)).toBe(expectedHash);
     }
 
-    const [runtimeSkill, nvstSkill] = await Promise.all([
-      readFile(RUNTIME_SKILL_PATH, "utf8"),
-      readFile(NVST_SKILLS_SKILL_PATH, "utf8"),
-    ]);
-
-    expect(runtimeSkill).toBe(nvstSkill);
+    const bundled = await readFile(BUNDLED_SKILL_PATH, "utf8");
+    expect(bundled.length).toBeGreaterThan(0);
   });
 });

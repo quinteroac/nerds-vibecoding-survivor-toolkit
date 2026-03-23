@@ -5,7 +5,6 @@ import { join } from "node:path";
 
 const PROJECT_ROOT = join(import.meta.dir, "..");
 const NVST_SKILLS_SKILL_PATH = join(PROJECT_ROOT, "nvst-skills", "ideate", "SKILL.md");
-const SOURCE_SKILL_PATH = join(PROJECT_ROOT, ".agents", "skills", "ideate", "SKILL.md");
 const CLI_PATH = join(PROJECT_ROOT, "src", "cli.ts");
 
 interface CliResult {
@@ -31,15 +30,12 @@ async function runCli(args: string[], cwd?: string): Promise<CliResult> {
 }
 
 describe("ideate scaffold template — US-003", () => {
-  // AC01: nvst-skills/ideate/SKILL.md exists and mirrors .agents/skills/ideate/SKILL.md
-  it("AC01: nvst-skills/ideate/SKILL.md exists and mirrors .agents/skills/ideate/SKILL.md", async () => {
-    const [nvstSkillContent, sourceContent] = await Promise.all([
-      readFile(NVST_SKILLS_SKILL_PATH, "utf8"),
-      readFile(SOURCE_SKILL_PATH, "utf8"),
-    ]);
+  // AC01: bundled ideate skill ships under nvst-skills/ (no duplicate copy required under repo .agents/skills/)
+  it("AC01: nvst-skills/ideate/SKILL.md exists and is non-empty", async () => {
+    const nvstSkillContent = await readFile(NVST_SKILLS_SKILL_PATH, "utf8");
 
     expect(nvstSkillContent.length).toBeGreaterThan(0);
-    expect(nvstSkillContent).toBe(sourceContent);
+    expect(nvstSkillContent.trimStart().startsWith("---")).toBe(true);
   });
 
   // AC02: nvst init does not copy .agents/skills/ideate/SKILL.md (delegated to skills installer)

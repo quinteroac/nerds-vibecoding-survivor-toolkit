@@ -29,11 +29,11 @@ nerds-vst is a package that provides:
   .agents/          # Workflow state and artifacts
     state.json      # Current iteration state
     PROJECT_CONTEXT.md
-    skills/         # Specialized agent skills
+    skills/         # Agent skills (populated when you install bundled skills during init)
     flow/           # Iteration artifacts (PRDs, etc.)
   ```
 
-  Template files live under [`scaffold/`](scaffold/) and are synced to the target project.
+  Core template files live under [`scaffold/`](scaffold/) and are copied to the target project; bundled skills ship from [`nvst-skills/`](nvst-skills/) via `nvst init` (see [`nvst init` and skill selection](#nvst-init-and-skill-selection)).
 
 - **Command-line tool** — Prompts and orchestrates the development loop, keeping state in sync. Instead of internally calling an agent within the commands, it outputs instructions as prompts to be executed by your preferred AI environment (e.g., Cursor, Antigravity, Claude Code Web, GitHub Copilot).
 
@@ -44,7 +44,7 @@ nerds-vst is a package that provides:
   | Group | Commands |
   |-------|----------|
   | **Main loop** | `nvst start iteration`, `nvst define requirement`, `nvst refine requirement` (optional), `nvst approve requirement`, `nvst create prototype`, `nvst audit prototype`, `nvst refactor prototype`, `nvst approve prototype` |
-  | **Utilities** | `nvst init`, `nvst destroy [--clean]`, `nvst sync skills`, `nvst write-json`, `nvst write-technical-debt` |
+  | **Utilities** | `nvst init`, `nvst destroy [--clean]`, `nvst sync skills` (maintainers), `nvst write-json`, `nvst write-technical-debt` |
 
   **Agent providers:** `claude`, `codex`, `gemini`, `cursor`, `copilot`, `ide` — where `ide` prints skill prompts to stdout instead of invoking an agent subprocess.
 
@@ -71,6 +71,21 @@ nerds-vst is a package that provides:
 **Prerequisites:** [Bun](https://bun.sh/) v1 or later must be installed.
 
 You can install the toolkit via standalone binaries (recommended for quick use), from the local file system, or from a registry. If you only want the NVST workflow skills (without the `nvst` CLI), see [Skills only](#skills-only) below.
+
+### `nvst init` and skill selection
+
+When `nvst init` runs in an interactive terminal, it invokes `npx skills add` with the **bundled** skills from this package (sources live under `nvst-skills/` in the repository). The installer may prompt you to choose which skills to add.
+
+**Recommendation:** select **all** bundled skills. That avoids “skill not found” errors for every CLI command and gives the agent the Impeccable toolkit referenced inside `audit-prototype` and `refactor-prototype` for UI/UX work.
+
+If you prefer a minimal install, include at least the **required** set below. Everything else is **optional** for strict CLI use but still recommended for parity with the full audit/refactor experience.
+
+| | Skill directories (folder names under `.agents/skills/`) |
+|---|-----------------------------------------------------------|
+| **Required** | `define-requirement`, `refine-requirement`, `create-project-context`, `refine-project-context`, `ideate`, `create-prototype`, `audit-prototype`, `refactor-prototype`, `approve-prototype`, `execute-automated-fix` |
+| **Optional** (Impeccable / design & polish; used when agents follow audit/refactor guidance) | `adapt`, `animate`, `audit`, `bolder`, `clarify`, `colorize`, `critique`, `delight`, `distill`, `extract`, `frontend-design`, `harden`, `normalize`, `onboard`, `optimize`, `polish`, `quieter`, `teach-impeccable` |
+
+See [docs/nvst-flow/COMMANDS.md](docs/nvst-flow/COMMANDS.md) for how bundled skills relate to `nvst sync skills` (maintainer workflow).
 
 ### Skills only
 

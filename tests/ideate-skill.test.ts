@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 
 const PROJECT_ROOT = join(import.meta.dir, "..");
-const SKILL_PATH = join(PROJECT_ROOT, ".agents", "skills", "ideate", "SKILL.md");
+const SKILL_PATH = join(PROJECT_ROOT, "nvst-skills", "ideate", "SKILL.md");
 
 async function readSkill(): Promise<string> {
   return readFile(SKILL_PATH, "utf8");
@@ -105,8 +105,8 @@ describe("ideate SKILL.md — US-002", () => {
     expect(content).toMatch(flagPattern);
   });
 
-  // AC07: loadSkill("ideate") succeeds — file exists at the correct path
-  it("AC07: ideate SKILL.md exists at the correct path for loadSkill", async () => {
+  // AC07: bundled ideate skill exists for distribution / installer (runtime loadSkill uses project ~/.agents/skills)
+  it("AC07: ideate SKILL.md exists under nvst-skills for bundling", async () => {
     const content = await readSkill();
     expect(content.length).toBeGreaterThan(0);
   });

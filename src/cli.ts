@@ -256,10 +256,14 @@ async function main() {
   });
 
   // ---- sync ----
-  const sync = program.command("sync").description("Copy .agents/skills/ to nvst-skills/");
+  const sync = program
+    .command("sync")
+    .description("Maintainer: copy .agents/skills/ into nvst-skills/ (canonical bundled sources)");
   sync
     .command("skills")
-    .description("Copy .agents/skills/ to nvst-skills/ (keep both identical)")
+    .description(
+      "Write .agents/skills/*/SKILL.md → nvst-skills/ (use after local skill edits; see docs)",
+    )
     .action(async () => {
       await runSyncAgentSkills();
     });
