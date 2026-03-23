@@ -2,9 +2,8 @@ import { access, mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
 const RUNTIME_SKILLS_DIR = ".agents/skills";
-const SCAFFOLD_SKILLS_DIR = "scaffold/.agents/skills";
+const NVST_SKILLS_DIR = "nvst-skills";
 const SKILL_FILE = "SKILL.md";
-const SCAFFOLD_SKILL_FILE = "tmpl_SKILL.md";
 
 async function fileExists(path: string): Promise<boolean> {
   try {
@@ -16,16 +15,15 @@ async function fileExists(path: string): Promise<boolean> {
 }
 
 /**
- * Syncs agent skill files from runtime `.agents/skills/` to scaffold
- * `scaffold/.agents/skills/` so both locations stay identical. Each
- * `.agents/skills/<name>/SKILL.md` is written to
- * `scaffold/.agents/skills/<name>/tmpl_SKILL.md`.
+ * Syncs agent skill files from runtime `.agents/skills/` to `nvst-skills/`
+ * so that the skills package can distribute updated versions. Each
+ * `.agents/skills/<name>/SKILL.md` is written to `nvst-skills/<name>/SKILL.md`.
  *
  * @param projectRoot - Project root (defaults to process.cwd())
  */
 export async function runSyncAgentSkills(projectRoot: string = process.cwd()): Promise<void> {
   const runtimeDir = join(projectRoot, RUNTIME_SKILLS_DIR);
-  const scaffoldDir = join(projectRoot, SCAFFOLD_SKILLS_DIR);
+  const nvstSkillsDir = join(projectRoot, NVST_SKILLS_DIR);
 
   const entries = await readdir(runtimeDir, { withFileTypes: true });
   const skillNames = entries.filter((e) => e.isDirectory()).map((e) => e.name);
@@ -43,13 +41,13 @@ export async function runSyncAgentSkills(projectRoot: string = process.cwd()): P
       continue;
     }
     const content = await readFile(sourcePath, "utf8");
-    const destDir = join(scaffoldDir, name);
-    const destPath = join(destDir, SCAFFOLD_SKILL_FILE);
+    const destDir = join(nvstSkillsDir, name);
+    const destPath = join(destDir, SKILL_FILE);
     await mkdir(destDir, { recursive: true });
     await writeFile(destPath, content, "utf8");
-    console.log(`Synced: .agents/skills/${name}/SKILL.md → scaffold/.agents/skills/${name}/tmpl_SKILL.md`);
+    console.log(`Synced: .agents/skills/${name}/SKILL.md → nvst-skills/${name}/SKILL.md`);
     synced++;
   }
 
-  console.log(`\nSync complete. ${synced} skill(s) updated in scaffold.`);
+  console.log(`\nSync complete. ${synced} skill(s) updated in nvst-skills.`);
 }

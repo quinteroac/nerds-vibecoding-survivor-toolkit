@@ -12,6 +12,7 @@
   "files": [
     "src",
     "scaffold",
+    "nvst-skills",
     "schemas",
     "AGENTS.md",
     "README.md",
@@ -21,8 +22,9 @@
     "test": "bun test src tests schemas",
     "typecheck": "bun tsc --noEmit",
     "generate:scaffold": "bun run src/scripts/generate-scaffold-manifest.ts",
-    "build:binary": "bun run src/scripts/generate-scaffold-manifest.ts && bun run src/scripts/build-binary.ts",
-    "build:binaries": "bun run src/scripts/generate-scaffold-manifest.ts && bun run src/scripts/build-binaries.ts",
+    "generate:nvst-skills-manifest": "bun run src/scripts/generate-nvst-skills-manifest.ts",
+    "build:binary": "bun run src/scripts/generate-scaffold-manifest.ts && bun run src/scripts/generate-nvst-skills-manifest.ts && bun run src/scripts/build-binary.ts",
+    "build:binaries": "bun run src/scripts/generate-scaffold-manifest.ts && bun run src/scripts/generate-nvst-skills-manifest.ts && bun run src/scripts/build-binaries.ts",
     "bump": "npm version && git push --follow-tags",
     "bump:patch": "npm version patch && git push --follow-tags",
     "bump:minor": "npm version minor && git push --follow-tags",
@@ -34,6 +36,7 @@
   },
   "dependencies": {
     "@quinteroac/agents-coding-toolkit": "^0.2.0",
+    "commander": "^14.0.3",
     "zod": "^3.23.8"
   },
   "devDependencies": {

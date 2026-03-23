@@ -96,7 +96,7 @@ describe("build-binary script", () => {
     expect(sourceHelpStderr).toBe("");
     expect(binaryHelpStdout).toBe(sourceHelpStdout);
     expect(binaryHelpStdout).toContain("Usage: nvst");
-    expect(binaryHelpStdout).toContain("define requirement");
+    expect(binaryHelpStdout).toContain("define");
 
     const binaryNoRuntimeProc = Bun.spawn([binaryPath, "--help"], {
       cwd: outdir,

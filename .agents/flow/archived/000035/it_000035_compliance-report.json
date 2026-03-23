@@ -1,0 +1,23 @@
+{
+  "iteration": "it_000035",
+  "executiveSummary": "All 4 user stories and 5 functional requirements for iteration it_000035 are fully implemented and verified. The `nvst init` command correctly delegates scope selection to `npx skills add`, passes the bundled `nvst-skills` path, awaits completion before reporting success, and handles abort cleanly. The `tmpl_` skill files have been migrated out of `scaffold/.agents/skills/` (directory no longer exists) and are available as proper SKILL.md entries under `nvst-skills/`. All 16 dedicated tests pass and typecheck returns clean.",
+  "verificationByFR": [
+    { "frId": "FR-1", "assessment": "comply" },
+    { "frId": "FR-2", "assessment": "comply" },
+    { "frId": "FR-3", "assessment": "comply" },
+    { "frId": "FR-4", "assessment": "comply" },
+    { "frId": "FR-5", "assessment": "comply" }
+  ],
+  "verificationByUS": [
+    { "usId": "US-001", "assessment": "comply" },
+    { "usId": "US-002", "assessment": "comply" },
+    { "usId": "US-003", "assessment": "comply" },
+    { "usId": "US-004", "assessment": "comply" }
+  ],
+  "minorObservations": [
+    "In `defaultInitDeps.skillsInstallerFn`, when `process.stdin.isTTY` is false the installer is silently skipped (returns 0). This is a pragmatic guard for CI/automated contexts but is undocumented; maintainers running nvst init non-interactively may not expect this behaviour.",
+    "US-003-AC04 delegates idempotency entirely to the `skills` package by always invoking the installer on re-runs. No runtime guard exists if the `skills` package itself is not idempotent — intentional per Non-Goals but worth noting.",
+    "The `scaffold/.agents/skills/` directory has been fully removed (not just emptied), which satisfies US-004-AC02 cleanly."
+  ],
+  "conclusionsAndRecommendations": "The implementation fully satisfies the PRD. No corrective action is required. Minor recommendations: (1) document the TTY-skip behaviour in CLI help or README; (2) add an inline comment in init.ts explaining the idempotency contract delegated to the `skills` package."
+}

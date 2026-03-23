@@ -1,0 +1,128 @@
+{
+  "goals": [
+    "Any NVST skill can be successfully invoked from any AI agent CLI that supports skills, without NVST being installed or the NVST flow being active.",
+    "Skills that currently depend on `state.json` or NVST-injected context variables self-detect their absence and prompt the user for the missing information instead.",
+    "Skills that currently write to `state.json` skip that step when running standalone (state management remains NVST's responsibility).",
+    "All workflow skills are discoverable by agent CLIs (`user-invocable: true` in frontmatter)."
+  ],
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Skills that read `state.json` detect NVST absence and ask user for required context",
+      "description": "As a developer invoking an NVST skill directly from an agent CLI, I want the skill to detect whether `state.json` is present and, if not, ask me for the required information (e.g. iteration number, PRD file path), so that I can complete the skill's job without needing to run `nvst` or have a valid `state.json`. Affected skills: `define-requirement`, `refine-requirement`, `create-project-context`",
+      "acceptanceCriteria": [
+        {
+          "id": "US-001-AC01",
+          "text": "Each affected skill's \"The Job\" section is updated so that the first step reads: \"Check if `.agents/state.json` exists. If it does, read it to obtain `current_iteration` (and any other required fields). If it does not exist, ask the user to provide the required information (e.g. iteration number as a 6-digit string, or the PRD filename).\""
+        },
+        {
+          "id": "US-001-AC02",
+          "text": "`refine-requirement` specifically: when `state.json` is absent, asks the user for the path to the existing PRD file (e.g. `it_000037_product-requirement-document.md`) instead of reading `requirement_definition.file` from state."
+        },
+        {
+          "id": "US-001-AC03",
+          "text": "The fallback prompts use the same lettered-options format used in the rest of the skill's Questions Flow."
+        },
+        {
+          "id": "US-001-AC04",
+          "text": "Typecheck / lint passes (no code changes required; SKILL.md is a markdown file)."
+        }
+      ]
+    },
+    {
+      "id": "US-002",
+      "title": "Skills that write to `state.json` skip that step when running standalone",
+      "description": "As a developer invoking an NVST skill directly from an agent CLI, I want the skill to update `state.json` only when it already exists (i.e. NVST is managing the workflow), so that the skill does not fail or leave a corrupt/unexpected `state.json` behind when run standalone. Affected skills: `define-requirement`, `create-project-context`",
+      "acceptanceCriteria": [
+        {
+          "id": "US-002-AC01",
+          "text": "Each affected skill's final step (state update) is rewritten as: \"If `.agents/state.json` exists, update `<field>` = `<value>`. If it does not exist (standalone mode), skip this step and notify the user that state was not persisted.\""
+        },
+        {
+          "id": "US-002-AC02",
+          "text": "The notification message is clear and non-blocking (e.g. \"Running standalone — state.json not found, skipping state update.\")."
+        },
+        {
+          "id": "US-002-AC03",
+          "text": "Typecheck / lint passes."
+        }
+      ]
+    },
+    {
+      "id": "US-003",
+      "title": "Skills that receive NVST context variables prompt user for them when invoked standalone",
+      "description": "As a developer invoking a workflow skill directly from an agent CLI (without NVST injecting context), I want the skill to detect that required context variables are missing and ask me for them interactively, so that I can use the skill without NVST's orchestration layer. Affected skills: `create-prototype`, `refactor-prototype`, `approve-prototype`, `audit-prototype`",
+      "acceptanceCriteria": [
+        {
+          "id": "US-003-AC01",
+          "text": "Each affected skill's \"Context\" / \"Inputs\" section is updated with a standalone fallback that follows the lookup order: (1) injected context variable → (2) `state.json` → (3) artifact files → (4) ask user."
+        },
+        {
+          "id": "US-003-AC02",
+          "text": "`create-prototype`: when `user_story` or `iteration` are absent, reads `state.json` (if present) to get `current_iteration`, then reads `.agents/flow/it_{iteration}_PRD.json` (preferred) or `.agents/flow/it_{iteration}_product-requirement-document.md` to discover available user stories and asks the user which story to implement. Only asks for the iteration number if neither `state.json` nor any PRD file can be found."
+        },
+        {
+          "id": "US-003-AC03",
+          "text": "`refactor-prototype`: when `iteration` or `audit_json_path` are absent, reads `state.json` (if present) to get `current_iteration`, then reads `.agents/flow/it_{iteration}_audit.json` or `.agents/flow/it_{iteration}_audit.md` directly. Only asks the user for the iteration number if no artifact can be found."
+        },
+        {
+          "id": "US-003-AC04",
+          "text": "`approve-prototype`: when `iteration` is absent, reads `state.json` (if present) to get `current_iteration`. Only asks the user if `state.json` is also absent."
+        },
+        {
+          "id": "US-003-AC05",
+          "text": "`audit-prototype`: when `iteration` is absent, reads `state.json` (if present) to get `current_iteration`, then resolves `.agents/flow/it_{iteration}_PRD.json` or `.agents/flow/it_{iteration}_product-requirement-document.md`. Only asks the user if no artifact can be found."
+        },
+        {
+          "id": "US-003-AC06",
+          "text": "Typecheck / lint passes."
+        }
+      ]
+    },
+    {
+      "id": "US-004",
+      "title": "All workflow skills are marked `user-invocable: true` in frontmatter",
+      "description": "As a developer using an AI agent CLI that loads skills via `npx skills add`, I want all NVST workflow skills to appear as invocable slash commands in my agent, so that I can discover and invoke them without knowing they were originally orchestrated by NVST. Affected skills: `audit-prototype`, `create-prototype`, `refactor-prototype`, `approve-prototype` (currently `user-invocable: false`)",
+      "acceptanceCriteria": [
+        {
+          "id": "US-004-AC01",
+          "text": "The frontmatter field `user-invocable` is set to `true` in all four affected skills."
+        },
+        {
+          "id": "US-004-AC02",
+          "text": "No other frontmatter fields are modified."
+        },
+        {
+          "id": "US-004-AC03",
+          "text": "Typecheck / lint passes."
+        }
+      ]
+    }
+  ],
+  "functionalRequirements": [
+    {
+      "id": "FR-1",
+      "description": "Each skill that reads `state.json` must first check for the file's existence before attempting to read it."
+    },
+    {
+      "id": "FR-2",
+      "description": "When `state.json` is absent, skills must interactively ask the user for any required fields (iteration number, file paths) using the lettered-options format."
+    },
+    {
+      "id": "FR-3",
+      "description": "Each skill that writes to `state.json` must wrap that step in a conditional: execute only if `state.json` already exists."
+    },
+    {
+      "id": "FR-4",
+      "description": "Skills that receive context variables from NVST must declare a standalone fallback with the following lookup order: (1) injected context variable → (2) `state.json` → (3) artifact files (PRD json/md, audit json/md) → (4) ask user. Skills must not ask the user for information that can be resolved by reading existing files."
+    },
+    {
+      "id": "FR-5",
+      "description": "All four workflow skills currently marked `user-invocable: false` must be updated to `user-invocable: true`."
+    },
+    {
+      "id": "FR-6",
+      "description": "No changes may be made to `src/` files, NVST command handlers, or `.agents/state.json` schema — only `nvst-skills/*/SKILL.md` files may be modified."
+    }
+  ]
+}

@@ -1,0 +1,90 @@
+{
+  "iteration": "000034",
+  "executiveSummary": "La migración de la iteración 34 está funcionalmente completa: 137 tests pasan, commander está instalado, los comandos se comportan igual y los helpers legacy fueron eliminados. Sin embargo, commander.js solo genera texto de ayuda — el dispatch y el parsing de opciones siguen siendo manuales. El refactor completa la migración para que commander.js sea el motor real de parsing mediante .action() handlers, .argParser(), .choices() y .version().",
+  "verificationByFR": [
+    { "frId": "FR-1", "assessment": "comply" },
+    { "frId": "FR-2", "assessment": "partially_comply" },
+    { "frId": "FR-3", "assessment": "partially_comply" },
+    { "frId": "FR-4", "assessment": "partially_comply" },
+    { "frId": "FR-5", "assessment": "partially_comply" },
+    { "frId": "FR-6", "assessment": "partially_comply" },
+    { "frId": "FR-7", "assessment": "partially_comply" },
+    { "frId": "FR-8", "assessment": "comply" },
+    { "frId": "FR-9", "assessment": "comply" },
+    { "frId": "FR-10", "assessment": "comply" },
+    { "frId": "FR-11", "assessment": "partially_comply" },
+    { "frId": "FR-12", "assessment": "comply" },
+    { "frId": "FR-13", "assessment": "comply" }
+  ],
+  "verificationByUS": [
+    { "usId": "US-001", "assessment": "comply" },
+    { "usId": "US-002", "assessment": "comply" },
+    { "usId": "US-003", "assessment": "comply" },
+    { "usId": "US-004", "assessment": "comply" },
+    { "usId": "US-005", "assessment": "comply" }
+  ],
+  "minorObservations": [
+    "buildHelpProgram() instancia un root Command con subcomandos pero sin .action() handlers — commander no ejecuta el dispatch.",
+    "parseAgentArg() de src/agent.ts sigue siendo la validación real de --agent; no se usa choices de commander.",
+    "--force y --challenge se parsean con args.includes() manual en runtime.",
+    "--iterations y --retry-on-fail tienen la validación inline con indexOf + Number() en lugar de .argParser().",
+    "--mode registrado sin .choices(['strict','yolo']); validación inline.",
+    "Version flag usa if (command === '-v') manual en lugar de program.version().",
+    "buildHelpProgram() se invoca en cada ruta de error además de para help — overhead menor."
+  ],
+  "conclusionsAndRecommendations": "Completar la migración reemplazando buildHelpProgram() + dispatch manual por un único program con .action() callbacks, .argParser() para --iterations/--retry-on-fail, .choices() para --mode, y .version() para el flag de versión. Esto alinea la implementación con los FRs y reduce el costo de mantenimiento futuro.",
+  "refactorPlan": {
+    "mandatoryItems": [
+      {
+        "id": "RF-1",
+        "title": "Consolidar en un único program con .action() handlers",
+        "description": "Eliminar buildHelpProgram() y el bloque if/else de dispatch en main(). Registrar todos los subcomandos en un único program de commander y mover la lógica de cada rama a un .action() callback. El program debe llamarse .parseAsync(process.argv) al final.",
+        "priority": "high"
+      },
+      {
+        "id": "RF-2",
+        "title": "Reemplazar parseAgentArg con .option() de commander (FR-3)",
+        "description": "Usar .option('--agent <provider>', '...') en cada subcomando agent-backed. Validar el valor dentro del .action() handler (o usar .argParser()) contra la lista: claude, codex, gemini, cursor, copilot, ide. Mantener el mensaje de error existente si el valor es inválido.",
+        "priority": "high"
+      },
+      {
+        "id": "RF-3",
+        "title": "Usar .argParser() para --iterations y --retry-on-fail (FR-6)",
+        "description": "Registrar --iterations <N> y --retry-on-fail <N> en create prototype con parsers personalizados que lancen InvalidArgumentError si el valor no es un entero >= 1 o >= 0 respectivamente. Eliminar el código inline indexOf + Number().",
+        "priority": "high"
+      },
+      {
+        "id": "RF-4",
+        "title": "Usar .addOption().choices() para --mode (FR-7)",
+        "description": "Registrar --mode con new Option('--mode <strict|yolo>', '...').choices(['strict', 'yolo']).default('strict') en create project-context. Eliminar la validación inline if (modeVal !== 'strict' && modeVal !== 'yolo').",
+        "priority": "high"
+      },
+      {
+        "id": "RF-5",
+        "title": "Usar program.version() para el flag de versión (FR-11)",
+        "description": "Antes de definir los subcomandos, resolver la versión (NVST_COMPILED_VERSION o package.json) y pasarla a program.version(resolvedVersion, '-v, --version', 'Print version'). Eliminar el bloque if (command === '-v' || command === '--version') manual.",
+        "priority": "medium"
+      },
+      {
+        "id": "RF-6",
+        "title": "Extraer lógica de versión como función síncrona/async top-level",
+        "description": "La resolución de la versión desde NVST_COMPILED_VERSION o package.json debe ocurrir antes de program.version(). Crear una función resolveVersion() que retorne la versión como string para pasarla a commander.",
+        "priority": "medium"
+      },
+      {
+        "id": "RF-7",
+        "title": "Eliminar findCommand() y buildHelpProgram()",
+        "description": "Una vez que RF-1 esté completo, los helpers findCommand() y buildHelpProgram() ya no son necesarios. Eliminarlos de src/cli.ts.",
+        "priority": "medium"
+      }
+    ],
+    "optionalItems": [
+      {
+        "id": "RF-OPT-1",
+        "title": "Revisar si parseAgentArg en src/agent.ts puede eliminarse o reducirse",
+        "description": "Si RF-2 reemplaza completamente el uso de parseAgentArg, evaluar si la función puede eliminarse de src/agent.ts o reducirse a una función de validación interna.",
+        "priority": "low"
+      }
+    ]
+  }
+}

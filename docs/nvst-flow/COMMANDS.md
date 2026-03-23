@@ -21,6 +21,7 @@ Command form:
 
 | Command | Description |
 |---------|-------------|
+| `nvst start iteration` | Archive current flow files and begin a new iteration |
 | `nvst define requirement --agent <provider> [--force]` | Create requirement document via agent |
 | `nvst refine requirement --agent <provider> [--challenge] [--force]` | Refine requirement document (editor or challenger mode) |
 | `nvst approve requirement [--force]` | Mark requirement definition as approved |
@@ -34,12 +35,14 @@ Command form:
 | Command | Description |
 |---------|-------------|
 | `nvst write-json --schema <name> --out <path> [--data '<json>']` | Write a schema-validated JSON file (payload via --data or stdin) |
+| `nvst write-technical-debt [--out <path>] [--data '<json>']` | Append technical debt items to `.agents/TECHNICAL_DEBT.md` |
+| `nvst sync skills` | Copy `.agents/skills/` to `nvst-skills/` (keep both identical) |
 
 ## Global Options
 
 | Option | Description |
 |--------|-------------|
-| `--agent <provider>` | Agent provider: `claude`, `codex`, `gemini`, `cursor` |
+| `--agent <provider>` | Agent provider: `claude`, `codex`, `gemini`, `cursor`, `copilot`, `ide` |
 | `--iterations <N>` | Maximum prototype/fix passes (integer >= 1) |
 | `--retry-on-fail <N>` | Retry attempts per failed story (integer >= 0) |
 | `--stop-on-critical` | Stop execution after critical failures |

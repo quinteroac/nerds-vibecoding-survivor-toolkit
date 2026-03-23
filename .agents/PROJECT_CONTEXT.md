@@ -5,7 +5,7 @@
 ## Conventions
 - Naming: files use `kebab-case.ts`; exported command handlers use `camelCase` with `run` prefix (e.g. `runCreateProjectContext`); other exported helpers use standard `camelCase`; types/interfaces use `PascalCase`; Zod schemas use `PascalCaseSchema` (e.g. `StateSchema`); constants use `UPPER_SNAKE_CASE`
 - Formatting: no enforced formatter (no Prettier/ESLint config); rely on TypeScript strict mode for correctness
-- Git flow: trunk-based on `main`; conventional commit prefixes (`feat:`, `fix:`, `refactor:`); iteration work happens on branches named `feature/it_XXXXXX-[Req-Description]` or with team-based GitHub usernames (for multi-developer setups).
+- Git flow: `main` = stable/releases, `dev` = integration branch for ongoing work; conventional commit prefixes (`feat:`, `fix:`, `refactor:`); iteration work happens on branches named `feature/it_XXXXXX-[Req-Description]` (branch from `dev`, merge back to `dev`; promote `dev` → `main` when releasing).
 - Workflow: NVST manages iterations via `state.json`; all commands validate state before acting and persist transitions back. The "approve prototype" phase automatically updates project context, roadmap, pushes to git, and creates a Pull Request.
 
 ## Tech Stack

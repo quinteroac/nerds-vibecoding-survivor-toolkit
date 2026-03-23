@@ -1,0 +1,166 @@
+{
+  "goals": [
+    "Scaffold all Impeccable skills into `.agents/skills/` of the target project automatically on `nvst init`.",
+    "Make NVST workflow skills skill-aware: reference the relevant Impeccable skills in `implement-user-story`, `audit-prototype`, and `refactor-prototype` prompts.",
+    "Comply with the Apache 2.0 license of Impeccable by adding a `NOTICE.md` and acknowledgements in `README.md` to the NVST repository."
+  ],
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Scaffold Impeccable Skills on Init",
+      "description": "As a developer running `nvst init` in a new project, I want all Impeccable skills to be copied into `.agents/skills/` alongside the existing NVST skills so that I have high-quality design and audit skills available immediately without manual setup.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-001-AC01",
+          "text": "All 18 Impeccable skills (`adapt`, `animate`, `audit`, `bolder`, `clarify`, `colorize`, `critique`, `delight`, `distill`, `extract`, `frontend-design`, `harden`, `normalize`, `onboard`, `optimize`, `polish`, `quieter`, `teach-impeccable`) are added to `scaffold/.agents/skills/` as static files with the `tmpl_` prefix convention (e.g. `scaffold/.agents/skills/frontend-design/tmpl_SKILL.md`)."
+        },
+        {
+          "id": "US-001-AC02",
+          "text": "The `frontend-design` skill's `reference/` subdirectory files (e.g. `reference/typography.md`) are also included in the scaffold."
+        },
+        {
+          "id": "US-001-AC03",
+          "text": "Impeccable skill files are copied verbatim from the upstream source — no content modifications."
+        },
+        {
+          "id": "US-001-AC04",
+          "text": "After running `bun run src/scripts/generate-scaffold-manifest.ts`, all new skill files appear in `src/scaffold-manifest.ts`."
+        },
+        {
+          "id": "US-001-AC05",
+          "text": "Running `nvst init` in a clean directory creates each Impeccable skill at `.agents/skills/<skill-name>/SKILL.md` (and `reference/` files where applicable)."
+        },
+        {
+          "id": "US-001-AC06",
+          "text": "Running `nvst init` a second time skips already-existing Impeccable skill files (existing behavior: \"Skipping existing file\")."
+        },
+        {
+          "id": "US-001-AC07",
+          "text": "`bun run typecheck` passes with no errors."
+        }
+      ]
+    },
+    {
+      "id": "US-002",
+      "title": "Implement User Story References Impeccable for UI Tasks",
+      "description": "As an AI agent executing the `implement-user-story` skill, I want to be explicitly guided to use Impeccable design skills when the user story involves UI or frontend work so that the resulting implementation meets high design quality standards and avoids generic AI aesthetics.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-002-AC01",
+          "text": "The `implement-user-story` SKILL.md contains a section (e.g. `## UI / Frontend Stories`) that instructs the agent: if the user story involves a UI component, page, visual element, or frontend interaction, apply the following Impeccable skills in order: `frontend-design` (design direction and aesthetics), `harden` (edge case resilience), `polish` (final quality pass)."
+        },
+        {
+          "id": "US-002-AC02",
+          "text": "The section specifies the detection heuristic for \"UI task\": look for keywords in acceptance criteria or story description such as \"UI\", \"interface\", \"page\", \"component\", \"visual\", \"button\", \"form\", \"layout\", \"style\", or \"frontend\"."
+        },
+        {
+          "id": "US-002-AC03",
+          "text": "The instruction is clear enough for a junior developer or AI agent to follow without ambiguity."
+        },
+        {
+          "id": "US-002-AC04",
+          "text": "No changes are made to the Impeccable skill files themselves — only the NVST skill references them."
+        }
+      ]
+    },
+    {
+      "id": "US-003",
+      "title": "Audit Prototype References Impeccable for UI Audit",
+      "description": "As an AI agent executing the `audit-prototype` skill, I want to be guided to leverage Impeccable's audit and critique skills when the iteration includes UI/frontend work so that the audit covers design quality, UX critique, and interface performance in addition to functional compliance.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-003-AC01",
+          "text": "The `audit-prototype` SKILL.md contains a section (e.g. `## UI / Frontend Audit`) that instructs the agent: if any audited user story or functional requirement involves UI, apply the following Impeccable skills: `audit` (accessibility, performance, theming, responsive), `critique` (UX design evaluation), `optimize` (interface performance)."
+        },
+        {
+          "id": "US-003-AC02",
+          "text": "The section specifies that Impeccable audit findings should be incorporated into the compliance report under \"Minor observations\" or as separate FR/US assessment notes."
+        },
+        {
+          "id": "US-003-AC03",
+          "text": "The instruction is placed before the \"Diagnostic Scan\" section of the existing SKILL.md so the agent reads it early."
+        },
+        {
+          "id": "US-003-AC04",
+          "text": "No changes are made to the Impeccable skill files themselves."
+        }
+      ]
+    },
+    {
+      "id": "US-004",
+      "title": "Refactor Prototype References Impeccable for UI Refinement",
+      "description": "As an AI agent executing the `refactor-prototype` skill, I want to be guided to apply Impeccable refinement skills when the refactor plan includes UI changes so that the refactored interface is polished, resilient, performant, and consistent with the design system.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-004-AC01",
+          "text": "The `refactor-prototype` SKILL.md contains a section (e.g. `## UI / Frontend Refactor`) that instructs the agent: if any refactor item involves UI, apply the following Impeccable skills in order: `polish` (alignment, spacing, consistency), `harden` (edge cases, error states, i18n), `optimize` (performance), `normalize` (design system consistency)."
+        },
+        {
+          "id": "US-004-AC02",
+          "text": "The section specifies the same detection heuristic as US-002 for identifying UI refactor items."
+        },
+        {
+          "id": "US-004-AC03",
+          "text": "No changes are made to the Impeccable skill files themselves."
+        }
+      ]
+    },
+    {
+      "id": "US-005",
+      "title": "NOTICE.md and README Acknowledgements",
+      "description": "As a maintainer of the NVST repository, I want to add proper Apache 2.0 attribution for the Impeccable skills in `NOTICE.md` and `README.md` so that NVST complies with the license terms and gives proper credit to the Impeccable project.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-005-AC01",
+          "text": "A `NOTICE.md` file is created at the root of the NVST repository containing: the NVST copyright notice, a section \"Third-Party Notices\", and an entry for Impeccable that includes: project name, author (pbakaus), source URL (`https://github.com/pbakaus/impeccable`), license (Apache 2.0), and the verbatim Apache 2.0 attribution notice from Impeccable's own `NOTICE.md`."
+        },
+        {
+          "id": "US-005-AC02",
+          "text": "`README.md` contains an \"Acknowledgements\" section (or equivalent) that credits Impeccable with a link to its GitHub repository and a note that the skills are licensed under Apache 2.0."
+        },
+        {
+          "id": "US-005-AC03",
+          "text": "The `NOTICE.md` content is placed before or after any existing copyright block, not replacing it."
+        }
+      ]
+    }
+  ],
+  "functionalRequirements": [
+    {
+      "id": "FR-1",
+      "description": "** All 18 Impeccable skill `SKILL.md` files must be added verbatim to `scaffold/.agents/skills/<skill-name>/tmpl_SKILL.md`. No content modifications allowed."
+    },
+    {
+      "id": "FR-2",
+      "description": "** The `frontend-design` reference files (e.g. `reference/typography.md`) must be added to `scaffold/.agents/skills/frontend-design/reference/` with the `tmpl_` prefix (e.g. `tmpl_typography.md`), so the scaffold manifest strips it and copies them as `reference/typography.md` in the target project."
+    },
+    {
+      "id": "FR-3",
+      "description": "** After adding scaffold files, `bun run src/scripts/generate-scaffold-manifest.ts` must be executed to regenerate `src/scaffold-manifest.ts` so the new files are bundled into the CLI."
+    },
+    {
+      "id": "FR-4",
+      "description": "** `implement-user-story/SKILL.md` must be updated to include explicit instructions to use Impeccable skills (`frontend-design`, `harden`, `polish`) for user stories with UI/frontend scope."
+    },
+    {
+      "id": "FR-5",
+      "description": "** `audit-prototype/SKILL.md` must be updated to include explicit instructions to use Impeccable skills (`audit`, `critique`, `optimize`) for iterations with UI/frontend scope."
+    },
+    {
+      "id": "FR-6",
+      "description": "** `refactor-prototype/SKILL.md` must be updated to include explicit instructions to use Impeccable skills (`polish`, `harden`, `optimize`, `normalize`) for refactor items with UI/frontend scope."
+    },
+    {
+      "id": "FR-7",
+      "description": "** A `NOTICE.md` file must be created at the NVST repo root with proper Apache 2.0 attribution for Impeccable."
+    },
+    {
+      "id": "FR-8",
+      "description": "** `README.md` must be updated with an \"Acknowledgements\" section crediting Impeccable."
+    },
+    {
+      "id": "FR-9",
+      "description": "** No new npm/Bun dependencies may be introduced. Impeccable skills are embedded statically in the scaffold, not fetched at runtime."
+    }
+  ]
+}
