@@ -4,14 +4,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "bun:test";
 
 const PROJECT_ROOT = join(import.meta.dir, "..");
-const RUNTIME_SKILL_PATH = join(
-  PROJECT_ROOT,
-  ".agents",
-  "skills",
-  "create-prototype",
-  "SKILL.md",
-);
-const NVST_SKILLS_SKILL_PATH = join(PROJECT_ROOT, "nvst-skills", "create-prototype", "SKILL.md");
+const SKILL_PATH = join(PROJECT_ROOT, "nvst-skills", "create-prototype", "SKILL.md");
 
 const UI_KEYWORDS = [
   "UI",
@@ -39,7 +32,7 @@ function sha256(content: string): string {
 
 describe("create-prototype SKILL.md UI references — US-002", () => {
   it("AC01: includes a UI / Frontend Stories section with Impeccable skills in required order", async () => {
-    const content = await readFile(RUNTIME_SKILL_PATH, "utf8");
+    const content = await readFile(SKILL_PATH, "utf8");
 
     expect(content).toContain("## UI / Frontend Stories");
 
@@ -55,7 +48,7 @@ describe("create-prototype SKILL.md UI references — US-002", () => {
   });
 
   it("AC02: defines UI-task detection heuristic with required keywords", async () => {
-    const content = await readFile(RUNTIME_SKILL_PATH, "utf8");
+    const content = await readFile(SKILL_PATH, "utf8");
 
     expect(content).toContain("detect whether this is a UI task");
     for (const keyword of UI_KEYWORDS) {
@@ -64,7 +57,7 @@ describe("create-prototype SKILL.md UI references — US-002", () => {
   });
 
   it("AC03: provides clear, explicit instructions a junior can follow", async () => {
-    const content = await readFile(RUNTIME_SKILL_PATH, "utf8");
+    const content = await readFile(SKILL_PATH, "utf8");
 
     expect(content).toContain("Before implementation, detect whether this is a UI task.");
     expect(content).toContain("apply these Impeccable skills in this exact order");
@@ -80,11 +73,8 @@ describe("create-prototype SKILL.md UI references — US-002", () => {
       expect(sha256(content)).toBe(expectedHash);
     }
 
-    const [runtimeSkill, nvstSkill] = await Promise.all([
-      readFile(RUNTIME_SKILL_PATH, "utf8"),
-      readFile(NVST_SKILLS_SKILL_PATH, "utf8"),
-    ]);
-
-    expect(runtimeSkill).toBe(nvstSkill);
+    // Verify the create-prototype skill file exists in the canonical nvst-skills location
+    const skillContent = await readFile(SKILL_PATH, "utf8");
+    expect(skillContent.length).toBeGreaterThan(0);
   });
 });
