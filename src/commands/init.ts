@@ -1,5 +1,5 @@
 import { access, mkdir } from "node:fs/promises";
-import { basename, dirname, join } from "node:path";
+import { basename, dirname, join, resolve } from "node:path";
 import { SCAFFOLD_FILES } from "../scaffold-manifest";
 
 const TEMPLATE_PREFIX = "tmpl_";
@@ -42,15 +42,18 @@ async function exists(filePath: string): Promise<boolean> {
 
 export interface InitDeps {
   /** Runs the interactive skills installer and returns its exit code. */
-  skillsInstallerFn: (projectRoot: string) => Promise<number | null>;
+  skillsInstallerFn: (projectRoot: string, nvstSkillsPath: string) => Promise<number | null>;
 }
 
+/** Absolute path to the bundled `nvst-skills` directory shipped with this package. */
+export const NVST_SKILLS_PATH: string = resolve(import.meta.dir, "../../nvst-skills");
+
 export const defaultInitDeps: InitDeps = {
-  skillsInstallerFn: async (projectRoot: string): Promise<number | null> => {
+  skillsInstallerFn: async (projectRoot: string, nvstSkillsPath: string): Promise<number | null> => {
     if (!process.stdin.isTTY) {
       return 0;
     }
-    const proc = Bun.spawn(["npx", "skills", "add"], {
+    const proc = Bun.spawn(["npx", "skills", "add", nvstSkillsPath], {
       cwd: projectRoot,
       stdin: "inherit",
       stdout: "inherit",
@@ -84,7 +87,7 @@ export async function runInit(deps: InitDeps = defaultInitDeps): Promise<void> {
     `\nInit complete. Created ${created.length} file(s), skipped ${skipped.length} existing file(s).`,
   );
 
-  const exitCode = await deps.skillsInstallerFn(projectRoot);
+  const exitCode = await deps.skillsInstallerFn(projectRoot, NVST_SKILLS_PATH);
   if (exitCode !== 0) {
     process.exitCode = exitCode ?? 1;
   }

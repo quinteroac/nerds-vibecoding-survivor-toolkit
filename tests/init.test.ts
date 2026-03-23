@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach } from "bun:test";
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, rm, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { runInit, type InitDeps } from "../src/commands/init";
+import { runInit, NVST_SKILLS_PATH, type InitDeps } from "../src/commands/init";
 
 async function makeTempDir(): Promise<string> {
   return mkdtemp(join(tmpdir(), "nvst-init-test-"));
@@ -53,7 +53,7 @@ describe("runInit – US-001", () => {
     let installerCwd: string | undefined;
 
     const deps: InitDeps = {
-      skillsInstallerFn: async (projectRoot) => {
+      skillsInstallerFn: async (projectRoot, _nvstSkillsPath) => {
         installerCalled = true;
         installerCwd = projectRoot;
         return 0;
@@ -94,6 +94,67 @@ describe("runInit – US-001", () => {
 
     await runInit(deps);
 
+    expect(process.exitCode).toBe(0);
+  });
+});
+
+describe("runInit – US-002", () => {
+  let tmpDir: string;
+  let originalCwd: string;
+  let originalExitCode: number | undefined;
+
+  beforeEach(async () => {
+    tmpDir = await makeTempDir();
+    originalCwd = process.cwd();
+    process.chdir(tmpDir);
+    originalExitCode = process.exitCode as number | undefined;
+    process.exitCode = 0;
+  });
+
+  afterEach(async () => {
+    process.chdir(originalCwd);
+    process.exitCode = originalExitCode;
+    await rm(tmpDir, { recursive: true, force: true });
+  });
+
+  it("US-002-AC01: skillsInstallerFn receives the nvst-skills path as second argument (no scope flag)", async () => {
+    let receivedSkillsPath: string | undefined;
+
+    const deps: InitDeps = {
+      skillsInstallerFn: async (_projectRoot, nvstSkillsPath) => {
+        receivedSkillsPath = nvstSkillsPath;
+        return 0;
+      },
+    };
+
+    await runInit(deps);
+
+    expect(receivedSkillsPath).toBeDefined();
+    expect(receivedSkillsPath).toBe(NVST_SKILLS_PATH);
+  });
+
+  it("US-002-AC02: NVST_SKILLS_PATH points to the nvst-skills folder inside the package", async () => {
+    // The path must end with 'nvst-skills' and be an accessible directory.
+    expect(NVST_SKILLS_PATH).toMatch(/nvst-skills$/);
+    const dirStat = await stat(NVST_SKILLS_PATH);
+    expect(dirStat.isDirectory()).toBe(true);
+  });
+
+  it("US-002-AC03: init awaits the installer — process.exitCode reflects installer result", async () => {
+    let installerResolved = false;
+
+    const deps: InitDeps = {
+      skillsInstallerFn: async () => {
+        await new Promise<void>((resolve) => setTimeout(resolve, 10));
+        installerResolved = true;
+        return 0;
+      },
+    };
+
+    await runInit(deps);
+
+    // runInit must have awaited the installer before returning
+    expect(installerResolved).toBe(true);
     expect(process.exitCode).toBe(0);
   });
 });
