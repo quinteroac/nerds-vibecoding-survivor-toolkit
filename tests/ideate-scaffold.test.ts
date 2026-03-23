@@ -4,14 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 const PROJECT_ROOT = join(import.meta.dir, "..");
-const SCAFFOLD_TEMPLATE_PATH = join(
-  PROJECT_ROOT,
-  "scaffold",
-  ".agents",
-  "skills",
-  "ideate",
-  "tmpl_SKILL.md",
-);
+const NVST_SKILLS_SKILL_PATH = join(PROJECT_ROOT, "nvst-skills", "ideate", "SKILL.md");
 const SOURCE_SKILL_PATH = join(PROJECT_ROOT, ".agents", "skills", "ideate", "SKILL.md");
 const CLI_PATH = join(PROJECT_ROOT, "src", "cli.ts");
 
@@ -38,44 +31,48 @@ async function runCli(args: string[], cwd?: string): Promise<CliResult> {
 }
 
 describe("ideate scaffold template — US-003", () => {
-  // AC01: scaffold template exists and mirrors the source SKILL.md
-  it("AC01: scaffold/…/ideate/tmpl_SKILL.md exists and mirrors .agents/skills/ideate/SKILL.md", async () => {
-    const [templateContent, sourceContent] = await Promise.all([
-      readFile(SCAFFOLD_TEMPLATE_PATH, "utf8"),
+  // AC01: nvst-skills/ideate/SKILL.md exists and mirrors .agents/skills/ideate/SKILL.md
+  it("AC01: nvst-skills/ideate/SKILL.md exists and mirrors .agents/skills/ideate/SKILL.md", async () => {
+    const [nvstSkillContent, sourceContent] = await Promise.all([
+      readFile(NVST_SKILLS_SKILL_PATH, "utf8"),
       readFile(SOURCE_SKILL_PATH, "utf8"),
     ]);
 
-    expect(templateContent.length).toBeGreaterThan(0);
-    expect(templateContent).toBe(sourceContent);
+    expect(nvstSkillContent.length).toBeGreaterThan(0);
+    expect(nvstSkillContent).toBe(sourceContent);
   });
 
-  // AC02: `bun nvst init` on a fresh directory produces .agents/skills/ideate/SKILL.md
-  it("AC02: nvst init produces .agents/skills/ideate/SKILL.md in a fresh directory", async () => {
+  // AC02: nvst init does not copy .agents/skills/ideate/SKILL.md (delegated to skills installer)
+  it("AC02: nvst init does not create .agents/skills/ideate/SKILL.md (delegated to skills installer)", async () => {
     const tempDir = await mkdtemp(join(tmpdir(), "nvst-init-ideate-"));
     try {
       const result = await runCli(["init"], tempDir);
 
       expect(result.exitCode).toBe(0);
 
+      // Skills are installed by the skills package, not by nvst init directly
       const outputSkillPath = join(tempDir, ".agents", "skills", "ideate", "SKILL.md");
-
-      const outputContent = await readFile(outputSkillPath, "utf8");
-      const sourceContent = await readFile(SOURCE_SKILL_PATH, "utf8");
-      expect(outputContent).toBe(sourceContent);
+      const { access } = await import("node:fs/promises");
+      let exists = false;
+      try {
+        await access(outputSkillPath);
+        exists = true;
+      } catch {
+        exists = false;
+      }
+      expect(exists).toBe(false);
     } finally {
       await rm(tempDir, { recursive: true, force: true });
     }
   });
 
-  // AC03: typecheck is validated structurally — if the file is importable and the manifest compiles, TS is happy
-  it("AC03: scaffold-manifest includes the ideate template entry", async () => {
+  // AC03: scaffold-manifest does NOT include the ideate template entry (it lives in nvst-skills)
+  it("AC03: scaffold-manifest does not include the ideate template entry (lives in nvst-skills)", async () => {
     const { SCAFFOLD_FILES } = await import("../src/scaffold-manifest");
     const ideateEntry = SCAFFOLD_FILES.find((f) =>
-      f.relativePath.includes("skills/ideate/tmpl_SKILL.md"),
+      f.relativePath.includes("skills/ideate"),
     );
 
-    expect(ideateEntry).toBeDefined();
-    expect(ideateEntry!.content.length).toBeGreaterThan(0);
-    expect(ideateEntry!.content).toContain("ideate");
+    expect(ideateEntry).toBeUndefined();
   });
 });

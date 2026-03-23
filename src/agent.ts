@@ -1,4 +1,5 @@
 import { readFile } from "node:fs/promises";
+import { homedir } from "node:os";
 import { join } from "node:path";
 
 import { exists } from "./state";
@@ -198,9 +199,19 @@ export async function invokeAgent(options: AgentInvokeOptions): Promise<AgentRes
 // ---------------------------------------------------------------------------
 
 export async function loadSkill(projectRoot: string, skillName: string): Promise<string> {
-  const skillPath = join(projectRoot, ".agents", "skills", skillName, "SKILL.md");
-  if (!(await exists(skillPath))) {
-    throw new Error(`Skill '${skillName}' not found at ${skillPath}`);
+  const projectPath = join(projectRoot, ".agents", "skills", skillName, "SKILL.md");
+  const globalPath = join(homedir(), ".agents", "skills", skillName, "SKILL.md");
+
+  const skillPath = (await exists(projectPath))
+    ? projectPath
+    : (await exists(globalPath))
+      ? globalPath
+      : null;
+
+  if (!skillPath) {
+    throw new Error(
+      `Skill '${skillName}' not found at ${projectPath} or ${globalPath}`,
+    );
   }
   const raw = await readFile(skillPath, "utf8");
   return stripFrontmatter(raw);

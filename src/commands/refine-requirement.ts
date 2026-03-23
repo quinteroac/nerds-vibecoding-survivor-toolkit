@@ -34,7 +34,7 @@ export async function runRefineRequirement(opts: RefineRequirementOptions): Prom
     throw new Error(`Cannot refine requirement: file not found at ${requirementPath}`);
   }
 
-  const skillBody = await loadSkill(projectRoot, "refine-pr-document");
+  const skillBody = await loadSkill(projectRoot, "refine-requirement");
   const requirementContent = await readFile(requirementPath, "utf8");
 
   const context: Record<string, string> = {

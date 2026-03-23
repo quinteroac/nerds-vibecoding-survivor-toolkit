@@ -1,0 +1,91 @@
+{
+  "executiveSummary": "The iteration 34 migration from custom arg-parsing to commander.js is functionally complete: all 137 automated tests pass, `commander` is installed as a production dependency, all original CLI commands behave identically, the legacy helpers (`extractFlagValue`, `parseOptionalIntegerFlag`, `parseProjectContextMode`, `parseForce`, `printUsage`) are removed, and auto-generated `--help` output works at both root and per-command level. However, the implementation took a hybrid approach: commander.js is used exclusively for help-text generation via a dedicated `buildHelpProgram()` factory, while the actual command dispatch and option parsing remain fully custom (`if (command === ...)` blocks with manual `args.includes()` / `indexOf()` logic). This satisfies the user-observable goals but diverges from several FRs that explicitly required commander.js to own the parsing pipeline—replacing `.argParser`, `.choices()`, and `.version()` rather than simply rendering help.",
+  "verificationByFr": [
+    {
+      "frId": "FR-1",
+      "assessment": "comply"
+    },
+    {
+      "frId": "FR-2",
+      "assessment": "partially_comply"
+    },
+    {
+      "frId": "FR-3",
+      "assessment": "partially_comply"
+    },
+    {
+      "frId": "FR-4",
+      "assessment": "partially_comply"
+    },
+    {
+      "frId": "FR-5",
+      "assessment": "partially_comply"
+    },
+    {
+      "frId": "FR-6",
+      "assessment": "partially_comply"
+    },
+    {
+      "frId": "FR-7",
+      "assessment": "partially_comply"
+    },
+    {
+      "frId": "FR-8",
+      "assessment": "comply"
+    },
+    {
+      "frId": "FR-9",
+      "assessment": "comply"
+    },
+    {
+      "frId": "FR-10",
+      "assessment": "comply"
+    },
+    {
+      "frId": "FR-11",
+      "assessment": "partially_comply"
+    },
+    {
+      "frId": "FR-12",
+      "assessment": "comply"
+    },
+    {
+      "frId": "FR-13",
+      "assessment": "comply"
+    }
+  ],
+  "verificationByUs": [
+    {
+      "usId": "US-001",
+      "assessment": "comply"
+    },
+    {
+      "usId": "US-002",
+      "assessment": "comply"
+    },
+    {
+      "usId": "US-003",
+      "assessment": "comply"
+    },
+    {
+      "usId": "US-004",
+      "assessment": "comply"
+    },
+    {
+      "usId": "US-005",
+      "assessment": "comply"
+    }
+  ],
+  "minorObservations": [
+    "FR-2 (partial): `buildHelpProgram()` registers all commands as subcommands of a single root `Command`, satisfying the structural requirement, but `.action()` handlers are absent—commander.js does not drive dispatch; a manual `if/else` chain in `main()` handles routing instead.",
+    "FR-3 (partial): `--agent` appears in the commander help tree with correct description, but validation (allowed values: claude | codex | gemini | cursor | copilot | ide) is still delegated to the pre-existing `parseAgentArg()` helper in `src/agent.ts`. The PRD required commander's choices mechanism to replace this.",
+    "FR-4/FR-5 (partial): `--force` and `--challenge` are registered in the help program and described correctly, but runtime extraction is `args.includes('--force')` / `args.includes('--challenge')`—not commander option objects.",
+    "FR-6 (partial): `--iterations` and `--retry-on-fail` are registered in the help program. The validation logic (integer ≥ 1 / integer ≥ 0) is replicated inline in `main()` via manual `indexOf` + `Number()` checks. The PRD required this to use `.argParser()` on the commander option.",
+    "FR-7 (partial): `--mode <strict|yolo>` is registered in the help program without `.choices()`. Runtime validation is an inline `if (modeVal !== 'strict' && modeVal !== 'yolo')` check, not commander's built-in choices enforcement.",
+    "FR-9 / FR-10 (comply): `--schema`, `--out`, `--data` are registered on `write-json`; `--out`, `--data` on `write-technical-debt`. The handlers receive raw `args` and manage their own parsing and stdin fallback—consistent with pre-migration behavior and functionally correct.",
+    "FR-11 (partial): Version printing is handled via `if (command === '-v' || command === '--version') { await printVersion(); }`. The PRD required using commander's `.version()` API or a custom action. The NVST_COMPILED_VERSION fallback logic is preserved correctly.",
+    "The `buildHelpProgram()` function is called on every help request and on every unknown-command error path. This is slightly wasteful but has no functional impact.",
+    "No regression was introduced: `bun test` → 137 pass / 0 fail."
+  ],
+  "conclusionsAndRecommendations": "All five user stories are met from an end-user perspective: help is auto-generated, per-command scoped help works, all commands behave identically, legacy helpers are deleted, and the test suite is green. The gap is architectural: seven functional requirements (FR-2 through FR-7, FR-11) asked commander.js to own arg parsing at runtime, not just generate help text. The current hybrid approach preserves the old manual dispatch, making the codebase larger and not significantly less fragile than before—the original maintenance problem (boilerplate per command) still exists in the `main()` function. Recommendation: complete the migration by replacing `buildHelpProgram()` with a single `program` instance that has `.action()` callbacks on each subcommand, uses `.argParser()` for `--iterations` / `--retry-on-fail`, uses `.choices()` for `--mode`, and uses `.version()` for the version flag. This aligns with the stated goals of the PRD and reduces future maintenance cost."
+}

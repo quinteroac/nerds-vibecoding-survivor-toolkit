@@ -1,0 +1,42 @@
+{
+  "iteration": "000036",
+  "auditedAt": "2026-03-23T16:20:27.428Z",
+  "executiveSummary": "All four user stories and all three functional requirements comply. Skill directories renamed, loadSkill() calls updated, tests migrated, manifest regenerated, typecheck clean. Two minor follow-ups: fix a stale prose reference in refine-requirement/SKILL.md and track 17 pre-existing test failures as technical debt.",
+  "verificationByFR": [
+    { "frId": "FR-1", "assessment": "comply" },
+    { "frId": "FR-2", "assessment": "comply" },
+    { "frId": "FR-3", "assessment": "comply" }
+  ],
+  "verificationByUS": [
+    { "usId": "US-001", "assessment": "comply" },
+    { "usId": "US-002", "assessment": "comply" },
+    { "usId": "US-003", "assessment": "comply" },
+    { "usId": "US-004", "assessment": "comply" }
+  ],
+  "minorObservations": [
+    "nvst-skills/refine-requirement/SKILL.md has a stale prose reference: 'following the same Output Structure as `create-pr-document`' — should read 'define-requirement'.",
+    "17 pre-existing test failures exist in the suite (audit-prototype-skill.test.ts ×7, ideate-skill.test.ts ×5, refine-project-context-skill.test.ts ×3, refactor-prototype-skill.test.ts ×2). None caused by this iteration."
+  ],
+  "conclusionsAndRecommendations": "The iteration is complete and fully compliant. Recommended follow-ups: (1) fix the stale prose reference in nvst-skills/refine-requirement/SKILL.md and regenerate the manifest; (2) track the 17 pre-existing test failures as technical debt.",
+  "refactorPlan": [
+    {
+      "id": "RC-001",
+      "title": "Fix stale prose reference in refine-requirement/SKILL.md",
+      "description": "In nvst-skills/refine-requirement/SKILL.md, replace 'following the same Output Structure as `create-pr-document`' with 'following the same Output Structure as `define-requirement`'. Then re-run the manifest generation script to update src/nvst-skills-manifest.ts.",
+      "files": [
+        "nvst-skills/refine-requirement/SKILL.md",
+        "src/nvst-skills-manifest.ts"
+      ],
+      "acceptanceCheck": "grep -r 'create-pr-document' nvst-skills/ src/nvst-skills-manifest.ts returns no output"
+    },
+    {
+      "id": "RC-002",
+      "title": "Track pre-existing test failures as technical debt",
+      "description": "Record the 17 failing tests in TECHNICAL_DEBT.md via nvst write-technical-debt so they are visible and can be prioritised in a future iteration.",
+      "files": [
+        ".agents/TECHNICAL_DEBT.md"
+      ],
+      "acceptanceCheck": "TECHNICAL_DEBT.md contains entries for the 17 pre-existing failures"
+    }
+  ]
+}

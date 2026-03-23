@@ -37,10 +37,33 @@ Use this command order as the standard loop:
 
 ## Agent providers
 
-Use `--agent` with: `claude`, `codex`, `gemini`, or `cursor`.
+Use `--agent` with: `claude`, `codex`, `gemini`, `cursor`, `copilot`, or `ide`.
 
 Example:
 
 ```bash
 bun nvst define requirement --agent cursor
 ```
+
+## Standalone Skill Invocation
+
+Every NVST workflow skill can be invoked directly from any AI agent CLI that loads skills via `npx skills add` — without installing or running the `nvst` binary and without an active NVST iteration.
+
+**Available standalone skills:** `/define-requirement`, `/refine-requirement`, `/create-prototype`, `/audit-prototype`, `/refactor-prototype`, `/approve-prototype`
+
+**How to add NVST skills to your agent CLI:**
+
+```bash
+npx skills add nerds-vibecoding-survivor-toolkit
+```
+
+**How standalone fallback works:**
+
+When a skill is invoked without NVST orchestrating the session, it self-detects the absence of `.agents/state.json` and resolves required context in this order:
+
+1. Injected context variable (set by NVST when orchestrating)
+2. `.agents/state.json` — read `current_iteration` if the file exists
+3. Artifact files — look for `.agents/flow/it_{iteration}_PRD.json` or the matching `.md` file
+4. Ask the user — prompt interactively for any information that could not be resolved automatically
+
+Skills that normally write to `state.json` skip that step when running standalone, and notify the user that state was not persisted. This means standalone invocation is safe and non-destructive — it will never create or corrupt a `state.json`.

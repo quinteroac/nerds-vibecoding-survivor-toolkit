@@ -31,7 +31,7 @@ export async function runDefineRequirement(opts: DefineRequirementOptions): Prom
     { force },
   );
 
-  const skillBody = await loadSkill(projectRoot, "create-pr-document");
+  const skillBody = await loadSkill(projectRoot, "define-requirement");
   const prompt = buildPrompt(skillBody, {
     current_iteration: state.current_iteration,
   });
