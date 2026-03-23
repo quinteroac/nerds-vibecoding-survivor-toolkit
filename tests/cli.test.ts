@@ -190,9 +190,52 @@ describe("CLI routing", () => {
     const result = await runCli(["--help"]);
 
     expect(result.exitCode).toBe(0);
-    expect(result.stdout).toContain("create project-context --agent <provider>");
-    expect(result.stdout).toContain("refine project-context --agent <provider>");
-    expect(result.stdout).toContain("approve project-context [--force]");
+    expect(result.stdout).toContain("create");
+    expect(result.stdout).toContain("define");
+    expect(result.stdout).toContain("refine");
+    expect(result.stdout).toContain("approve");
+  });
+
+  // US-001-AC01: --help exits 0 and prints commander-generated listing
+  it("US-001-AC01: --help exits with code 0 and prints commander-generated help", async () => {
+    const result = await runCli(["--help"]);
+
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout).toContain("Usage: nvst");
+  });
+
+  // US-001-AC02: -h produces identical output to --help
+  it("US-001-AC02: -h produces identical output to --help", async () => {
+    const helpResult = await runCli(["--help"]);
+    const hResult = await runCli(["-h"]);
+
+    expect(hResult.exitCode).toBe(0);
+    expect(hResult.stdout).toBe(helpResult.stdout);
+  });
+
+  // US-001-AC03: output includes all top-level commands
+  it("US-001-AC03: --help lists all top-level commands", async () => {
+    const result = await runCli(["--help"]);
+
+    expect(result.exitCode).toBe(0);
+    const commands = [
+      "ideate",
+      "start",
+      "define",
+      "refine",
+      "approve",
+      "create",
+      "audit",
+      "refactor",
+      "sync",
+      "init",
+      "destroy",
+      "write-json",
+      "write-technical-debt",
+    ];
+    for (const cmd of commands) {
+      expect(result.stdout).toContain(cmd);
+    }
   });
 
   it("keeps unknown create subcommand usage errors", async () => {
