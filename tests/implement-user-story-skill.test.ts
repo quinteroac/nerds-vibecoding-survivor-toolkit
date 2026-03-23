@@ -11,14 +11,7 @@ const RUNTIME_SKILL_PATH = join(
   "implement-user-story",
   "SKILL.md",
 );
-const SCAFFOLD_SKILL_PATH = join(
-  PROJECT_ROOT,
-  "scaffold",
-  ".agents",
-  "skills",
-  "implement-user-story",
-  "tmpl_SKILL.md",
-);
+const NVST_SKILLS_SKILL_PATH = join(PROJECT_ROOT, "nvst-skills", "implement-user-story", "SKILL.md");
 
 const UI_KEYWORDS = [
   "UI",
@@ -35,12 +28,9 @@ const UI_KEYWORDS = [
 
 // Hashes from upstream pbakaus/impeccable commit 3c3ee6b4f244bf522ecadf2ae9dd0e688d195ed8.
 const EXPECTED_IMPECCABLE_SHA256: Record<string, string> = {
-  ".agents/skills/frontend-design/tmpl_SKILL.md":
-    "1281e529c4d7cfc058f3857c493976f1299c87a285f53ebe0cb2afbd4840a71f",
-  ".agents/skills/harden/tmpl_SKILL.md":
-    "4756b3f0365de089e7d4dd5a67f813df32a487a5cd2cf4793a32a58a04938a7b",
-  ".agents/skills/polish/tmpl_SKILL.md":
-    "20961487777bdb75f740c4ce6d7651968196ae80f424ce92bcfe4edfb010020b",
+  "frontend-design/SKILL.md": "1281e529c4d7cfc058f3857c493976f1299c87a285f53ebe0cb2afbd4840a71f",
+  "harden/SKILL.md": "4756b3f0365de089e7d4dd5a67f813df32a487a5cd2cf4793a32a58a04938a7b",
+  "polish/SKILL.md": "20961487777bdb75f740c4ce6d7651968196ae80f424ce92bcfe4edfb010020b",
 };
 
 function sha256(content: string): string {
@@ -85,16 +75,16 @@ describe("implement-user-story SKILL.md UI references — US-002", () => {
 
   it("AC04: keeps Impeccable skill files unchanged and only updates NVST references", async () => {
     for (const [relativePath, expectedHash] of Object.entries(EXPECTED_IMPECCABLE_SHA256)) {
-      const absolutePath = join(PROJECT_ROOT, "scaffold", relativePath);
+      const absolutePath = join(PROJECT_ROOT, "nvst-skills", relativePath);
       const content = await readFile(absolutePath, "utf8");
       expect(sha256(content)).toBe(expectedHash);
     }
 
-    const [runtimeSkill, scaffoldSkill] = await Promise.all([
+    const [runtimeSkill, nvstSkill] = await Promise.all([
       readFile(RUNTIME_SKILL_PATH, "utf8"),
-      readFile(SCAFFOLD_SKILL_PATH, "utf8"),
+      readFile(NVST_SKILLS_SKILL_PATH, "utf8"),
     ]);
 
-    expect(runtimeSkill).toBe(scaffoldSkill);
+    expect(runtimeSkill).toBe(nvstSkill);
   });
 });

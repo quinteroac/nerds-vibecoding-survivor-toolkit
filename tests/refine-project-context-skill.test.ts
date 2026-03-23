@@ -76,22 +76,20 @@ describe("refine-project-context skill recovery", () => {
       "refine-project-context",
       "SKILL.md",
     );
-    const scaffoldSkillPath = join(
+    const nvstSkillPath = join(
       PROJECT_ROOT,
-      "scaffold",
-      ".agents",
-      "skills",
+      "nvst-skills",
       "refine-project-context",
-      "tmpl_SKILL.md",
+      "SKILL.md",
     );
 
-    const [runtimeSkill, scaffoldSkill] = await Promise.all([
+    const [runtimeSkill, nvstSkill] = await Promise.all([
       readFile(runtimeSkillPath, "utf8"),
-      readFile(scaffoldSkillPath, "utf8"),
+      readFile(nvstSkillPath, "utf8"),
     ]);
 
-    expect(scaffoldSkill.length).toBeGreaterThan(0);
-    expect(scaffoldSkill).toBe(runtimeSkill);
+    expect(nvstSkill.length).toBeGreaterThan(0);
+    expect(nvstSkill).toBe(runtimeSkill);
   });
 
   it("runs `nvst refine project-context --agent ide` without missing skill errors", async () => {

@@ -256,10 +256,10 @@ async function main() {
   });
 
   // ---- sync ----
-  const sync = program.command("sync").description("Copy .agents/skills/ to scaffold/.agents/skills/");
+  const sync = program.command("sync").description("Copy .agents/skills/ to nvst-skills/");
   sync
     .command("skills")
-    .description("Copy .agents/skills/ to scaffold/.agents/skills/ (keep both identical)")
+    .description("Copy .agents/skills/ to nvst-skills/ (keep both identical)")
     .action(async () => {
       await runSyncAgentSkills();
     });

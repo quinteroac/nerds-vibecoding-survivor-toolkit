@@ -11,14 +11,7 @@ const RUNTIME_SKILL_PATH = join(
   "refactor-prototype",
   "SKILL.md",
 );
-const SCAFFOLD_SKILL_PATH = join(
-  PROJECT_ROOT,
-  "scaffold",
-  ".agents",
-  "skills",
-  "refactor-prototype",
-  "tmpl_SKILL.md",
-);
+const NVST_SKILLS_SKILL_PATH = join(PROJECT_ROOT, "nvst-skills", "refactor-prototype", "SKILL.md");
 
 const UI_KEYWORDS = [
   "UI",
@@ -35,14 +28,10 @@ const UI_KEYWORDS = [
 
 // Hashes from upstream pbakaus/impeccable commit 3c3ee6b4f244bf522ecadf2ae9dd0e688d195ed8.
 const EXPECTED_IMPECCABLE_SHA256: Record<string, string> = {
-  ".agents/skills/polish/tmpl_SKILL.md":
-    "20961487777bdb75f740c4ce6d7651968196ae80f424ce92bcfe4edfb010020b",
-  ".agents/skills/harden/tmpl_SKILL.md":
-    "4756b3f0365de089e7d4dd5a67f813df32a487a5cd2cf4793a32a58a04938a7b",
-  ".agents/skills/optimize/tmpl_SKILL.md":
-    "34a1d0ea8ca6756e0f3f95ad0fb7870dba4c7fb341ea3a582d17268672783acc",
-  ".agents/skills/normalize/tmpl_SKILL.md":
-    "7a2e99550b52b0c6b859e086cab38b66db3823df26f52dfe829cc206b7f8eeca",
+  "polish/SKILL.md": "20961487777bdb75f740c4ce6d7651968196ae80f424ce92bcfe4edfb010020b",
+  "harden/SKILL.md": "4756b3f0365de089e7d4dd5a67f813df32a487a5cd2cf4793a32a58a04938a7b",
+  "optimize/SKILL.md": "34a1d0ea8ca6756e0f3f95ad0fb7870dba4c7fb341ea3a582d17268672783acc",
+  "normalize/SKILL.md": "7a2e99550b52b0c6b859e086cab38b66db3823df26f52dfe829cc206b7f8eeca",
 };
 
 function sha256(content: string): string {
@@ -88,16 +77,16 @@ describe("refactor-prototype SKILL.md UI references — US-004", () => {
 
   it("AC03: keeps Impeccable skill files unchanged and only updates refactor-prototype references", async () => {
     for (const [relativePath, expectedHash] of Object.entries(EXPECTED_IMPECCABLE_SHA256)) {
-      const absolutePath = join(PROJECT_ROOT, "scaffold", relativePath);
+      const absolutePath = join(PROJECT_ROOT, "nvst-skills", relativePath);
       const content = await readFile(absolutePath, "utf8");
       expect(sha256(content)).toBe(expectedHash);
     }
 
-    const [runtimeSkill, scaffoldSkill] = await Promise.all([
+    const [runtimeSkill, nvstSkill] = await Promise.all([
       readFile(RUNTIME_SKILL_PATH, "utf8"),
-      readFile(SCAFFOLD_SKILL_PATH, "utf8"),
+      readFile(NVST_SKILLS_SKILL_PATH, "utf8"),
     ]);
 
-    expect(runtimeSkill).toBe(scaffoldSkill);
+    expect(runtimeSkill).toBe(nvstSkill);
   });
 });
