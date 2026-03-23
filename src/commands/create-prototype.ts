@@ -392,10 +392,10 @@ export async function runCreatePrototype(
 
   let skillTemplate: string;
   try {
-    skillTemplate = await mergedDeps.loadSkillFn(projectRoot, "implement-user-story");
+    skillTemplate = await mergedDeps.loadSkillFn(projectRoot, "create-prototype");
   } catch {
     throw new Error(
-      "Required skill missing: expected .agents/skills/implement-user-story/SKILL.md.",
+      "Required skill missing: expected .agents/skills/create-prototype/SKILL.md.",
     );
   }
 

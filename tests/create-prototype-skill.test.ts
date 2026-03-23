@@ -8,10 +8,10 @@ const RUNTIME_SKILL_PATH = join(
   PROJECT_ROOT,
   ".agents",
   "skills",
-  "implement-user-story",
+  "create-prototype",
   "SKILL.md",
 );
-const NVST_SKILLS_SKILL_PATH = join(PROJECT_ROOT, "nvst-skills", "implement-user-story", "SKILL.md");
+const NVST_SKILLS_SKILL_PATH = join(PROJECT_ROOT, "nvst-skills", "create-prototype", "SKILL.md");
 
 const UI_KEYWORDS = [
   "UI",
@@ -37,7 +37,7 @@ function sha256(content: string): string {
   return createHash("sha256").update(content, "utf8").digest("hex");
 }
 
-describe("implement-user-story SKILL.md UI references — US-002", () => {
+describe("create-prototype SKILL.md UI references — US-002", () => {
   it("AC01: includes a UI / Frontend Stories section with Impeccable skills in required order", async () => {
     const content = await readFile(RUNTIME_SKILL_PATH, "utf8");
 

@@ -1,5 +1,5 @@
 ---
-name: create-pr-document
+name: define-requirement
 description: "Gathers the requirement from the user and produces it_{iteration}_product-requirement-document.md. Triggered by: nvst define requirement."
 user-invocable: true
 ---

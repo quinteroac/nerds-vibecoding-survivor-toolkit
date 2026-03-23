@@ -160,7 +160,7 @@ describe("US-003: All existing commands work identically after migration", () =>
     const projectRoot = await createTempDir();
     try {
       await writeState(projectRoot, makeDefineState());
-      await writeSkill(projectRoot, "create-pr-document");
+      await writeSkill(projectRoot, "define-requirement");
       const result = await runCli(["define", "requirement", "--agent", "ide"], projectRoot);
       expect(result.exitCode).toBe(0);
       expect(result.stderr).toBe("");
@@ -189,7 +189,7 @@ describe("US-003: All existing commands work identically after migration", () =>
         history: [],
       };
       await writeState(projectRoot, state);
-      await writeSkill(projectRoot, "refine-pr-document");
+      await writeSkill(projectRoot, "refine-requirement");
       await writeFile(
         join(projectRoot, ".agents", "flow", requirementFile),
         "# Product Requirement Document\n\nSome requirement content.",
@@ -369,7 +369,7 @@ describe("US-003: All existing commands work identically after migration", () =>
         history: [],
       };
       await writeState(projectRoot, state);
-      await writeSkill(projectRoot, "implement-user-story");
+      await writeSkill(projectRoot, "create-prototype");
 
       await writeFile(
         join(projectRoot, ".agents", "flow", "it_000001_PRD.json"),

@@ -1,5 +1,5 @@
 ---
-name: refine-pr-document
+name: refine-requirement
 description: "Updates an existing product requirement document based on user feedback. Triggered by: nvst refine requirement."
 user-invocable: true
 ---
