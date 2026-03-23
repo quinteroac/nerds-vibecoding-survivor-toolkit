@@ -1,7 +1,7 @@
 ---
 name: refactor-prototype
 description: "Load the refactor plan from it_{iteration}_audit.json and invoke the agent to apply code changes."
-user-invocable: false
+user-invocable: true
 ---
 
 # Refactor Prototype

@@ -1,7 +1,7 @@
 ---
 name: approve-prototype
 description: "Drive interactive approval of the prototype by updating project context and roadmap artifacts after a completed iteration."
-user-invocable: false
+user-invocable: true
 ---
 
 # Approve Prototype

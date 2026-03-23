@@ -1,7 +1,7 @@
 ---
 name: audit-prototype
 description: "Validate the current iteration's PRD against the implemented code via the audit prototype skill."
-user-invocable: false
+user-invocable: true
 ---
 
 # Audit Prototype
