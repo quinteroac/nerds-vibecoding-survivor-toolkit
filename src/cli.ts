@@ -82,7 +82,7 @@ async function main() {
     .description("Start an ideation session via agent (optional preliminary step)")
     .option("--agent <provider>", "Agent provider (claude, codex, gemini, cursor, copilot, ide)")
     .option("--force", "Bypass flow guardrail confirmation")
-    .option("--yolo", "Suppress agent permission prompts")
+    .option("--yolo", "Invoke agent with bypass-permissions flags (suppresses agent permission prompts)")
     .action(async (opts) => {
       const provider = validateAgent(opts.agent, program);
       if (provider === null) return;
@@ -110,7 +110,7 @@ async function main() {
     .description("Create requirement document via agent")
     .option("--agent <provider>", "Agent provider (claude, codex, gemini, cursor, copilot, ide)")
     .option("--force", "Bypass flow guardrail confirmation")
-    .option("--yolo", "Suppress agent permission prompts")
+    .option("--yolo", "Invoke agent with bypass-permissions flags (suppresses agent permission prompts)")
     .action(async (opts) => {
       const provider = validateAgent(opts.agent, program);
       if (provider === null) return;
@@ -130,7 +130,7 @@ async function main() {
     .option("--agent <provider>", "Agent provider (claude, codex, gemini, cursor, copilot, ide)")
     .option("--challenge", "Run in challenger mode")
     .option("--force", "Bypass flow guardrail confirmation")
-    .option("--yolo", "Suppress agent permission prompts")
+    .option("--yolo", "Invoke agent with bypass-permissions flags (suppresses agent permission prompts)")
     .action(async (opts) => {
       const provider = validateAgent(opts.agent, program);
       if (provider === null) return;
@@ -142,7 +142,7 @@ async function main() {
     .option("--agent <provider>", "Agent provider (claude, codex, gemini, cursor, copilot, ide)")
     .option("--challenge", "Run in challenger mode")
     .option("--force", "Bypass flow guardrail confirmation")
-    .option("--yolo", "Suppress agent permission prompts")
+    .option("--yolo", "Invoke agent with bypass-permissions flags (suppresses agent permission prompts)")
     .action(async (opts) => {
       const provider = validateAgent(opts.agent, program);
       if (provider === null) return;
@@ -193,7 +193,7 @@ async function main() {
     .option("--retry-on-fail <N>", "Retry attempts per failed story (integer >= 0)", parseIntegerArg(0))
     .option("--stop-on-critical", "Stop execution after critical failures")
     .option("--force", "Bypass flow guardrail confirmation")
-    .option("--yolo", "Suppress agent permission prompts")
+    .option("--yolo", "Invoke agent with bypass-permissions flags (suppresses agent permission prompts)")
     .action(async (opts) => {
       const provider = validateAgent(opts.agent, program);
       if (provider === null) return;
@@ -214,7 +214,7 @@ async function main() {
       new Option("--mode <strict|yolo>", "Generation mode (default: strict)").choices(["strict", "yolo"]).default("strict"),
     )
     .option("--force", "Bypass flow guardrail confirmation")
-    .option("--yolo", "Suppress agent permission prompts")
+    .option("--yolo", "Invoke agent with bypass-permissions flags (suppresses agent permission prompts)")
     .action(async (opts) => {
       const provider = validateAgent(opts.agent, program);
       if (provider === null) return;
@@ -233,7 +233,7 @@ async function main() {
     .description("Execute approved prototype audit tests via agent")
     .option("--agent <provider>", "Agent provider (claude, codex, gemini, cursor, copilot, ide)")
     .option("--force", "Bypass flow guardrail confirmation")
-    .option("--yolo", "Suppress agent permission prompts")
+    .option("--yolo", "Invoke agent with bypass-permissions flags (suppresses agent permission prompts)")
     .action(async (opts) => {
       const provider = validateAgent(opts.agent, program);
       if (provider === null) return;
@@ -252,7 +252,7 @@ async function main() {
     .description("Execute approved prototype refactor items via agent")
     .option("--agent <provider>", "Agent provider (claude, codex, gemini, cursor, copilot, ide)")
     .option("--force", "Bypass flow guardrail confirmation")
-    .option("--yolo", "Suppress agent permission prompts")
+    .option("--yolo", "Invoke agent with bypass-permissions flags (suppresses agent permission prompts)")
     .action(async (opts) => {
       const provider = validateAgent(opts.agent, program);
       if (provider === null) return;

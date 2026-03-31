@@ -1,0 +1,49 @@
+{
+  "executiveSummary": "Iteration 000038 implements the --yolo flag feature across all eight agent-invoking nvst commands. The implementation correctly threads `yolo: boolean` from CLI options through handler option interfaces to `invokeAgent`, and the agent dispatch logic in `src/agent.ts` correctly appends bypass args for Codex and Copilot in interactive mode when `yolo=true`. TypeScript typecheck passes with zero errors and all 213 tests pass. The only minor deviation is that the help-text description for `--yolo` reads \"Suppress agent permission prompts\" rather than the verbatim text specified in FR-1: \"Invoke agent with bypass-permissions flags (suppresses agent permission prompts)\". All functional behaviour is fully compliant.",
+  "verificationByFR": [
+    {
+      "frId": "FR-1",
+      "assessment": "partially_comply",
+      "notes": "All eight agent-invoking commands declare `.option(\"--yolo\", ...)` as required, but the description string used is \"Suppress agent permission prompts\" instead of the specified \"Invoke agent with bypass-permissions flags (suppresses agent permission prompts)\". Behaviour is correct; only the help text wording differs."
+    },
+    {
+      "frId": "FR-2",
+      "assessment": "comply",
+      "notes": "`yolo: boolean` is present in every handler options interface (IdeateOptions, DefineRequirementOptions, RefineRequirementOptions, RefineProjectContextOptions, CreatePrototypeOptions, CreateProjectContextOptions, AuditPrototypeOptions, RefactorPrototypeOptions) and forwarded to invokeAgentFn at each call site."
+    },
+    {
+      "frId": "FR-3",
+      "assessment": "comply",
+      "notes": "`AgentInvokeOptions` in `src/agent.ts` line 20 declares `yolo?: boolean`. Default value of `false` is applied at destructuring in `invokeAgent`."
+    },
+    {
+      "frId": "FR-4",
+      "assessment": "comply",
+      "notes": "In `buildAgentArgs`: codex interactive branch appends `--dangerously-bypass-approvals-and-sandbox` when yolo=true; copilot interactive branch appends `--yolo --no-ask-user` when yolo=true. Non-interactive paths are unaffected."
+    },
+    {
+      "frId": "FR-5",
+      "assessment": "comply",
+      "notes": "`--yolo` and `--force` are independent options on every command. They can be combined freely with no conflict."
+    },
+    {
+      "frId": "FR-6",
+      "assessment": "comply",
+      "notes": "No new runtime dependencies were introduced. Changes are pure TypeScript additions to existing files."
+    }
+  ],
+  "verificationByUS": [
+    {
+      "usId": "US-001",
+      "assessment": "comply",
+      "notes": "All seven acceptance criteria are satisfied: AC01 — --yolo present on all 8 commands (help text wording is minor); AC02 — yolo forwarded to invokeAgent in every handler; AC03 — yolo?: boolean optional in AgentInvokeOptions; AC04 — bypass args injected when yolo=true for codex and copilot interactive; AC05 — no bypass args added when yolo=false (non-interactive paths unchanged); AC06 — bun tsc --noEmit exits 0; AC07 — bun test exits 0 with 213 pass / 0 fail."
+    }
+  ],
+  "minorObservations": [
+    "FR-1 specifies the exact help-text string: \"Invoke agent with bypass-permissions flags (suppresses agent permission prompts)\". The implementation uses the shorter: \"Suppress agent permission prompts\". While functionally equivalent, aligning the wording with the PRD is recommended for consistency.",
+    "Claude's interactive branch in `buildAgentArgs` always adds `--dangerously-skip-permissions` regardless of the yolo flag (line 113). The PRD scopes FR-4 to Codex and Copilot only, so this is not a violation, but it means Claude users cannot opt out of bypass permissions in interactive mode — worth documenting.",
+    "Gemini's interactive branch (line 102-103) does not have a yolo-conditional path. If Gemini gains an equivalent bypass flag in the future, the pattern would need to be extended.",
+    "The test file `tests/it_000038_us-001-yolo-flag.test.ts` covers AC01–AC05 thoroughly. AC06 and AC07 (typecheck and test pass) are validated implicitly by the CI/build pipeline rather than a dedicated test assertion, which is acceptable."
+  ],
+  "conclusionsAndRecommendations": "The implementation is fully compliant with all functional requirements and the single user story. The only actionable item is a cosmetic fix to align the --yolo help-text description with the exact wording specified in FR-1. No regressions were introduced, all tests pass, and the codebase typechecks cleanly. Recommendation: apply the minor help-text fix in a fast follow-up (one-line change per command in src/cli.ts), then proceed to approve the prototype."
+}

@@ -114,7 +114,7 @@ export function buildAgentArgs(
   }
   if (provider === "copilot" && interactive) {
     const yoloArgs = yolo ? ["--yolo", "--no-ask-user"] : [];
-    return { finalArgs: ["-i", ...yoloArgs, prompt], stdinOption: "inherit" };
+    return { finalArgs: ["-i", prompt, ...yoloArgs], stdinOption: "inherit" };
   }
   if (provider === "copilot") {
     return { finalArgs: ["-p", prompt, ...args.filter((arg) => arg !== "-p")], stdinOption: "inherit" };

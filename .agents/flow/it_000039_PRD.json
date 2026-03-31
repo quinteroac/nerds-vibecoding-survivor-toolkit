@@ -1,0 +1,81 @@
+{
+  "goals": [
+    "Generate a human-readable branch name that includes a kebab-case slug from the PRD requirement title.",
+    "Keep branch names within 50 characters to avoid filesystem and remote compatibility issues.",
+    "Produce URL-safe, lowercase, hyphen-separated slugs with no special characters."
+  ],
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Slug extracted from PRD title",
+      "description": "As a developer or automated process running `nvst create prototype`, I want the branch name to include a slug derived from the `# Requirement:` title in the PRD markdown file so that the branch is immediately identifiable without opening files.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-001-AC01",
+          "text": "`runCreatePrototype` reads `.agents/flow/it_XXXXXX_product-requirement-document.md` and extracts the text after `# Requirement:` on the first matching line."
+        },
+        {
+          "id": "US-001-AC02",
+          "text": "The extracted title is converted to a kebab-case slug: lowercased, non-alphanumeric characters replaced with hyphens, consecutive hyphens collapsed, leading/trailing hyphens trimmed."
+        },
+        {
+          "id": "US-001-AC03",
+          "text": "A pure helper function `toKebabSlug(title: string): string` is exported from `src/commands/create-prototype.ts` (or a shared util) and unit-tested."
+        },
+        {
+          "id": "US-001-AC04",
+          "text": "Typecheck / lint passes."
+        }
+      ]
+    },
+    {
+      "id": "US-002",
+      "title": "Branch created with slug suffix",
+      "description": "As a developer or automated process running `nvst create prototype`, I want the Git branch to be named `feature/it_XXXXXX_<slug>` so that the branch communicates the feature context.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-002-AC01",
+          "text": "The branch name follows the pattern `feature/it_XXXXXX_<slug>`."
+        },
+        {
+          "id": "US-002-AC02",
+          "text": "The full branch name is truncated to a maximum of 50 characters (slug truncated, never the `feature/it_XXXXXX_` prefix)."
+        },
+        {
+          "id": "US-002-AC03",
+          "text": "The branch is created and checked out under the new name; no branch with the old format (`feature/it_XXXXXX`) is created."
+        },
+        {
+          "id": "US-002-AC04",
+          "text": "All existing tests in `tests/` pass; no regression in `create prototype` behavior."
+        },
+        {
+          "id": "US-002-AC05",
+          "text": "Typecheck / lint passes."
+        }
+      ]
+    }
+  ],
+  "functionalRequirements": [
+    {
+      "id": "FR-1",
+      "description": "A function `toKebabSlug(title: string): string` converts a free-text title to a kebab-case slug (lowercase, alphanumeric + hyphens only, consecutive hyphens collapsed, leading/trailing hyphens trimmed)."
+    },
+    {
+      "id": "FR-2",
+      "description": "`runCreatePrototype` reads `it_${iteration}_product-requirement-document.md` from `.agents/flow/` and applies `toKebabSlug` to the text after `# Requirement:` to produce the slug."
+    },
+    {
+      "id": "FR-3",
+      "description": "The branch name is constructed as `feature/it_${iteration}_${slug}`, truncated so the total length does not exceed 50 characters."
+    },
+    {
+      "id": "FR-4",
+      "description": "Branch creation and checkout logic in `runCreatePrototype` uses the new branch name from FR-3."
+    },
+    {
+      "id": "FR-5",
+      "description": "`toKebabSlug` is covered by unit tests in `tests/`."
+    }
+  ]
+}
