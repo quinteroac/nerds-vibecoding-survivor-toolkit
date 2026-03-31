@@ -243,6 +243,24 @@ export async function runApprovePrototype(
     return;
   }
 
+  const nextState: State = {
+    ...state,
+    phases: {
+      ...state.phases,
+      prototype: {
+        ...state.phases.prototype,
+        prototype_approval: {
+          status: "completed",
+          file: null,
+        },
+      },
+    },
+    last_updated: new Date().toISOString(),
+    updated_by: "nvst:approve-prototype",
+  };
+
+  await mergedDeps.writeStateFn(projectRoot, nextState);
+
   const commitMessage = `feat: approve iteration ${iteration} prototype`;
   await mergedDeps.gitAddAndCommitFn(projectRoot, commitMessage);
 
@@ -293,22 +311,4 @@ export async function runApprovePrototype(
       mergedDeps.warnFn(`gh pr create failed (non-fatal)${suffix}`);
     }
   }
-
-  const nextState: State = {
-    ...state,
-    phases: {
-      ...state.phases,
-      prototype: {
-        ...state.phases.prototype,
-        prototype_approval: {
-          status: "completed",
-          file: null,
-        },
-      },
-    },
-    last_updated: new Date().toISOString(),
-    updated_by: "nvst:approve-prototype",
-  };
-
-  await mergedDeps.writeStateFn(projectRoot, nextState);
 }

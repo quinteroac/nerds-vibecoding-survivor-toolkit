@@ -36,12 +36,6 @@ const DIRTY_TREE_COMMIT_PROMPT = "Working tree has uncommitted changes. Stage an
 interface CreatePrototypeDeps {
   invokeAgentFn: (options: AgentInvokeOptions) => Promise<AgentResult>;
   loadSkillFn: (projectRoot: string, skillName: string) => Promise<string>;
-  checkGhAvailableFn: (projectRoot: string) => Promise<boolean>;
-  createPullRequestFn: (
-    projectRoot: string,
-    title: string,
-    body: string,
-  ) => Promise<{ exitCode: number; stderr: string }>;
   logFn: (message: string) => void;
   warnFn: (message: string) => void;
   promptDirtyTreeCommitFn: (question: string) => Promise<boolean>;
@@ -52,24 +46,6 @@ interface CreatePrototypeDeps {
 const defaultDeps: CreatePrototypeDeps = {
   invokeAgentFn: invokeAgent,
   loadSkillFn: loadSkill,
-  checkGhAvailableFn: async (projectRoot) => {
-    const proc = Bun.spawn(["gh", "--version"], {
-      cwd: projectRoot,
-      stdout: "ignore",
-      stderr: "ignore",
-    });
-    return (await proc.exited) === 0;
-  },
-  createPullRequestFn: async (projectRoot, title, body) => {
-    const result = await dollar`gh pr create --title ${title} --body ${body}`
-      .cwd(projectRoot)
-      .nothrow()
-      .quiet();
-    return {
-      exitCode: result.exitCode,
-      stderr: result.stderr.toString().trim(),
-    };
-  },
   logFn: console.log,
   warnFn: console.warn,
   promptDirtyTreeCommitFn: promptForDirtyTreeCommit,
@@ -329,7 +305,11 @@ export async function runCreatePrototype(
     const prdTitle = extractPrdTitle(prdMdContent);
     if (prdTitle) {
       slug = toKebabSlug(prdTitle);
+    } else {
+      mergedDeps.warnFn(`[warn] No '# Requirement:' heading found in ${prdMdPath}. Branch will use bare iteration format.`);
     }
+  } else {
+    mergedDeps.warnFn(`[warn] PRD markdown not found at ${prdMdPath}. Branch will use bare iteration format.`);
   }
   const branchName = buildBranchName(iteration, slug);
   const branchExistsResult = await dollar`git rev-parse --verify ${branchName}`
@@ -583,18 +563,6 @@ export async function runCreatePrototype(
   }
 
   if (allCompleted) {
-    const ghAvailable = await mergedDeps.checkGhAvailableFn(projectRoot);
-    if (!ghAvailable) {
-      mergedDeps.logFn("gh CLI not found — skipping PR creation");
-    } else {
-      const prTitle = `feat: prototype it_${iteration}`;
-      const prBody = `Prototype for iteration it_${iteration}`;
-      const prResult = await mergedDeps.createPullRequestFn(projectRoot, prTitle, prBody);
-      if (prResult.exitCode !== 0) {
-        const suffix = prResult.stderr.length > 0 ? `: ${prResult.stderr}` : "";
-        mergedDeps.warnFn(`gh pr create failed (non-fatal)${suffix}`);
-      }
-    }
     mergedDeps.logFn("Prototype implementation completed for all user stories.");
   } else {
     mergedDeps.logFn("Prototype implementation paused with remaining pending or failed stories.");

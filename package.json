@@ -19,6 +19,7 @@
     "tsconfig.json"
   ],
   "scripts": {
+    "lint": "bun tsc --noEmit",
     "test": "bun test src tests schemas",
     "typecheck": "bun tsc --noEmit",
     "generate:scaffold": "bun run src/scripts/generate-scaffold-manifest.ts",
