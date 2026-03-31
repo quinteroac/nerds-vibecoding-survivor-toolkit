@@ -15,6 +15,7 @@ import { exists, FLOW_REL_DIR, readState } from "../state";
 export interface RefactorPrototypeOptions {
   provider: AgentProvider;
   force?: boolean;
+  yolo?: boolean;
 }
 
 interface RefactorPrototypeDeps {
@@ -76,6 +77,7 @@ export async function runRefactorPrototype(
     prompt,
     cwd: projectRoot,
     interactive: true,
+    yolo: opts.yolo ?? false,
   });
   if (result.exitCode !== 0) {
     throw new Error(`Agent invocation failed with exit code ${result.exitCode}.`);

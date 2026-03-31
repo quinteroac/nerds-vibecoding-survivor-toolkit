@@ -9,10 +9,11 @@ export interface RefineProjectContextOptions {
     provider: AgentProvider;
     challenge: boolean;
     force?: boolean;
+    yolo?: boolean;
 }
 
 export async function runRefineProjectContext(opts: RefineProjectContextOptions): Promise<void> {
-    const { provider, challenge, force = false } = opts;
+    const { provider, challenge, force = false, yolo = false } = opts;
     const projectRoot = process.cwd();
     const state = await readState(projectRoot);
 
@@ -60,6 +61,7 @@ export async function runRefineProjectContext(opts: RefineProjectContextOptions)
         prompt,
         cwd: projectRoot,
         interactive: true,
+        yolo,
     });
 
     if (result.exitCode !== 0) {

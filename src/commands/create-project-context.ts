@@ -14,10 +14,11 @@ export interface CreateProjectContextOptions {
   provider: AgentProvider;
   mode: "strict" | "yolo";
   force?: boolean;
+  yolo?: boolean;
 }
 
 export async function runCreateProjectContext(opts: CreateProjectContextOptions): Promise<void> {
-  const { provider, mode, force = false } = opts;
+  const { provider, mode, force = false, yolo = false } = opts;
   const projectRoot = process.cwd();
   const state = await readState(projectRoot);
 
@@ -113,6 +114,7 @@ export async function runCreateProjectContext(opts: CreateProjectContextOptions)
     prompt,
     cwd: projectRoot,
     interactive: true,
+    yolo,
   });
 
   if (result.exitCode !== 0) {

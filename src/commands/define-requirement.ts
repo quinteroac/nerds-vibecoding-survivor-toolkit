@@ -9,10 +9,11 @@ import { readState, writeState } from "../state";
 export interface DefineRequirementOptions {
   provider: AgentProvider;
   force?: boolean;
+  yolo?: boolean;
 }
 
 export async function runDefineRequirement(opts: DefineRequirementOptions): Promise<void> {
-  const { provider, force = false } = opts;
+  const { provider, force = false, yolo = false } = opts;
   const projectRoot = process.cwd();
   const state = await readState(projectRoot);
 
@@ -40,6 +41,7 @@ export async function runDefineRequirement(opts: DefineRequirementOptions): Prom
     prompt,
     cwd: projectRoot,
     interactive: true,
+    yolo,
   });
 
   if (result.exitCode !== 0) {

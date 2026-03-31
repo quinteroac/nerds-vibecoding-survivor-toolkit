@@ -27,6 +27,7 @@ export interface CreatePrototypeOptions {
   retryOnFail?: number;
   stopOnCritical?: boolean;
   force?: boolean;
+  yolo?: boolean;
 }
 
 const DECLINE_DIRTY_TREE_ABORT_MESSAGE = "Aborted. Commit or discard your changes and re-run `bun nvst create prototype`.";
@@ -460,6 +461,7 @@ export async function runCreatePrototype(
         prompt,
         cwd: projectRoot,
         interactive: false,
+        yolo: opts.yolo ?? false,
       });
 
       const qualityResults: Array<{ command: string; exit_code: number }> = [];
