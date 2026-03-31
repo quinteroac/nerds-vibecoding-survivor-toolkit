@@ -200,6 +200,16 @@ export function extractPrdTitle(content: string): string | null {
   return match ? match[1].trim() : null;
 }
 
+export function buildBranchName(iteration: string, slug: string): string {
+  if (!slug) {
+    return `feature/it_${iteration}`;
+  }
+  const prefix = `feature/it_${iteration}_`;
+  const maxSlugLen = 50 - prefix.length;
+  const truncatedSlug = slug.slice(0, maxSlugLen).replace(/-+$/, "");
+  return `${prefix}${truncatedSlug}`;
+}
+
 export async function runCreatePrototype(
   opts: CreatePrototypeOptions,
   deps: Partial<CreatePrototypeDeps> = {},
@@ -313,15 +323,15 @@ export async function runCreatePrototype(
   }
 
   const prdMdPath = join(projectRoot, FLOW_REL_DIR, `it_${iteration}_product-requirement-document.md`);
-  let branchSlug = "";
+  let slug = "";
   if (await exists(prdMdPath)) {
     const prdMdContent = await readFile(prdMdPath, "utf8");
     const prdTitle = extractPrdTitle(prdMdContent);
     if (prdTitle) {
-      branchSlug = `-${toKebabSlug(prdTitle)}`;
+      slug = toKebabSlug(prdTitle);
     }
   }
-  const branchName = `feature/it_${iteration}${branchSlug}`;
+  const branchName = buildBranchName(iteration, slug);
   const branchExistsResult = await dollar`git rev-parse --verify ${branchName}`
     .cwd(projectRoot)
     .nothrow()
