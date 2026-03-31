@@ -187,6 +187,19 @@ function parseQualityChecks(projectContextContent: string): string[] {
     .filter((line) => line.length > 0);
 }
 
+export function toKebabSlug(title: string): string {
+  return title
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+}
+
+export function extractPrdTitle(content: string): string | null {
+  const match = /^#\s+Requirement:\s*(.+)$/m.exec(content);
+  return match ? match[1].trim() : null;
+}
+
 export async function runCreatePrototype(
   opts: CreatePrototypeOptions,
   deps: Partial<CreatePrototypeDeps> = {},
@@ -299,7 +312,16 @@ export async function runCreatePrototype(
     }
   }
 
-  const branchName = `feature/it_${iteration}`;
+  const prdMdPath = join(projectRoot, FLOW_REL_DIR, `it_${iteration}_product-requirement-document.md`);
+  let branchSlug = "";
+  if (await exists(prdMdPath)) {
+    const prdMdContent = await readFile(prdMdPath, "utf8");
+    const prdTitle = extractPrdTitle(prdMdContent);
+    if (prdTitle) {
+      branchSlug = `-${toKebabSlug(prdTitle)}`;
+    }
+  }
+  const branchName = `feature/it_${iteration}${branchSlug}`;
   const branchExistsResult = await dollar`git rev-parse --verify ${branchName}`
     .cwd(projectRoot)
     .nothrow()
