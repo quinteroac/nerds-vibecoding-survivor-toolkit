@@ -34,7 +34,6 @@ function createInitialState(nowIso: string): State {
       },
     },
     last_updated: nowIso,
-    history: [],
   };
 }
 
@@ -65,17 +64,8 @@ export async function runStartIteration(): Promise<void> {
     await rm(join(flowDir, entry.name), { recursive: true, force: true });
   }
 
-  const updatedHistory = [
-    ...(parsedState.history ?? []),
-    {
-      iteration: currentIteration,
-      deleted_at: nowIso,
-    },
-  ];
-
   const nextState = createInitialState(nowIso);
   nextState.current_iteration = nextIteration(currentIteration);
-  nextState.history = updatedHistory;
 
   // Preserve project_context when already created (immutable across iterations)
   const prevProjectContext = parsedState.phases?.prototype?.project_context;

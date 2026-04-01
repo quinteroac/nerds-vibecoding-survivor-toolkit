@@ -48,9 +48,17 @@ export function buildChangelogEntry(
  * Inserts a new changelog entry into existing CHANGELOG.md content.
  * The entry is placed after the header block and before any existing `## [` entry,
  * so the most recent iteration always appears first.
+ * Skips insertion if an entry with the same heading already exists (duplicate guard).
  */
 export function insertChangelogEntry(existingContent: string, newEntry: string): string {
   const normalized = existingContent.replace(/\r\n/g, "\n");
+
+  // Extract the heading line of the new entry (e.g. "## [000041] - 2026-04-01")
+  const newHeading = newEntry.split("\n")[0];
+  if (normalized.includes(newHeading)) {
+    return normalized;
+  }
+
   const match = /^## \[/m.exec(normalized);
 
   if (!match) {

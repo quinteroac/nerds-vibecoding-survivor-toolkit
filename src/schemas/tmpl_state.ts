@@ -82,13 +82,6 @@ const refactorPhase = z.object({
   }).optional(),
 });
 
-const historyEntry = z.object({
-  iteration: iterationId,
-  deleted_at: iso8601.optional(),
-  archived_at: iso8601.optional(),
-  archived_path: z.string().optional(),
-});
-
 export const StateSchema = z.object({
   current_iteration: iterationId,
   current_phase: phase,
@@ -100,7 +93,6 @@ export const StateSchema = z.object({
   }),
   last_updated: iso8601,
   updated_by: z.string().optional(),
-  history: z.array(historyEntry).optional(),
 });
 
 export type State = z.infer<typeof StateSchema>;
