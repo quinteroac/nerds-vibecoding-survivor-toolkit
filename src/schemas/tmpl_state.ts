@@ -84,8 +84,9 @@ const refactorPhase = z.object({
 
 const historyEntry = z.object({
   iteration: iterationId,
-  archived_at: iso8601,
-  archived_path: z.string(),
+  deleted_at: iso8601.optional(),
+  archived_at: iso8601.optional(),
+  archived_path: z.string().optional(),
 });
 
 export const StateSchema = z.object({
