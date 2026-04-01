@@ -3,7 +3,6 @@ import { join } from "node:path";
 import { $ as dollar } from "bun";
 
 import type { State } from "../schemas/tmpl_state";
-import { PrdSchema } from "../schemas/tmpl_prd";
 import {
   buildPrompt,
   invokeAgent,
@@ -14,7 +13,7 @@ import {
 import { assertGuardrail } from "../guardrail";
 import { defaultReadLine } from "../readline";
 import { exists, FLOW_REL_DIR, readState, writeState } from "../state";
-import { runGitAddAndCommit } from "./create-prototype";
+import { extractPrdTitle, runGitAddAndCommit } from "./create-prototype";
 
 export interface ApprovePrototypeOptions {
   force?: boolean;
@@ -39,6 +38,7 @@ interface ApprovePrototypeDeps {
   ) => Promise<{ exitCode: number; stderr: string }>;
   warnFn: (message: string) => void;
   writeStateFn: (projectRoot: string, state: State) => Promise<void>;
+  readPrdMarkdownFn: (path: string) => Promise<string | null>;
 }
 
 const defaultDeps: ApprovePrototypeDeps = {
@@ -104,6 +104,13 @@ const defaultDeps: ApprovePrototypeDeps = {
   },
   warnFn: console.warn,
   writeStateFn: writeState,
+  readPrdMarkdownFn: async (path: string) => {
+    try {
+      return await readFile(path, "utf8");
+    } catch {
+      return null;
+    }
+  },
 };
 
 type ReadLineFn = () => Promise<string | null>;
@@ -273,37 +280,28 @@ export async function runApprovePrototype(
       "GitHub CLI (gh) not found. Skipping PR creation. Push was successful.",
     );
   } else {
-    const prdPath = join(flowDir, `it_${iteration}_PRD.json`);
+    const prdMdPath = join(flowDir, `it_${iteration}_product-requirement-document.md`);
     let requirementName = `approve prototype iteration it_${iteration}`;
-    let prdTitle = requirementName;
 
-    if (await mergedDeps.existsFn(prdPath)) {
-      try {
-        const raw = await readFile(prdPath, "utf8");
-        const parsed = JSON.parse(raw);
-        const validation = PrdSchema.safeParse(parsed);
-        if (validation.success) {
-          const prd = validation.data;
-          const firstStory = prd.userStories[0];
-          if (firstStory) {
-            requirementName = firstStory.title;
-            prdTitle = firstStory.title;
-          }
-        } else {
-          mergedDeps.warnFn("Unable to derive PR metadata from PRD: schema mismatch.");
-        }
-      } catch {
-        mergedDeps.warnFn("Unable to derive PR metadata from PRD: invalid JSON.");
+    const prdMdContent = await mergedDeps.readPrdMarkdownFn(prdMdPath);
+    if (prdMdContent !== null) {
+      const extracted = extractPrdTitle(prdMdContent);
+      if (extracted) {
+        requirementName = extracted;
+      } else {
+        mergedDeps.warnFn(
+          "Unable to derive PR title from markdown PRD: no `# Requirement:` heading found.",
+        );
       }
     } else {
       mergedDeps.warnFn(
-        `Unable to derive PR metadata from PRD: ${join(FLOW_REL_DIR, `it_${iteration}_PRD.json`)} missing.`,
+        `Unable to derive PR title from markdown PRD: ${join(FLOW_REL_DIR, `it_${iteration}_product-requirement-document.md`)} missing.`,
       );
     }
 
     const refactorReportRelativePath = join(FLOW_REL_DIR, `it_${iteration}_refactor-report.md`);
     const prTitle = `feat: it_${iteration} — ${requirementName}`;
-    const prBody = `${prdTitle}\n\nRefactor report: ${refactorReportRelativePath}`;
+    const prBody = `${requirementName}\n\nRefactor report: ${refactorReportRelativePath}`;
 
     const prResult = await mergedDeps.createPullRequestFn(projectRoot, prTitle, prBody);
     if (prResult.exitCode !== 0) {
