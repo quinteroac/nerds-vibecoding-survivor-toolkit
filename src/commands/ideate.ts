@@ -7,10 +7,11 @@ import { exists, readState, writeState } from "../state";
 export interface IdeateOptions {
   provider: AgentProvider;
   force?: boolean;
+  yolo?: boolean;
 }
 
 export async function runIdeate(opts: IdeateOptions): Promise<void> {
-  const { provider, force = false } = opts;
+  const { provider, force = false, yolo = false } = opts;
   const projectRoot = process.cwd();
 
   // AC07: Read state early (needed for guardrail and current_iteration)
@@ -51,6 +52,7 @@ export async function runIdeate(opts: IdeateOptions): Promise<void> {
     prompt,
     cwd: projectRoot,
     interactive: true,
+    yolo,
   });
 
   // AC06: Throw if agent exits with non-zero code

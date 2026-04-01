@@ -3,7 +3,6 @@ import { join } from "node:path";
 import { $ as dollar } from "bun";
 
 import type { State } from "../schemas/tmpl_state";
-import { PrdSchema } from "../schemas/tmpl_prd";
 import {
   buildPrompt,
   invokeAgent,
@@ -14,7 +13,59 @@ import {
 import { assertGuardrail } from "../guardrail";
 import { defaultReadLine } from "../readline";
 import { exists, FLOW_REL_DIR, readState, writeState } from "../state";
-import { runGitAddAndCommit } from "./create-prototype";
+import { extractPrdTitle, runGitAddAndCommit } from "./create-prototype";
+
+export const NVST_PR_FOOTER =
+  "---\n_Made with [NVST](https://github.com/NerdsVibe/nerds-vibecoding-survivor-toolkit)_";
+
+/**
+ * Extracts a named `## Section` block (heading + body) from PRD markdown content.
+ * Returns the trimmed section text, or null if the section is absent.
+ */
+export function extractPrdSection(content: string, sectionName: string): string | null {
+  const normalizedContent = content.replace(/\r\n/g, "\n");
+  const lines = normalizedContent.split("\n");
+  let inSection = false;
+  const sectionLines: string[] = [];
+
+  for (const line of lines) {
+    if (!inSection && line.trimEnd() === `## ${sectionName}`) {
+      inSection = true;
+      sectionLines.push(line);
+      continue;
+    }
+    if (inSection) {
+      if (/^##\s/.test(line)) {
+        break;
+      }
+      sectionLines.push(line);
+    }
+  }
+
+  if (!inSection) return null;
+
+  while (sectionLines.length > 0 && sectionLines[sectionLines.length - 1].trim() === "") {
+    sectionLines.pop();
+  }
+
+  return sectionLines.length > 0 ? sectionLines.join("\n") : null;
+}
+
+/**
+ * Extracts the title, Context section, and Goals section from PRD markdown content.
+ * Satisfies FR-2: single exported helper for unit testability.
+ */
+export function extractPrdSections(markdown: string): {
+  title: string | null;
+  context: string | null;
+  goals: string | null;
+} {
+  return {
+    title: extractPrdTitle(markdown),
+    context: extractPrdSection(markdown, "Context"),
+    goals: extractPrdSection(markdown, "Goals"),
+  };
+}
 
 export interface ApprovePrototypeOptions {
   force?: boolean;
@@ -39,6 +90,7 @@ interface ApprovePrototypeDeps {
   ) => Promise<{ exitCode: number; stderr: string }>;
   warnFn: (message: string) => void;
   writeStateFn: (projectRoot: string, state: State) => Promise<void>;
+  readPrdMarkdownFn: (path: string) => Promise<string | null>;
 }
 
 const defaultDeps: ApprovePrototypeDeps = {
@@ -104,6 +156,13 @@ const defaultDeps: ApprovePrototypeDeps = {
   },
   warnFn: console.warn,
   writeStateFn: writeState,
+  readPrdMarkdownFn: async (path: string) => {
+    try {
+      return await readFile(path, "utf8");
+    } catch {
+      return null;
+    }
+  },
 };
 
 type ReadLineFn = () => Promise<string | null>;
@@ -243,57 +302,6 @@ export async function runApprovePrototype(
     return;
   }
 
-  const commitMessage = `feat: approve iteration ${iteration} prototype`;
-  await mergedDeps.gitAddAndCommitFn(projectRoot, commitMessage);
-
-  const branch = await mergedDeps.getCurrentBranchFn(projectRoot);
-  await mergedDeps.gitPushFn(projectRoot, branch);
-
-  const ghAvailable = await mergedDeps.checkGhAvailableFn(projectRoot);
-  if (!ghAvailable) {
-    mergedDeps.warnFn(
-      "GitHub CLI (gh) not found. Skipping PR creation. Push was successful.",
-    );
-  } else {
-    const prdPath = join(flowDir, `it_${iteration}_PRD.json`);
-    let requirementName = `approve prototype iteration it_${iteration}`;
-    let prdTitle = requirementName;
-
-    if (await mergedDeps.existsFn(prdPath)) {
-      try {
-        const raw = await readFile(prdPath, "utf8");
-        const parsed = JSON.parse(raw);
-        const validation = PrdSchema.safeParse(parsed);
-        if (validation.success) {
-          const prd = validation.data;
-          const firstStory = prd.userStories[0];
-          if (firstStory) {
-            requirementName = firstStory.title;
-            prdTitle = firstStory.title;
-          }
-        } else {
-          mergedDeps.warnFn("Unable to derive PR metadata from PRD: schema mismatch.");
-        }
-      } catch {
-        mergedDeps.warnFn("Unable to derive PR metadata from PRD: invalid JSON.");
-      }
-    } else {
-      mergedDeps.warnFn(
-        `Unable to derive PR metadata from PRD: ${join(FLOW_REL_DIR, `it_${iteration}_PRD.json`)} missing.`,
-      );
-    }
-
-    const refactorReportRelativePath = join(FLOW_REL_DIR, `it_${iteration}_refactor-report.md`);
-    const prTitle = `feat: it_${iteration} — ${requirementName}`;
-    const prBody = `${prdTitle}\n\nRefactor report: ${refactorReportRelativePath}`;
-
-    const prResult = await mergedDeps.createPullRequestFn(projectRoot, prTitle, prBody);
-    if (prResult.exitCode !== 0) {
-      const suffix = prResult.stderr.length > 0 ? `: ${prResult.stderr}` : "";
-      mergedDeps.warnFn(`gh pr create failed (non-fatal)${suffix}`);
-    }
-  }
-
   const nextState: State = {
     ...state,
     phases: {
@@ -311,4 +319,54 @@ export async function runApprovePrototype(
   };
 
   await mergedDeps.writeStateFn(projectRoot, nextState);
+
+  const commitMessage = `feat: approve iteration ${iteration} prototype`;
+  await mergedDeps.gitAddAndCommitFn(projectRoot, commitMessage);
+
+  const branch = await mergedDeps.getCurrentBranchFn(projectRoot);
+  await mergedDeps.gitPushFn(projectRoot, branch);
+
+  const ghAvailable = await mergedDeps.checkGhAvailableFn(projectRoot);
+  if (!ghAvailable) {
+    mergedDeps.warnFn(
+      "GitHub CLI (gh) not found. Skipping PR creation. Push was successful.",
+    );
+  } else {
+    const prdMdPath = join(flowDir, `it_${iteration}_product-requirement-document.md`);
+    let requirementName = `approve prototype iteration it_${iteration}`;
+
+    const prdMdContent = await mergedDeps.readPrdMarkdownFn(prdMdPath);
+    if (prdMdContent !== null) {
+      const extracted = extractPrdTitle(prdMdContent);
+      if (extracted) {
+        requirementName = extracted;
+      } else {
+        mergedDeps.warnFn(
+          "Unable to derive PR title from markdown PRD: no `# Requirement:` heading found.",
+        );
+      }
+    } else {
+      mergedDeps.warnFn(
+        `Unable to derive PR title from markdown PRD: ${join(FLOW_REL_DIR, `it_${iteration}_product-requirement-document.md`)} missing.`,
+      );
+    }
+
+    const refactorReportRelativePath = join(FLOW_REL_DIR, `it_${iteration}_refactor-report.md`);
+    const prTitle = `feat: it_${iteration} — ${requirementName}`;
+
+    const contextSection = prdMdContent !== null ? extractPrdSection(prdMdContent, "Context") : null;
+    const goalsSection = prdMdContent !== null ? extractPrdSection(prdMdContent, "Goals") : null;
+    const bodySections: string[] = [requirementName];
+    if (contextSection) bodySections.push(contextSection);
+    if (goalsSection) bodySections.push(goalsSection);
+    bodySections.push(`Refactor report: ${refactorReportRelativePath}`);
+    bodySections.push(NVST_PR_FOOTER);
+    const prBody = bodySections.join("\n\n");
+
+    const prResult = await mergedDeps.createPullRequestFn(projectRoot, prTitle, prBody);
+    if (prResult.exitCode !== 0) {
+      const suffix = prResult.stderr.length > 0 ? `: ${prResult.stderr}` : "";
+      mergedDeps.warnFn(`gh pr create failed (non-fatal)${suffix}`);
+    }
+  }
 }

@@ -16,6 +16,8 @@ export interface AgentInvokeOptions {
   cwd?: string;
   /** Use interactive mode (e.g. Codex TUI) so the agent can interview the user. */
   interactive?: boolean;
+  /** Suppress agent permission prompts (pass skip-permissions flags even in interactive mode). */
+  yolo?: boolean;
   resolveCommandPath?: ResolveCommandPath;
 }
 
@@ -85,12 +87,48 @@ export function ensureAgentCommandAvailable(
 /** Codex interactive (TUI) args: no "exec", so it can read stdin for interview. */
 const CODEX_INTERACTIVE_ARGS = ["--sandbox", "workspace-write"];
 
+/**
+ * Pure function that computes the final CLI args and stdin mode for a provider.
+ * Exported for unit testing without spawning real processes.
+ */
+export function buildAgentArgs(
+  provider: AgentProvider,
+  prompt: string,
+  interactive: boolean,
+  yolo: boolean,
+): { finalArgs: string[]; stdinOption: "ignore" | "inherit" } {
+  const { args } = buildCommand(provider);
+
+  if (provider === "gemini" && interactive) {
+    return { finalArgs: [...args, prompt], stdinOption: "inherit" };
+  }
+  if (provider === "gemini") {
+    return { finalArgs: [...args, "-p", prompt], stdinOption: "ignore" };
+  }
+  if (provider === "codex" && interactive) {
+    const yoloArgs = yolo ? ["--dangerously-bypass-approvals-and-sandbox"] : [];
+    return { finalArgs: [prompt, ...CODEX_INTERACTIVE_ARGS, ...yoloArgs], stdinOption: "inherit" };
+  }
+  if (provider === "claude" && interactive) {
+    return { finalArgs: ["--dangerously-skip-permissions", prompt], stdinOption: "inherit" };
+  }
+  if (provider === "copilot" && interactive) {
+    const yoloArgs = yolo ? ["--yolo", "--no-ask-user"] : [];
+    return { finalArgs: ["-i", prompt, ...yoloArgs], stdinOption: "inherit" };
+  }
+  if (provider === "copilot") {
+    return { finalArgs: ["-p", prompt, ...args.filter((arg) => arg !== "-p")], stdinOption: "inherit" };
+  }
+  return { finalArgs: [...args, prompt], stdinOption: "inherit" };
+}
+
 export async function invokeAgent(options: AgentInvokeOptions): Promise<AgentResult> {
   const {
     provider,
     prompt,
     cwd = process.cwd(),
     interactive = false,
+    yolo = false,
     resolveCommandPath = defaultResolveCommandPath,
   } = options;
   if (provider === "ide") {
@@ -102,40 +140,10 @@ export async function invokeAgent(options: AgentInvokeOptions): Promise<AgentRes
     };
   }
 
-  const { cmd, args } = buildCommand(provider);
+  const { cmd } = buildCommand(provider);
   ensureAgentCommandAvailable(provider, resolveCommandPath);
 
-  let finalArgs: string[];
-  let stdinOption: "ignore" | "inherit";
-  if (provider === "gemini" && interactive) {
-    // Interactive mode: drop -p so Gemini runs as a conversational session.
-    // Flags must come before the positional prompt arg.
-    finalArgs = [...args, prompt];
-    stdinOption = "inherit";
-  } else if (provider === "gemini") {
-    finalArgs = [...args, "-p", prompt];
-    stdinOption = "ignore";
-  } else if (provider === "codex" && interactive) {
-    // Codex interactive mode (no "exec"): prompt first, then TUI can read user input.
-    finalArgs = [prompt, ...CODEX_INTERACTIVE_ARGS];
-    stdinOption = "inherit";
-  } else if (provider === "claude" && interactive) {
-    // Interactive mode: drop --print so Claude runs as a conversational TUI.
-    finalArgs = ["--dangerously-skip-permissions", prompt];
-    stdinOption = "inherit";
-  } else if (provider === "copilot" && interactive) {
-    // Interactive mode: use -i so Copilot starts a conversational TUI with the initial prompt.
-    finalArgs = ["-i", prompt];
-    stdinOption = "inherit";
-  } else if (provider === "copilot") {
-    // Non-interactive Copilot: -p <prompt> then --yolo --no-ask-user (no confirmation prompts).
-    finalArgs = ["-p", prompt, ...args.filter((arg) => arg !== "-p")];
-    stdinOption = "inherit";
-  } else {
-    // Non-interactive execution: prompt as last arg.
-    finalArgs = [...args, prompt];
-    stdinOption = "inherit";
-  }
+  const { finalArgs, stdinOption } = buildAgentArgs(provider, prompt, interactive, yolo);
 
   // Interactive mode: use real TTY (inherit) so the agent stays in interactive mode and
   // waits for user input. The agent writes output via write-json or to a file.

@@ -27,6 +27,7 @@ export interface CreatePrototypeOptions {
   retryOnFail?: number;
   stopOnCritical?: boolean;
   force?: boolean;
+  yolo?: boolean;
 }
 
 const DECLINE_DIRTY_TREE_ABORT_MESSAGE = "Aborted. Commit or discard your changes and re-run `bun nvst create prototype`.";
@@ -35,12 +36,6 @@ const DIRTY_TREE_COMMIT_PROMPT = "Working tree has uncommitted changes. Stage an
 interface CreatePrototypeDeps {
   invokeAgentFn: (options: AgentInvokeOptions) => Promise<AgentResult>;
   loadSkillFn: (projectRoot: string, skillName: string) => Promise<string>;
-  checkGhAvailableFn: (projectRoot: string) => Promise<boolean>;
-  createPullRequestFn: (
-    projectRoot: string,
-    title: string,
-    body: string,
-  ) => Promise<{ exitCode: number; stderr: string }>;
   logFn: (message: string) => void;
   warnFn: (message: string) => void;
   promptDirtyTreeCommitFn: (question: string) => Promise<boolean>;
@@ -51,24 +46,6 @@ interface CreatePrototypeDeps {
 const defaultDeps: CreatePrototypeDeps = {
   invokeAgentFn: invokeAgent,
   loadSkillFn: loadSkill,
-  checkGhAvailableFn: async (projectRoot) => {
-    const proc = Bun.spawn(["gh", "--version"], {
-      cwd: projectRoot,
-      stdout: "ignore",
-      stderr: "ignore",
-    });
-    return (await proc.exited) === 0;
-  },
-  createPullRequestFn: async (projectRoot, title, body) => {
-    const result = await dollar`gh pr create --title ${title} --body ${body}`
-      .cwd(projectRoot)
-      .nothrow()
-      .quiet();
-    return {
-      exitCode: result.exitCode,
-      stderr: result.stderr.toString().trim(),
-    };
-  },
   logFn: console.log,
   warnFn: console.warn,
   promptDirtyTreeCommitFn: promptForDirtyTreeCommit,
@@ -186,6 +163,29 @@ function parseQualityChecks(projectContextContent: string): string[] {
     .filter((line) => line.length > 0);
 }
 
+export function toKebabSlug(title: string): string {
+  return title
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+}
+
+export function extractPrdTitle(content: string): string | null {
+  const match = /^#\s+Requirement:\s*(.+)$/m.exec(content);
+  return match ? match[1].trim() : null;
+}
+
+export function buildBranchName(iteration: string, slug: string): string {
+  if (!slug) {
+    return `feature/it_${iteration}`;
+  }
+  const prefix = `feature/it_${iteration}_`;
+  const maxSlugLen = 50 - prefix.length;
+  const truncatedSlug = slug.slice(0, maxSlugLen).replace(/-+$/, "");
+  return `${prefix}${truncatedSlug}`;
+}
+
 export async function runCreatePrototype(
   opts: CreatePrototypeOptions,
   deps: Partial<CreatePrototypeDeps> = {},
@@ -298,7 +298,20 @@ export async function runCreatePrototype(
     }
   }
 
-  const branchName = `feature/it_${iteration}`;
+  const prdMdPath = join(projectRoot, FLOW_REL_DIR, `it_${iteration}_product-requirement-document.md`);
+  let slug = "";
+  if (await exists(prdMdPath)) {
+    const prdMdContent = await readFile(prdMdPath, "utf8");
+    const prdTitle = extractPrdTitle(prdMdContent);
+    if (prdTitle) {
+      slug = toKebabSlug(prdTitle);
+    } else {
+      mergedDeps.warnFn(`[warn] No '# Requirement:' heading found in ${prdMdPath}. Branch will use bare iteration format.`);
+    }
+  } else {
+    mergedDeps.warnFn(`[warn] PRD markdown not found at ${prdMdPath}. Branch will use bare iteration format.`);
+  }
+  const branchName = buildBranchName(iteration, slug);
   const branchExistsResult = await dollar`git rev-parse --verify ${branchName}`
     .cwd(projectRoot)
     .nothrow()
@@ -460,6 +473,7 @@ export async function runCreatePrototype(
         prompt,
         cwd: projectRoot,
         interactive: false,
+        yolo: opts.yolo ?? false,
       });
 
       const qualityResults: Array<{ command: string; exit_code: number }> = [];
@@ -549,18 +563,6 @@ export async function runCreatePrototype(
   }
 
   if (allCompleted) {
-    const ghAvailable = await mergedDeps.checkGhAvailableFn(projectRoot);
-    if (!ghAvailable) {
-      mergedDeps.logFn("gh CLI not found — skipping PR creation");
-    } else {
-      const prTitle = `feat: prototype it_${iteration}`;
-      const prBody = `Prototype for iteration it_${iteration}`;
-      const prResult = await mergedDeps.createPullRequestFn(projectRoot, prTitle, prBody);
-      if (prResult.exitCode !== 0) {
-        const suffix = prResult.stderr.length > 0 ? `: ${prResult.stderr}` : "";
-        mergedDeps.warnFn(`gh pr create failed (non-fatal)${suffix}`);
-      }
-    }
     mergedDeps.logFn("Prototype implementation completed for all user stories.");
   } else {
     mergedDeps.logFn("Prototype implementation paused with remaining pending or failed stories.");

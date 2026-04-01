@@ -9,10 +9,11 @@ export interface RefineRequirementOptions {
   provider: AgentProvider;
   challenge: boolean;
   force?: boolean;
+  yolo?: boolean;
 }
 
 export async function runRefineRequirement(opts: RefineRequirementOptions): Promise<void> {
-  const { provider, challenge, force = false } = opts;
+  const { provider, challenge, force = false, yolo = false } = opts;
   const projectRoot = process.cwd();
   const state = await readState(projectRoot);
 
@@ -53,6 +54,7 @@ export async function runRefineRequirement(opts: RefineRequirementOptions): Prom
     prompt,
     cwd: projectRoot,
     interactive: true,
+    yolo,
   });
 
   if (result.exitCode !== 0) {

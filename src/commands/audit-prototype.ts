@@ -13,6 +13,7 @@ import { readState } from "../state";
 export interface AuditPrototypeOptions {
   provider: AgentProvider;
   force?: boolean;
+  yolo?: boolean;
 }
 
 interface AuditPrototypeDeps {
@@ -61,6 +62,7 @@ export async function runAuditPrototype(
     prompt,
     cwd: projectRoot,
     interactive: true,
+    yolo: opts.yolo ?? false,
   });
   if (result.exitCode !== 0) {
     throw new Error(`Agent invocation failed with exit code ${result.exitCode}.`);

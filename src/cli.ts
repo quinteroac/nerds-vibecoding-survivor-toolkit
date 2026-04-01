@@ -82,10 +82,11 @@ async function main() {
     .description("Start an ideation session via agent (optional preliminary step)")
     .option("--agent <provider>", "Agent provider (claude, codex, gemini, cursor, copilot, ide)")
     .option("--force", "Bypass flow guardrail confirmation")
+    .option("--yolo", "Invoke agent with bypass-permissions flags (suppresses agent permission prompts)")
     .action(async (opts) => {
       const provider = validateAgent(opts.agent, program);
       if (provider === null) return;
-      await runIdeate({ provider, force: !!opts.force });
+      await runIdeate({ provider, force: !!opts.force, yolo: !!opts.yolo });
     });
 
   // ---- start ----
@@ -109,10 +110,11 @@ async function main() {
     .description("Create requirement document via agent")
     .option("--agent <provider>", "Agent provider (claude, codex, gemini, cursor, copilot, ide)")
     .option("--force", "Bypass flow guardrail confirmation")
+    .option("--yolo", "Invoke agent with bypass-permissions flags (suppresses agent permission prompts)")
     .action(async (opts) => {
       const provider = validateAgent(opts.agent, program);
       if (provider === null) return;
-      await runDefineRequirement({ provider, force: !!opts.force });
+      await runDefineRequirement({ provider, force: !!opts.force, yolo: !!opts.yolo });
     });
   define.on("command:*", (operands: string[]) => {
     console.error(`Unknown define subcommand: ${operands[0]}`);
@@ -128,10 +130,11 @@ async function main() {
     .option("--agent <provider>", "Agent provider (claude, codex, gemini, cursor, copilot, ide)")
     .option("--challenge", "Run in challenger mode")
     .option("--force", "Bypass flow guardrail confirmation")
+    .option("--yolo", "Invoke agent with bypass-permissions flags (suppresses agent permission prompts)")
     .action(async (opts) => {
       const provider = validateAgent(opts.agent, program);
       if (provider === null) return;
-      await runRefineRequirement({ provider, challenge: !!opts.challenge, force: !!opts.force });
+      await runRefineRequirement({ provider, challenge: !!opts.challenge, force: !!opts.force, yolo: !!opts.yolo });
     });
   refine
     .command("project-context")
@@ -139,10 +142,11 @@ async function main() {
     .option("--agent <provider>", "Agent provider (claude, codex, gemini, cursor, copilot, ide)")
     .option("--challenge", "Run in challenger mode")
     .option("--force", "Bypass flow guardrail confirmation")
+    .option("--yolo", "Invoke agent with bypass-permissions flags (suppresses agent permission prompts)")
     .action(async (opts) => {
       const provider = validateAgent(opts.agent, program);
       if (provider === null) return;
-      await runRefineProjectContext({ provider, challenge: !!opts.challenge, force: !!opts.force });
+      await runRefineProjectContext({ provider, challenge: !!opts.challenge, force: !!opts.force, yolo: !!opts.yolo });
     });
   refine.on("command:*", (operands: string[]) => {
     console.error(`Unknown refine subcommand: ${operands[0]}`);
@@ -189,6 +193,7 @@ async function main() {
     .option("--retry-on-fail <N>", "Retry attempts per failed story (integer >= 0)", parseIntegerArg(0))
     .option("--stop-on-critical", "Stop execution after critical failures")
     .option("--force", "Bypass flow guardrail confirmation")
+    .option("--yolo", "Invoke agent with bypass-permissions flags (suppresses agent permission prompts)")
     .action(async (opts) => {
       const provider = validateAgent(opts.agent, program);
       if (provider === null) return;
@@ -198,6 +203,7 @@ async function main() {
         retryOnFail: opts.retryOnFail,
         stopOnCritical: !!opts.stopOnCritical,
         force: !!opts.force,
+        yolo: !!opts.yolo,
       });
     });
   create
@@ -208,10 +214,11 @@ async function main() {
       new Option("--mode <strict|yolo>", "Generation mode (default: strict)").choices(["strict", "yolo"]).default("strict"),
     )
     .option("--force", "Bypass flow guardrail confirmation")
+    .option("--yolo", "Invoke agent with bypass-permissions flags (suppresses agent permission prompts)")
     .action(async (opts) => {
       const provider = validateAgent(opts.agent, program);
       if (provider === null) return;
-      await runCreateProjectContext({ provider, mode: opts.mode, force: !!opts.force });
+      await runCreateProjectContext({ provider, mode: opts.mode, force: !!opts.force, yolo: !!opts.yolo });
     });
   create.on("command:*", (operands: string[]) => {
     console.error(`Unknown create subcommand: ${operands[0]}`);
@@ -226,10 +233,11 @@ async function main() {
     .description("Execute approved prototype audit tests via agent")
     .option("--agent <provider>", "Agent provider (claude, codex, gemini, cursor, copilot, ide)")
     .option("--force", "Bypass flow guardrail confirmation")
+    .option("--yolo", "Invoke agent with bypass-permissions flags (suppresses agent permission prompts)")
     .action(async (opts) => {
       const provider = validateAgent(opts.agent, program);
       if (provider === null) return;
-      await runAuditPrototype({ provider, force: !!opts.force });
+      await runAuditPrototype({ provider, force: !!opts.force, yolo: !!opts.yolo });
     });
   audit.on("command:*", (operands: string[]) => {
     console.error(`Unknown audit subcommand: ${operands[0]}`);
@@ -244,10 +252,11 @@ async function main() {
     .description("Execute approved prototype refactor items via agent")
     .option("--agent <provider>", "Agent provider (claude, codex, gemini, cursor, copilot, ide)")
     .option("--force", "Bypass flow guardrail confirmation")
+    .option("--yolo", "Invoke agent with bypass-permissions flags (suppresses agent permission prompts)")
     .action(async (opts) => {
       const provider = validateAgent(opts.agent, program);
       if (provider === null) return;
-      await runRefactorPrototype({ provider, force: !!opts.force });
+      await runRefactorPrototype({ provider, force: !!opts.force, yolo: !!opts.yolo });
     });
   refactor.on("command:*", (operands: string[]) => {
     console.error(`Unknown refactor subcommand: ${operands[0]}`);
