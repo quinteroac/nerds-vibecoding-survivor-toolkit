@@ -15,6 +15,38 @@ import { defaultReadLine } from "../readline";
 import { exists, FLOW_REL_DIR, readState, writeState } from "../state";
 import { extractPrdTitle, runGitAddAndCommit } from "./create-prototype";
 
+/**
+ * Extracts a named `## Section` block (heading + body) from PRD markdown content.
+ * Returns the trimmed section text, or null if the section is absent.
+ */
+export function extractPrdSection(content: string, sectionName: string): string | null {
+  const lines = content.split("\n");
+  let inSection = false;
+  const sectionLines: string[] = [];
+
+  for (const line of lines) {
+    if (!inSection && line.trimEnd() === `## ${sectionName}`) {
+      inSection = true;
+      sectionLines.push(line);
+      continue;
+    }
+    if (inSection) {
+      if (/^##\s/.test(line)) {
+        break;
+      }
+      sectionLines.push(line);
+    }
+  }
+
+  if (!inSection) return null;
+
+  while (sectionLines.length > 0 && sectionLines[sectionLines.length - 1].trim() === "") {
+    sectionLines.pop();
+  }
+
+  return sectionLines.length > 0 ? sectionLines.join("\n") : null;
+}
+
 export interface ApprovePrototypeOptions {
   force?: boolean;
 }
@@ -301,7 +333,14 @@ export async function runApprovePrototype(
 
     const refactorReportRelativePath = join(FLOW_REL_DIR, `it_${iteration}_refactor-report.md`);
     const prTitle = `feat: it_${iteration} — ${requirementName}`;
-    const prBody = `${requirementName}\n\nRefactor report: ${refactorReportRelativePath}`;
+
+    const contextSection = prdMdContent !== null ? extractPrdSection(prdMdContent, "Context") : null;
+    const goalsSection = prdMdContent !== null ? extractPrdSection(prdMdContent, "Goals") : null;
+    const bodySections: string[] = [requirementName];
+    if (contextSection) bodySections.push(contextSection);
+    if (goalsSection) bodySections.push(goalsSection);
+    bodySections.push(`Refactor report: ${refactorReportRelativePath}`);
+    const prBody = bodySections.join("\n\n");
 
     const prResult = await mergedDeps.createPullRequestFn(projectRoot, prTitle, prBody);
     if (prResult.exitCode !== 0) {
