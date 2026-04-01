@@ -3,7 +3,7 @@
  * Iteration: 000040
  */
 import { describe, it, expect } from "bun:test";
-import { runApprovePrototype, extractPrdSection } from "../src/commands/approve-prototype";
+import { runApprovePrototype, extractPrdSection, extractPrdSections } from "../src/commands/approve-prototype";
 import type { State } from "../schemas/tmpl_state";
 
 // ---------------------------------------------------------------------------
@@ -269,3 +269,45 @@ Some context about this change.
     expect(capturedBodies[0]).toContain("Refactor report:");
   });
 });
+
+// ---------------------------------------------------------------------------
+// FR-2: extractPrdSections combined helper
+// ---------------------------------------------------------------------------
+
+describe("extractPrdSections helper", () => {
+  it("returns title, context, and goals from a full PRD", () => {
+    const result = extractPrdSections(FULL_PRD);
+    expect(result.title).toBe("PR Metadata from PRD");
+    expect(result.context).toContain("## Context");
+    expect(result.goals).toContain("## Goals");
+  });
+
+  it("returns null title when no # Requirement: heading is present", () => {
+    const result = extractPrdSections("## Context\nSome context.\n\n## Goals\n- item");
+    expect(result.title).toBeNull();
+    expect(result.context).toContain("## Context");
+    expect(result.goals).toContain("## Goals");
+  });
+
+  it("returns null context when ## Context section is absent", () => {
+    const result = extractPrdSections("# Requirement: My Title\n\n## Goals\n- item");
+    expect(result.title).toBe("My Title");
+    expect(result.context).toBeNull();
+    expect(result.goals).toContain("## Goals");
+  });
+
+  it("returns null goals when ## Goals section is absent", () => {
+    const result = extractPrdSections("# Requirement: My Title\n\n## Context\nSome context.");
+    expect(result.title).toBe("My Title");
+    expect(result.context).toContain("## Context");
+    expect(result.goals).toBeNull();
+  });
+
+  it("returns all nulls for empty string", () => {
+    const result = extractPrdSections("");
+    expect(result.title).toBeNull();
+    expect(result.context).toBeNull();
+    expect(result.goals).toBeNull();
+  });
+});
+

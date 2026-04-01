@@ -50,6 +50,22 @@ export function extractPrdSection(content: string, sectionName: string): string 
   return sectionLines.length > 0 ? sectionLines.join("\n") : null;
 }
 
+/**
+ * Extracts the title, Context section, and Goals section from PRD markdown content.
+ * Satisfies FR-2: single exported helper for unit testability.
+ */
+export function extractPrdSections(markdown: string): {
+  title: string | null;
+  context: string | null;
+  goals: string | null;
+} {
+  return {
+    title: extractPrdTitle(markdown),
+    context: extractPrdSection(markdown, "Context"),
+    goals: extractPrdSection(markdown, "Goals"),
+  };
+}
+
 export interface ApprovePrototypeOptions {
   force?: boolean;
 }

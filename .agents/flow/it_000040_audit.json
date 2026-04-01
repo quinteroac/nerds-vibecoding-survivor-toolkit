@@ -1,0 +1,51 @@
+{
+  "iteration": "000040",
+  "executive_summary": "Iteration 000040 implements PR metadata enrichment in `approve-prototype`. All 46 tests pass and typecheck is clean. Two minor spec deviations: FR-2 uses `extractPrdSection` (singular) instead of the specified `extractPrdSections`; FR-4 body has extra elements (requirementName preamble, refactor report path). Both deviations appear intentional and do not break any user-facing behaviour.",
+  "verification_by_fr": [
+    { "frId": "FR-1", "assessment": "comply" },
+    { "frId": "FR-2", "assessment": "partially_comply" },
+    { "frId": "FR-3", "assessment": "comply" },
+    { "frId": "FR-4", "assessment": "partially_comply" },
+    { "frId": "FR-5", "assessment": "comply" },
+    { "frId": "FR-6", "assessment": "comply" }
+  ],
+  "verification_by_us": [
+    { "usId": "US-001", "assessment": "comply" },
+    { "usId": "US-002", "assessment": "comply" },
+    { "usId": "US-003", "assessment": "comply" },
+    { "usId": "US-004", "assessment": "comply" },
+    { "usId": "US-005", "assessment": "comply" }
+  ],
+  "minor_observations": [
+    "FR-2: exported helper is `extractPrdSection(content, sectionName)` not `extractPrdSections(markdown): { title, context, goals }` as specified.",
+    "FR-4: PR body prepends requirementName and appends 'Refactor report: {path}' before the footer — extra elements not in the spec but confirmed intentional by tests.",
+    "US-001-AC02: `extractPrdTitle` matches `# Requirement: ...` specifically, not any `# ` heading. Unlikely to be a problem given the fixed PRD template convention.",
+    "All 46 tests pass; `bun tsc --noEmit` exits 0."
+  ],
+  "conclusions_and_recommendations": "The implementation fully delivers iteration 000040 goals. Recommended refactor: (1) add `extractPrdSections(markdown): { title, context, goals }` exported wrapper to `approve-prototype.ts` to satisfy FR-2's contract; (2) keep body structure as-is — extra elements add reviewer value.",
+  "refactor_plan": {
+    "steps": [
+      {
+        "id": "step-1",
+        "title": "Add `extractPrdSections` wrapper export (FR-2)",
+        "file": "src/commands/approve-prototype.ts",
+        "description": "Add exported `extractPrdSections(markdown: string): { title: string | null; context: string | null; goals: string | null }` after `extractPrdSection`. Internally delegates to `extractPrdTitle` + `extractPrdSection`. No behaviour changes.",
+        "risk": "low"
+      },
+      {
+        "id": "step-2",
+        "title": "Add unit tests for `extractPrdSections` (FR-2 testability)",
+        "file": "tests/it_000040_us-002-pr-body-from-prd.test.ts",
+        "description": "Add a `describe('extractPrdSections helper')` block verifying the `{ title, context, goals }` shape, including null returns for absent sections.",
+        "risk": "low"
+      },
+      {
+        "id": "step-3",
+        "title": "No changes to PR body structure (FR-4)",
+        "file": null,
+        "description": "The requirementName preamble and Refactor report line are intentional additions confirmed by existing tests. FR-4 spec is considered updated to reflect the actual implemented structure.",
+        "risk": "none"
+      }
+    ]
+  }
+}
