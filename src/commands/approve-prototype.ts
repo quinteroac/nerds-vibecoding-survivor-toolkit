@@ -18,6 +18,50 @@ import { extractPrdTitle, runGitAddAndCommit } from "./create-prototype";
 export const NVST_PR_FOOTER =
   "---\n_Made with [NVST](https://github.com/NerdsVibe/nerds-vibecoding-survivor-toolkit)_";
 
+export const CHANGELOG_HEADER = `# Changelog
+
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
+
+---`;
+
+/** Extracts `- item` lines from a Goals section block (including the `## Goals` heading). */
+export function extractGoalBullets(goalsSection: string): string[] {
+  return goalsSection
+    .split("\n")
+    .map((l) => l.trim())
+    .filter((l) => l.startsWith("- "));
+}
+
+/** Builds a Keep a Changelog entry for one iteration. */
+export function buildChangelogEntry(
+  iteration: string,
+  isoDate: string,
+  bullets: string[],
+): string {
+  const bulletLines = bullets.join("\n");
+  return `## [${iteration}] - ${isoDate}\n\n### Added\n${bulletLines}`;
+}
+
+/**
+ * Inserts a new changelog entry into existing CHANGELOG.md content.
+ * The entry is placed after the header block and before any existing `## [` entry,
+ * so the most recent iteration always appears first.
+ */
+export function insertChangelogEntry(existingContent: string, newEntry: string): string {
+  const normalized = existingContent.replace(/\r\n/g, "\n");
+  const match = /^## \[/m.exec(normalized);
+
+  if (!match) {
+    return normalized.trimEnd() + "\n\n" + newEntry + "\n";
+  }
+
+  const before = normalized.slice(0, match.index).trimEnd();
+  const after = normalized.slice(match.index);
+  return before + "\n\n" + newEntry + "\n\n" + after;
+}
+
 /**
  * Extracts a named `## Section` block (heading + body) from PRD markdown content.
  * Returns the trimmed section text, or null if the section is absent.
@@ -91,6 +135,8 @@ interface ApprovePrototypeDeps {
   warnFn: (message: string) => void;
   writeStateFn: (projectRoot: string, state: State) => Promise<void>;
   readPrdMarkdownFn: (path: string) => Promise<string | null>;
+  readChangelogFn: (path: string) => Promise<string | null>;
+  writeChangelogFn: (path: string, content: string) => Promise<void>;
 }
 
 const defaultDeps: ApprovePrototypeDeps = {
@@ -162,6 +208,16 @@ const defaultDeps: ApprovePrototypeDeps = {
     } catch {
       return null;
     }
+  },
+  readChangelogFn: async (path: string) => {
+    try {
+      return await readFile(path, "utf8");
+    } catch {
+      return null;
+    }
+  },
+  writeChangelogFn: async (path: string, content: string) => {
+    await Bun.write(path, content);
   },
 };
 
@@ -289,6 +345,42 @@ export async function runApprovePrototype(
   });
   if (result.exitCode !== 0) {
     throw new Error(`Agent invocation failed with exit code ${result.exitCode}.`);
+  }
+
+  // Append iteration goals to CHANGELOG.md (US-002)
+  const changelogPath = join(projectRoot, "CHANGELOG.md");
+  const prdMdPathForChangelog = join(
+    flowDir,
+    `it_${iteration}_product-requirement-document.md`,
+  );
+  const prdForChangelog = await mergedDeps.readPrdMarkdownFn(prdMdPathForChangelog);
+  if (prdForChangelog === null) {
+    mergedDeps.warnFn(
+      `Skipping changelog update: PRD not found for iteration ${iteration}.`,
+    );
+  } else {
+    const goalsSection = extractPrdSection(prdForChangelog, "Goals");
+    if (!goalsSection) {
+      mergedDeps.warnFn(
+        "Skipping changelog update: no ## Goals section found in PRD.",
+      );
+    } else {
+      const bullets = extractGoalBullets(goalsSection);
+      if (bullets.length === 0) {
+        mergedDeps.warnFn(
+          "Skipping changelog update: ## Goals section has no bullet items.",
+        );
+      } else {
+        const isoDate = new Date().toISOString().slice(0, 10);
+        const entry = buildChangelogEntry(iteration, isoDate, bullets);
+        const existingChangelog = await mergedDeps.readChangelogFn(changelogPath);
+        const updatedContent =
+          existingChangelog !== null
+            ? insertChangelogEntry(existingChangelog, entry)
+            : CHANGELOG_HEADER + "\n\n" + entry + "\n";
+        await mergedDeps.writeChangelogFn(changelogPath, updatedContent);
+      }
+    }
   }
 
   const changedFiles = await mergedDeps.readChangedFilesFn(projectRoot);
