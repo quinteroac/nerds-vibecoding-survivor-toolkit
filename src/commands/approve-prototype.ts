@@ -15,6 +15,9 @@ import { defaultReadLine } from "../readline";
 import { exists, FLOW_REL_DIR, readState, writeState } from "../state";
 import { extractPrdTitle, runGitAddAndCommit } from "./create-prototype";
 
+export const NVST_PR_FOOTER =
+  "---\n_Made with [NVST](https://github.com/NerdsVibe/nerds-vibecoding-survivor-toolkit)_";
+
 /**
  * Extracts a named `## Section` block (heading + body) from PRD markdown content.
  * Returns the trimmed section text, or null if the section is absent.
@@ -340,6 +343,7 @@ export async function runApprovePrototype(
     if (contextSection) bodySections.push(contextSection);
     if (goalsSection) bodySections.push(goalsSection);
     bodySections.push(`Refactor report: ${refactorReportRelativePath}`);
+    bodySections.push(NVST_PR_FOOTER);
     const prBody = bodySections.join("\n\n");
 
     const prResult = await mergedDeps.createPullRequestFn(projectRoot, prTitle, prBody);
