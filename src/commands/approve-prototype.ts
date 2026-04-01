@@ -23,7 +23,8 @@ export const NVST_PR_FOOTER =
  * Returns the trimmed section text, or null if the section is absent.
  */
 export function extractPrdSection(content: string, sectionName: string): string | null {
-  const lines = content.split("\n");
+  const normalizedContent = content.replace(/\r\n/g, "\n");
+  const lines = normalizedContent.split("\n");
   let inSection = false;
   const sectionLines: string[] = [];
 
