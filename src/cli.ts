@@ -20,6 +20,7 @@ import { runRefineRequirement } from "./commands/refine-requirement";
 import { runSyncAgentSkills } from "./commands/sync-agent-skills";
 import { runWriteJson } from "./commands/write-json";
 import { runWriteTechnicalDebt } from "./commands/write-technical-debt";
+import { runAuto } from "./commands/auto";
 import { runIdeate } from "./commands/ideate";
 
 declare const NVST_COMPILED_VERSION: string;
@@ -75,6 +76,19 @@ async function main() {
     .version(version, "-v, --version", "Print version")
     .exitOverride()
     .configureOutput({ writeErr: (str) => process.stderr.write(str) });
+
+  // ---- auto ----
+  program
+    .command("auto")
+    .description("Run create, audit, and refactor prototype phases in sequence")
+    .option("--agent <provider>", "Agent provider (claude, codex, gemini, cursor, copilot, ide)")
+    .option("--force", "Bypass flow guardrail confirmation")
+    .option("--yolo", "Invoke agent with bypass-permissions flags (suppresses agent permission prompts)")
+    .action(async (opts) => {
+      const provider = validateAgent(opts.agent, program);
+      if (provider === null) return;
+      await runAuto({ provider, force: !!opts.force, yolo: !!opts.yolo });
+    });
 
   // ---- ideate ----
   program

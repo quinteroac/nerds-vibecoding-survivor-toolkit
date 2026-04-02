@@ -1,0 +1,137 @@
+{
+  "goals": [
+    "Allow a developer to run the full prototype pipeline (create → audit → refactor) with a single command after requirement approval.",
+    "Enforce that `nvst auto` can only be invoked when the requirement is in `approved` status.",
+    "Respect the existing guardrail system (`flow_guardrail` mode and `--force` flag) for out-of-order invocations.",
+    "Fix `audit prototype` so it updates `state.json` on completion, enabling `refactor prototype` to detect a completed audit."
+  ],
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Run full prototype pipeline automatically",
+      "description": "As a developer, I want to run `nvst auto --agent <provider>` so that the create, audit, and refactor prototype phases execute in sequence without requiring manual phase transitions.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-001-AC01",
+          "text": "`nvst auto --agent <provider>` is a valid command registered in `src/cli.ts`"
+        },
+        {
+          "id": "US-001-AC02",
+          "text": "The command sequentially calls `runCreatePrototype`, `runAuditPrototype`, and `runRefactorPrototype` with the given provider"
+        },
+        {
+          "id": "US-001-AC03",
+          "text": "If `runCreatePrototype` fails (throws or exits non-zero), execution stops and the error is surfaced — audit and refactor do not run"
+        },
+        {
+          "id": "US-001-AC04",
+          "text": "If `runAuditPrototype` fails, execution stops and refactor does not run"
+        },
+        {
+          "id": "US-001-AC05",
+          "text": "After all 3 phases complete successfully, the process exits with code 0"
+        },
+        {
+          "id": "US-001-AC06",
+          "text": "`--force` and `--yolo` flags are passed through to each sub-command"
+        },
+        {
+          "id": "US-001-AC07",
+          "text": "`runAuditPrototype` is invoked with `interactive: false` when called from `runAuto` (agent runs non-interactively, no TTY hand-off)"
+        },
+        {
+          "id": "US-001-AC08",
+          "text": "`runCreatePrototype` and `runRefactorPrototype` retain their default interactive behaviour"
+        },
+        {
+          "id": "US-001-AC09",
+          "text": "Typecheck / lint passes"
+        }
+      ]
+    },
+    {
+      "id": "US-002",
+      "title": "Enforce requirement-approved guard on `nvst auto`",
+      "description": "As a developer, I want `nvst auto` to fail with a clear error if the requirement has not been approved so that auto mode cannot run on an unapproved or missing requirement.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-002-AC01",
+          "text": "`nvst auto` throws/exits with an error if `state.phases.define.requirement_definition.status !== \"approved\"`"
+        },
+        {
+          "id": "US-002-AC02",
+          "text": "The error message clearly states that the requirement must be approved before running auto mode"
+        },
+        {
+          "id": "US-002-AC03",
+          "text": "The guardrail respects the `flow_guardrail` mode in `state.json` (strict = throw, relaxed = warn + confirm)"
+        },
+        {
+          "id": "US-002-AC04",
+          "text": "`--force` bypasses the confirmation prompt (warning is still printed)"
+        },
+        {
+          "id": "US-002-AC05",
+          "text": "Typecheck / lint passes"
+        }
+      ]
+    },
+    {
+      "id": "US-003",
+      "title": "Fix `audit prototype` state update on completion",
+      "description": "As a developer, I want `audit prototype` to update `state.phases.prototype.prototype_audit.status` to `\"completed\"` in `state.json` after a successful agent invocation so that `refactor prototype` (and auto mode) can detect a completed audit via the existing `refactorAllowed` guard.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-003-AC01",
+          "text": "After a successful `nvst audit prototype` run, `state.phases.prototype.prototype_audit.status` equals `\"completed\"` in `.agents/state.json`"
+        },
+        {
+          "id": "US-003-AC02",
+          "text": "`state.last_updated` and `state.updated_by` are set after the audit completes"
+        },
+        {
+          "id": "US-003-AC03",
+          "text": "`refactor prototype` can be run immediately after `audit prototype` without requiring `--force`"
+        },
+        {
+          "id": "US-003-AC04",
+          "text": "The fix does not break the existing `auditAllowed` guard logic"
+        },
+        {
+          "id": "US-003-AC05",
+          "text": "Typecheck / lint passes"
+        }
+      ]
+    }
+  ],
+  "functionalRequirements": [
+    {
+      "id": "FR-1",
+      "description": "A new command `auto` is registered at the top level of the Commander program in `src/cli.ts`, accepting `--agent <provider>`, `--force`, and `--yolo` options."
+    },
+    {
+      "id": "FR-2",
+      "description": "A new handler `runAuto` is implemented in `src/commands/auto.ts` following the existing one-file-per-command convention."
+    },
+    {
+      "id": "FR-3",
+      "description": "`runAuto` reads state and checks that `state.phases.define.requirement_definition.status === \"approved\"` before proceeding, using `assertGuardrail`."
+    },
+    {
+      "id": "FR-4",
+      "description": "`runAuto` sequentially calls `runCreatePrototype`, `runAuditPrototype`, and `runRefactorPrototype`, propagating `provider`, `force`, and `yolo` to each."
+    },
+    {
+      "id": "FR-5",
+      "description": "Any error thrown by a sub-phase bubbles up and stops the chain; `runAuto` does not swallow errors."
+    },
+    {
+      "id": "FR-6",
+      "description": "`runAuditPrototype` writes `state.phases.prototype.prototype_audit.status = \"completed\"` and calls `writeState` after a successful agent invocation."
+    },
+    {
+      "id": "FR-7",
+      "description": "`runAuditPrototype` sets `state.last_updated` and `state.updated_by = \"nvst:audit-prototype\"` on the state write."
+    }
+  ]
+}

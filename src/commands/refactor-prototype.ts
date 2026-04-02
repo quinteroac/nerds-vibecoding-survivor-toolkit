@@ -59,18 +59,26 @@ export async function runRefactorPrototype(
     { force },
   );
 
-  const auditFileName = `it_${state.current_iteration}_audit.json`;
-  const auditPath = join(projectRoot, FLOW_REL_DIR, auditFileName);
-  if (!(await mergedDeps.existsFn(auditPath))) {
+  const auditJsonFileName = `it_${state.current_iteration}_audit.json`;
+  const auditJsonPath = join(projectRoot, FLOW_REL_DIR, auditJsonFileName);
+  const auditMdFileName = `it_${state.current_iteration}_audit.md`;
+  const auditMdPath = join(projectRoot, FLOW_REL_DIR, auditMdFileName);
+
+  let auditPlanPath = auditJsonPath;
+  if (!(await mergedDeps.existsFn(auditJsonPath))) {
+    if (await mergedDeps.existsFn(auditMdPath)) {
+      auditPlanPath = auditMdPath;
+    } else {
     throw new Error(
-      `Audit artifact not found: expected ${join(FLOW_REL_DIR, auditFileName)}. Run \`nvst audit prototype\` and choose to refactor first.`,
-    );
+        `Audit artifact not found: expected either ${join(FLOW_REL_DIR, auditJsonFileName)} or ${join(FLOW_REL_DIR, auditMdFileName)}. Run \`nvst audit prototype\` and choose to refactor first.`,
+      );
+    }
   }
 
   const skillBody = await mergedDeps.loadSkillFn(projectRoot, "refactor-prototype");
   const prompt = buildPrompt(skillBody, {
     iteration: state.current_iteration,
-    audit_json_path: auditPath,
+    audit_json_path: auditPlanPath,
   });
   const result = await mergedDeps.invokeAgentFn({
     provider: opts.provider,

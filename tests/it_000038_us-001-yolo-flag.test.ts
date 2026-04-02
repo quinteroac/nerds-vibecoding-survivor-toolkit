@@ -215,7 +215,7 @@ describe("US-001-AC02: handlers forward yolo to invokeAgent", () => {
 
     await runAuditPrototype(
       { provider: "claude", yolo: true },
-      { invokeAgentFn: fakeInvoke, readStateFn: fakeReadState, loadSkillFn: fakeLoadSkill },
+      { invokeAgentFn: fakeInvoke, readStateFn: fakeReadState, loadSkillFn: fakeLoadSkill, writeStateFn: async () => {} },
     );
 
     expect(capturedYolo).toBe(true);
@@ -253,6 +253,7 @@ describe("US-001-AC02: handlers forward yolo to invokeAgent", () => {
         invokeAgentFn: fakeInvoke,
         readStateFn: async () => fakeState,
         loadSkillFn: async () => "skill body",
+        writeStateFn: async () => {},
       },
     );
     expect(capturedYolo).toBe(false);
