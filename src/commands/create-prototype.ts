@@ -41,6 +41,14 @@ interface CreatePrototypeDeps {
   promptDirtyTreeCommitFn: (question: string) => Promise<boolean>;
   gitAddAndCommitFn: (projectRoot: string, commitMessage: string) => Promise<void>;
   writeJsonArtifactFn: WriteJsonArtifactFn;
+  readLessonsLearnedFn: (path: string) => Promise<string>;
+}
+
+export async function defaultReadLessonsLearned(path: string): Promise<string> {
+  if (!(await exists(path))) {
+    return "";
+  }
+  return readFile(path, "utf8");
 }
 
 const defaultDeps: CreatePrototypeDeps = {
@@ -51,6 +59,7 @@ const defaultDeps: CreatePrototypeDeps = {
   promptDirtyTreeCommitFn: promptForDirtyTreeCommit,
   gitAddAndCommitFn: runGitAddAndCommit,
   writeJsonArtifactFn: writeJsonArtifact,
+  readLessonsLearnedFn: defaultReadLessonsLearned,
 };
 
 type ReadLineFn = () => Promise<string | null>;
@@ -419,6 +428,12 @@ export async function runCreatePrototype(
   const projectContextContent = await readFile(projectContextPath, "utf8");
   const qualityCheckCommands = parseQualityChecks(projectContextContent);
 
+  const lessonsLearnedPath = join(projectRoot, FLOW_REL_DIR, `it_${iteration}_lessons-learned.md`);
+  const lessonsLearnedRaw = await mergedDeps.readLessonsLearnedFn(lessonsLearnedPath);
+  const lessonsLearnedContent = lessonsLearnedRaw
+    ? `## Lessons Learned from Previous Stories\n\n${lessonsLearnedRaw}`
+    : "";
+
   const maxStoriesToProcess = opts.iterations ?? Number.POSITIVE_INFINITY;
   const maxRetriesPerStory = opts.retryOnFail ?? 0;
 
@@ -437,6 +452,7 @@ export async function runCreatePrototype(
         iteration,
         project_context: projectContextContent,
         user_story: JSON.stringify(story, null, 2),
+        lessons_learned: lessonsLearnedContent,
       });
       mergedDeps.logFn(prompt);
       printedStories += 1;
@@ -465,6 +481,7 @@ export async function runCreatePrototype(
         iteration: iteration,
         project_context: projectContextContent,
         user_story: JSON.stringify(story, null, 2),
+        lessons_learned: lessonsLearnedContent,
       });
 
       // Non-interactive (yolo for copilot), same as execute refactor

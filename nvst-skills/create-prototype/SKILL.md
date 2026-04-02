@@ -14,16 +14,17 @@ Implement the provided user story by writing production code and tests that sati
 
 1. Read the **user story** and its **acceptance criteria** carefully.
 2. Review the **project context** to understand conventions, tech stack, testing strategy, and module structure.
-3. Plan the implementation: identify which files to create or modify, what tests to write, and how the change fits into the existing architecture.
-4. Implement the user story:
+3. **Review lessons learned** — if the `lessons_learned` context variable is present and non-empty, read it carefully before planning. It contains insights from previous agents working on this iteration. Skip this step silently if `lessons_learned` is absent or empty.
+4. Plan the implementation: identify which files to create or modify, what tests to write, and how the change fits into the existing architecture.
+5. Implement the user story:
    - Write production code that satisfies every acceptance criterion.
    - Write tests that verify each acceptance criterion (follow the testing strategy from the project context).
    - Follow all naming conventions, code standards, and forbidden patterns from the project context.
-5. Verify your work:
+6. Verify your work:
    - Ensure the code compiles / type-checks without errors.
    - Run any quality checks defined in the project context.
    - Fix any issues before finishing.
-6. Do **not** commit — the calling command handles git commits.
+7. Do **not** commit — the calling command handles git commits.
 
 ---
 
