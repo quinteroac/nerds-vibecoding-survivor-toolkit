@@ -90,3 +90,28 @@ Before finishing:
 - [ ] No unrelated changes were made
 - [ ] No state files were modified
 - [ ] No git commits were made
+- [ ] Lessons-learned entry written to `.agents/flow/it_{iteration}_lessons-learned.md`
+
+---
+
+## Lessons Learned
+
+After completing your user story, **create or append** a lessons-learned entry to `.agents/flow/it_{iteration}_lessons-learned.md` (replace `{iteration}` with the 6-digit iteration number, e.g. `it_000043_lessons-learned.md`).
+
+Each entry must include the following sections:
+
+```markdown
+## {User Story ID} — {User Story Title}
+
+**Summary:** Brief description of what was implemented.
+
+**Key Decisions:** Important architectural or design choices made during implementation.
+
+**Pitfalls Encountered:** Any mistakes, unexpected behaviours, or dead ends hit during implementation.
+
+**Useful Context for Future Agents:** Any discoveries, patterns, or caveats that will help the next agent working on this codebase.
+```
+
+- If the file does not exist, create it with a top-level heading `# Lessons Learned — Iteration {iteration}` followed by the entry.
+- If the file already exists, append the new entry at the end (do not overwrite existing entries).
+- Use the naming convention `it_{iteration}_lessons-learned.md` (iteration prefix, kebab-case, `.md` extension), consistent with other flow artifacts in `.agents/flow/`.
