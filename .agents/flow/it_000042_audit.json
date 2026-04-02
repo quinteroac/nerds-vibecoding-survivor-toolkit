@@ -1,0 +1,41 @@
+{
+  "iteration": "000042",
+  "overallAssessment": "comply",
+  "executiveSummary": "Iteration 000042 introduces the `nvst auto` pipeline command and fixes `audit prototype` state persistence. All 7 FRs and 3 USs comply. 35 unit tests pass, typecheck is clean.",
+  "verificationByFR": [
+    { "frId": "FR-1", "assessment": "comply" },
+    { "frId": "FR-2", "assessment": "comply" },
+    { "frId": "FR-3", "assessment": "comply" },
+    { "frId": "FR-4", "assessment": "comply" },
+    { "frId": "FR-5", "assessment": "comply" },
+    { "frId": "FR-6", "assessment": "comply" },
+    { "frId": "FR-7", "assessment": "comply" }
+  ],
+  "verificationByUS": [
+    { "usId": "US-001", "assessment": "comply" },
+    { "usId": "US-002", "assessment": "comply" },
+    { "usId": "US-003", "assessment": "comply" }
+  ],
+  "minorObservations": [
+    "No integration/e2e test for the full `nvst auto` CLI subprocess flow — unit tests mock sub-commands.",
+    "`--agent` uses `validateAgent` + null-guard instead of Commander's `.requiredOption()` — functional but non-idiomatic.",
+    "Strict-mode guardrail throws without a pre-throw warning; consistent with existing contract but worth noting."
+  ],
+  "conclusionsAndRecommendations": "Implementation is fully compliant and production-ready. Refactor should add an integration smoke-test and switch `--agent` to `.requiredOption()` in the auto command.",
+  "refactorPlan": [
+    {
+      "id": "RF-1",
+      "title": "Integration smoke-test for `nvst auto`",
+      "description": "Add `tests/it_000042_integration-auto.test.ts` that invokes `runAuto` with real state helpers and a stubbed agent, asserting all three phases run in order, `prototype_audit.status === 'completed'` is written to state, and the function resolves cleanly.",
+      "files": ["tests/it_000042_integration-auto.test.ts"],
+      "priority": "high"
+    },
+    {
+      "id": "RF-2",
+      "title": "Use `.requiredOption` for `--agent` in auto command",
+      "description": "In `src/cli.ts`, change the `auto` command's `--agent` from `.option()` to `.requiredOption()` so Commander natively enforces its presence and emits a standard error message when missing.",
+      "files": ["src/cli.ts"],
+      "priority": "low"
+    }
+  ]
+}

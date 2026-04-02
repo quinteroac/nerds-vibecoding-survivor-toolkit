@@ -239,9 +239,11 @@ describe("US-001-AC08: create and refactor use default interactive behaviour", (
 describe("US-001-AC07 (additional): AuditPrototypeOptions.interactive is honoured", () => {
   it("runAuditPrototype passes interactive: false to invokeAgentFn when set", async () => {
     let capturedInteractive: boolean | undefined;
+    let capturedPrompt = "";
 
     const fakeInvoke = async (options: AgentInvokeOptions) => {
       capturedInteractive = options.interactive;
+      capturedPrompt = options.prompt;
       return { exitCode: 0, stdout: "", stderr: "" };
     };
     const fakeState = {
@@ -276,6 +278,9 @@ describe("US-001-AC07 (additional): AuditPrototypeOptions.interactive is honoure
     );
 
     expect(capturedInteractive).toBe(false);
+    expect(capturedPrompt).toContain("Auto Mode Directive");
+    expect(capturedPrompt).toContain("Do not ask the user to choose options");
+    expect(capturedPrompt).toContain("it_{iteration}_audit.json");
   });
 
   it("runAuditPrototype defaults interactive to true when not set", async () => {
