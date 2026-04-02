@@ -14,6 +14,7 @@ export interface AuditPrototypeOptions {
   provider: AgentProvider;
   force?: boolean;
   yolo?: boolean;
+  interactive?: boolean;
 }
 
 interface AuditPrototypeDeps {
@@ -61,7 +62,7 @@ export async function runAuditPrototype(
     provider: opts.provider,
     prompt,
     cwd: projectRoot,
-    interactive: true,
+    interactive: opts.interactive ?? true,
     yolo: opts.yolo ?? false,
   });
   if (result.exitCode !== 0) {
