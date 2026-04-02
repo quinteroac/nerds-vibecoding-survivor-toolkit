@@ -1,10 +1,8 @@
-import { mkdir, readdir, rename } from "node:fs/promises";
+import { mkdir, readdir, rm } from "node:fs/promises";
 import { join } from "node:path";
 
 import type { State } from "../schemas/tmpl_state";
 import { exists, readState, writeState, STATE_REL_PATH, FLOW_REL_DIR } from "../state";
-
-const ARCHIVED_DIR = join(FLOW_REL_DIR, "archived");
 
 function createInitialState(nowIso: string): State {
   return {
@@ -36,7 +34,6 @@ function createInitialState(nowIso: string): State {
       },
     },
     last_updated: nowIso,
-    history: [],
   };
 }
 
@@ -62,31 +59,13 @@ export async function runStartIteration(): Promise<void> {
 
   const currentIteration = parsedState.current_iteration;
   const flowEntries = await readdir(flowDir, { withFileTypes: true });
-  const filePrefix = `it_${currentIteration}_`;
-  const filesToArchive = flowEntries
-    .filter((entry) => entry.isFile() && entry.name.startsWith(filePrefix))
-    .map((entry) => entry.name);
 
-  const iterationArchiveDir = join(ARCHIVED_DIR, currentIteration);
-  const iterationArchiveAbsDir = join(projectRoot, iterationArchiveDir);
-  await mkdir(iterationArchiveAbsDir, { recursive: true });
-
-  for (const fileName of filesToArchive) {
-    await rename(join(flowDir, fileName), join(iterationArchiveAbsDir, fileName));
+  for (const entry of flowEntries) {
+    await rm(join(flowDir, entry.name), { recursive: true, force: true });
   }
-
-  const updatedHistory = [
-    ...(parsedState.history ?? []),
-    {
-      iteration: currentIteration,
-      archived_at: nowIso,
-      archived_path: `.agents/flow/archived/${currentIteration}`,
-    },
-  ];
 
   const nextState = createInitialState(nowIso);
   nextState.current_iteration = nextIteration(currentIteration);
-  nextState.history = updatedHistory;
 
   // Preserve project_context when already created (immutable across iterations)
   const prevProjectContext = parsedState.phases?.prototype?.project_context;
@@ -104,8 +83,6 @@ export async function runStartIteration(): Promise<void> {
 
   await writeState(projectRoot, nextState);
 
-  console.log(
-    `Archived ${filesToArchive.length} file(s) to .agents/flow/archived/${currentIteration}`,
-  );
+  console.log(`Deleted ${flowEntries.length} file(s) from .agents/flow/`);
   console.log(`Iteration ${nextState.current_iteration} started (phase: define)`);
 }

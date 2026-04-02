@@ -1,0 +1,86 @@
+{
+  "goals": [
+    "Simplify state management by removing the `history` field from `state.json` and its Zod schema.",
+    "Eliminate the `.agents/flow/archived/` directory and all archive logic.",
+    "Preserve a lightweight, append-only human record of completed iterations in `CHANGELOG.md` (Keep a Changelog format, `### Added` section only).",
+    "Ensure `nvst start-iteration` starts each iteration with a clean `.agents/flow/` directory."
+  ],
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Clean flow directory on start-iteration",
+      "description": "As a developer running `nvst start-iteration`, I want all files in `.agents/flow/` to be deleted before the new iteration begins so that the working directory is always clean and no stale artifacts from the previous iteration remain.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-001-AC01",
+          "text": "All files directly inside `.agents/flow/` (e.g. `it_XXXXXX_*.md`, `it_XXXXXX_*.json`) are deleted before the new iteration state is written."
+        },
+        {
+          "id": "US-001-AC02",
+          "text": "Subdirectories inside `.agents/flow/` (if any remain after removing `archived/`) are also removed."
+        },
+        {
+          "id": "US-001-AC03",
+          "text": "The `.agents/flow/` directory itself still exists after the command runs."
+        },
+        {
+          "id": "US-001-AC04",
+          "text": "The command output no longer mentions \"Archived N file(s)\" — it prints \"Deleted N file(s) from .agents/flow/\" instead (or similar clean message)."
+        },
+        {
+          "id": "US-001-AC05",
+          "text": "If `.agents/flow/` is already empty, the command runs without error."
+        },
+        {
+          "id": "US-001-AC06",
+          "text": "Typecheck / lint passes."
+        }
+      ]
+    },
+    {
+      "id": "US-002",
+      "title": "Append iteration goals to CHANGELOG.md on approve-prototype",
+      "description": "As a developer running `nvst approve prototype`, I want the iteration's goals (extracted from the PRD) to be appended to `CHANGELOG.md` using Keep a Changelog format so that there is a concise, permanent, human-readable record of what was delivered each iteration.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-002-AC01",
+          "text": "`nvst approve prototype` reads the PRD file for the current iteration from `.agents/flow/`."
+        },
+        {
+          "id": "US-002-AC02",
+          "text": "The `## Goals` section of the PRD is extracted and its bullet items are used as the changelog entries."
+        },
+        {
+          "id": "US-002-AC03",
+          "text": "An entry is appended to `CHANGELOG.md` in the following format (date = ISO date of approval):"
+        }
+      ]
+    }
+  ],
+  "functionalRequirements": [
+    {
+      "id": "FR-1",
+      "description": "`runStartIteration` MUST delete all entries (files and subdirectories) inside `FLOW_REL_DIR` using async `rm` with `recursive: true` per entry, then recreate the directory."
+    },
+    {
+      "id": "FR-2",
+      "description": "`runApprovePrototype` MUST append a Keep a Changelog–compliant block to `CHANGELOG.md` after successfully completing the existing approval steps, using the `## Goals` bullet list from the current iteration's PRD file."
+    },
+    {
+      "id": "FR-3",
+      "description": "The CHANGELOG entry version identifier MUST use the iteration string format `[it_XXXXXX]` and the date MUST be the ISO date (YYYY-MM-DD) at approval time."
+    },
+    {
+      "id": "FR-4",
+      "description": "The `StateSchema` Zod object MUST NOT include a `history` field; the `State` TypeScript type derived from it must also omit `history`."
+    },
+    {
+      "id": "FR-5",
+      "description": "All mirrored copies of the state schema (in `scaffold/schemas/` and `schemas/`) MUST be updated consistently with `src/schemas/tmpl_state.ts`."
+    },
+    {
+      "id": "FR-6",
+      "description": "The `.agents/flow/archived/` directory MUST be removed from the repository (via `git rm -r` or equivalent)."
+    }
+  ]
+}

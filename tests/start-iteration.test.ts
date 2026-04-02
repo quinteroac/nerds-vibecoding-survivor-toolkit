@@ -109,7 +109,7 @@ describe("runStartIteration", () => {
     await rm(projectRoot, { recursive: true, force: true });
   });
 
-  it("increments current_iteration and archives previous flow artifacts", async () => {
+  it("increments current_iteration and deletes all previous flow artifacts (US-001-AC01)", async () => {
     const projectRoot = await createTempProjectRoot();
     process.chdir(projectRoot);
 
@@ -123,32 +123,85 @@ describe("runStartIteration", () => {
     await mkdir(flowDir, { recursive: true });
 
     const iterPrefix = "it_000001_";
-    const filesToArchive = ["product-requirement-document.md", "progress.json"].map(
+    const filesToDelete = ["product-requirement-document.md", "progress.json"].map(
       (name) => `${iterPrefix}${name}`,
     );
 
-    for (const file of filesToArchive) {
+    for (const file of filesToDelete) {
       await writeFile(join(flowDir, file), "content", "utf8");
     }
-
-    const otherFile = join(flowDir, "unrelated.txt");
-    await writeFile(otherFile, "keep", "utf8");
 
     await runStartIteration();
 
     const updatedState = await readState(projectRoot);
     expect(updatedState.current_iteration).toBe("000002");
 
-    const archivedDir = join(projectRoot, FLOW_REL_DIR, "archived", "000001");
-
-    const archivedEntries = await readdir(archivedDir);
-    expect(archivedEntries.sort()).toEqual(filesToArchive.sort());
-
     const flowEntries = await readdir(flowDir);
-    expect(flowEntries).toContain("unrelated.txt");
-    for (const file of filesToArchive) {
+    expect(flowEntries).toHaveLength(0);
+
+    for (const file of filesToDelete) {
       await expect(stat(join(flowDir, file))).rejects.toThrow();
     }
+
+    await rm(projectRoot, { recursive: true, force: true });
+  });
+
+  it("deletes subdirectories inside .agents/flow/ (US-001-AC02)", async () => {
+    const projectRoot = await createTempProjectRoot();
+    process.chdir(projectRoot);
+
+    const state = createValidState({ current_iteration: "000001" });
+    const statePath = await ensureStateDir(projectRoot);
+    await writeFile(statePath, `${JSON.stringify(state, null, 2)}\n`, "utf8");
+
+    const flowDir = join(projectRoot, FLOW_REL_DIR);
+    const subDir = join(flowDir, "archived");
+    await mkdir(subDir, { recursive: true });
+    await writeFile(join(subDir, "some-file.json"), "{}", "utf8");
+
+    await runStartIteration();
+
+    const flowEntries = await readdir(flowDir);
+    expect(flowEntries).toHaveLength(0);
+
+    await rm(projectRoot, { recursive: true, force: true });
+  });
+
+  it("flow dir still exists after command runs (US-001-AC03)", async () => {
+    const projectRoot = await createTempProjectRoot();
+    process.chdir(projectRoot);
+
+    const state = createValidState({ current_iteration: "000001" });
+    const statePath = await ensureStateDir(projectRoot);
+    await writeFile(statePath, `${JSON.stringify(state, null, 2)}\n`, "utf8");
+
+    const flowDir = join(projectRoot, FLOW_REL_DIR);
+    await mkdir(flowDir, { recursive: true });
+    await writeFile(join(flowDir, "it_000001_prd.md"), "content", "utf8");
+
+    await runStartIteration();
+
+    const flowStat = await stat(flowDir);
+    expect(flowStat.isDirectory()).toBe(true);
+
+    await rm(projectRoot, { recursive: true, force: true });
+  });
+
+  it("runs without error when .agents/flow/ is already empty (US-001-AC05)", async () => {
+    const projectRoot = await createTempProjectRoot();
+    process.chdir(projectRoot);
+
+    const state = createValidState({ current_iteration: "000001" });
+    const statePath = await ensureStateDir(projectRoot);
+    await writeFile(statePath, `${JSON.stringify(state, null, 2)}\n`, "utf8");
+
+    const flowDir = join(projectRoot, FLOW_REL_DIR);
+    await mkdir(flowDir, { recursive: true });
+
+    await expect(runStartIteration()).resolves.toBeUndefined();
+
+    const updatedState = await readState(projectRoot);
+    expect(updatedState.current_iteration).toBe("000002");
 
     await rm(projectRoot, { recursive: true, force: true });
   });

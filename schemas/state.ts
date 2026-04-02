@@ -40,26 +40,26 @@ const prototypePhase = z.object({
   // DEPRECATED: kept for backward compatibility with older command flows.
   project_context: statusFile.extend({
     status: z.enum(["pending", "pending_approval", "created"]),
-  }),
+  }).optional(),
   // DEPRECATED: kept for backward compatibility with older command flows.
   test_plan: statusFile.extend({
     status: z.enum(["pending", "pending_approval", "created"]),
-  }),
+  }).optional(),
   // DEPRECATED: kept for backward compatibility with older command flows.
   tp_generation: z.object({
     status: z.enum(["pending", "created"]),
     file: z.string().nullable(),
-  }),
+  }).optional(),
   // DEPRECATED: replaced by prototype_creation.
   prototype_build: statusFile.extend({
     status: z.enum(["pending", "in_progress", "created"]),
-  }),
+  }).optional(),
   // DEPRECATED: kept for backward compatibility with older command flows.
   test_execution: statusFile.extend({
     status: z.enum(["pending", "in_progress", "completed", "failed"]),
-  }),
+  }).optional(),
   // DEPRECATED: replaced by prototype_approval.
-  prototype_approved: z.boolean(),
+  prototype_approved: z.boolean().optional(),
 });
 
 // DEPRECATED: legacy phase, kept for backward compatibility with older command flows.
@@ -67,25 +67,19 @@ const refactorPhase = z.object({
   evaluation_report: z.object({
     status: z.enum(["pending", "created"]),
     file: z.string().nullable(),
-  }),
+  }).optional(),
   refactor_plan: z.object({
     status: z.enum(["pending", "pending_approval", "approved"]),
     file: z.string().nullable(),
-  }),
+  }).optional(),
   refactor_execution: z.object({
     status: z.enum(["pending", "in_progress", "completed"]),
     file: z.string().nullable(),
-  }),
+  }).optional(),
   changelog: z.object({
     status: z.enum(["pending", "created"]),
     file: z.string().nullable(),
-  }),
-});
-
-const historyEntry = z.object({
-  iteration: iterationId,
-  archived_at: iso8601,
-  archived_path: z.string(),
+  }).optional(),
 });
 
 export const StateSchema = z.object({
@@ -99,7 +93,6 @@ export const StateSchema = z.object({
   }),
   last_updated: iso8601,
   updated_by: z.string().optional(),
-  history: z.array(historyEntry).optional(),
 });
 
 export type State = z.infer<typeof StateSchema>;

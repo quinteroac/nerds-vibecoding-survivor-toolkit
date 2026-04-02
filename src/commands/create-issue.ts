@@ -231,27 +231,12 @@ export async function runCreateIssueFromTestReport(): Promise<void> {
 
   if (await exists(flowPath)) {
     resultsPath = flowPath;
-  } else {
-    // Check archived path from state.json history for current iteration
-    const historyEntry = state.history?.find(
-      (h) => h.iteration === iteration,
-    );
-    if (historyEntry) {
-      const archivedPath = join(
-        projectRoot,
-        historyEntry.archived_path,
-        fileName,
-      );
-      if (await exists(archivedPath)) {
-        resultsPath = archivedPath;
-      }
-    }
   }
 
-  // AC05: Fail with clear error if not found in either location
+  // AC05: Fail with clear error if not found
   if (!resultsPath) {
     throw new Error(
-      `Test execution results file not found: looked for ${fileName} in ${FLOW_REL_DIR}/ and archived path for iteration ${iteration}.`,
+      `Test execution results file not found: looked for ${fileName} in ${FLOW_REL_DIR}/.`,
     );
   }
 
