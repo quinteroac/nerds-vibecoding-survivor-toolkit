@@ -5,3 +5,5 @@
 - **Process:** Define/Refine/Approve Requirement → Create Prototype → Audit Prototype → Refactor Prototype → Approve Prototype (see package or usage documentation).
 - **Project context:** [`.agents/PROJECT_CONTEXT.md`](.agents/PROJECT_CONTEXT.md) — conventions, architecture, and tech stack; the agent adheres to this document from the second iteration onward.
 - **Rule:** All generated resources in this repo must be in English.
+- For any file search or grep in the current git indexed directory use fff tools
+
