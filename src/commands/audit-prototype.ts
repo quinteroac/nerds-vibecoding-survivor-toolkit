@@ -8,7 +8,7 @@ import {
 } from "../agent";
 import type { State } from "../schemas/tmpl_state";
 import { assertGuardrail } from "../guardrail";
-import { readState } from "../state";
+import { readState, writeState } from "../state";
 
 export interface AuditPrototypeOptions {
   provider: AgentProvider;
@@ -21,12 +21,14 @@ interface AuditPrototypeDeps {
   loadSkillFn: (projectRoot: string, skillName: string) => Promise<string>;
   invokeAgentFn: (options: AgentInvokeOptions) => Promise<AgentResult>;
   readStateFn: (projectRoot: string) => Promise<State>;
+  writeStateFn: (projectRoot: string, state: State) => Promise<void>;
 }
 
 const defaultDeps: AuditPrototypeDeps = {
   loadSkillFn: loadSkill,
   invokeAgentFn: invokeAgent,
   readStateFn: readState,
+  writeStateFn: writeState,
 };
 
 function auditAllowed(state: State): boolean {
@@ -68,4 +70,12 @@ export async function runAuditPrototype(
   if (result.exitCode !== 0) {
     throw new Error(`Agent invocation failed with exit code ${result.exitCode}.`);
   }
+
+  state.phases.prototype.prototype_audit = {
+    ...state.phases.prototype.prototype_audit,
+    status: "completed",
+    file: state.phases.prototype.prototype_audit?.file ?? null,
+  };
+  state.updated_by = "nvst:audit-prototype";
+  await mergedDeps.writeStateFn(projectRoot, state);
 }
