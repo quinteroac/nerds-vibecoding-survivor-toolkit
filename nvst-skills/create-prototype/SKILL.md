@@ -35,6 +35,7 @@ Implement the provided user story by writing production code and tests that sati
 | `user_story` (context variable) | The user story JSON with id, title, description, and acceptanceCriteria |
 | `project_context` (context variable) | Project conventions, tech stack, code standards, testing strategy, and architecture |
 | `iteration` (context variable) | Current iteration number for file naming and context |
+| `lessons_learned` (context variable) | Accumulated insights from previous agents in this iteration; empty string if none exist yet |
 
 ### Standalone Fallback
 
