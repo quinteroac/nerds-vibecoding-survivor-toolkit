@@ -135,3 +135,24 @@
 - Any test that expects `rejects.toBeInstanceOf(GuardrailAbortError)` must save and restore `process.exitCode` using `process.exitCode = originalExitCode ?? 0` (not just `process.exitCode = originalExitCode`) to prevent the bun test runner from exiting with code 1.
 - The guardrail check in `auto.ts` uses `requirementDefinitions.some(e => e.status === "approved")` — the pipeline runs as long as at least one PRD is approved. PRDs that are still `in_progress` or `pending` are passed through to the phase commands, which apply their own per-PRD filtering.
 - No additional `prdIndex` parameter is needed on the phase command option types for multi-PRD support — each command reads state itself and determines which entries to process.
+
+## US-008 — `approve prototype` consolidates all PRDs into a single CHANGELOG entry and PR
+
+**Summary:** Updated `runApprovePrototype` to read all PRD files from `state.phases.define.requirement_definition` (sorted by index) instead of a single hardcoded path. CHANGELOG bullets are now merged from all PRDs' Goals sections (with PRD title prefix when multiple PRDs exist). The PR body concatenates Name/Context/Goals from each PRD in index order. Added `buildMultiPrdChangelogBullets` as an exported pure function for testability.
+
+**Key Decisions:**
+- **Legacy fallback**: When `requirement_definition` is empty (legacy states that bypass `readState`/schema migration), the code falls back to reading `it_${iteration}_product-requirement-document.md` — preserving backward compat for old tests that inject state without a `define` phase.
+- **Conditional prefix in CHANGELOG bullets**: `buildMultiPrdChangelogBullets` only adds `**PRD 001 — Title:**` prefix when multiple PRDs have goals. For single-PRD iterations, bullets are returned unmodified (no prefix). This avoids breaking old tests that check for exact bullet text like `"- First goal item"`.
+- **PR title from first PRD**: The `gh pr create` title uses the first PRD's title (index 1). If no PRDs are found, it falls back to `approve prototype iteration it_XXXXXX`.
+- **PR body structure**: All PRDs are iterated in index order; for each, title/context/goals sections are appended to the body, followed by the refactor report path and the NVST footer. This differs from the old single-PRD body which always started with just the requirement name.
+- **Optional chaining on `state.phases.define`**: The field is `state.phases.define?.requirement_definition ?? []` rather than `.define.requirement_definition` because old test states omit the `define` key entirely.
+
+**Pitfalls Encountered:**
+- Old tests injected state without `phases.define` (they used a legacy shape with `phases.requirement` instead). The optional chaining (`?.`) guard prevents a `TypeError: undefined is not an object` runtime crash.
+- `buildMultiPrdChangelogBullets` with a single-entry array that produces no bullets (Goals section missing) returns `[]` — the warning path fires correctly.
+- The PR body previously always started with `requirementName` as the first element. With multi-PRD, each PRD's title is extracted individually and placed at the start of its group. Tests that checked `prBody.includes(requirementName)` still pass because the first PRD's title appears in the body.
+
+**Useful Context for Future Agents:**
+- `buildMultiPrdChangelogBullets` is exported from `approve-prototype.ts` and is the canonical helper for multi-PRD CHANGELOG bullet generation. Its `prdEntries` parameter mirrors the structure returned by `extractPrdSections`.
+- When adding new PRD-related processing in `approve-prototype`, compute `allPrdContents` once and reuse it for both CHANGELOG and PR body logic (the current pattern). Adding a third use (e.g., for a summary comment) should follow this same pattern.
+- The legacy fallback reads the unindexed filename `it_${iteration}_product-requirement-document.md` — this file was created by the old single-PRD `define requirement` flow. New iterations will have indexed files (`_001.md`, `_002.md`, …) tracked in `requirement_definition`.
