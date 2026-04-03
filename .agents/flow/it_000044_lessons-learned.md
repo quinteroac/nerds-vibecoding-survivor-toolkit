@@ -42,3 +42,22 @@
 - Use `stdoutWriteFn` (from deps) for all output in `runApproveRequirement` rather than `console.log` directly, so tests can capture and assert on output without real stdout.
 - The `fakeWriteJsonOk` / `fakeWriteJsonFail` pattern (small inline arrow functions returning `{ exitCode, stderr }`) is the preferred way to stub `invokeWriteJsonFn` in tests for this command.
 - Mixed arrays (some `approved`, some `in_progress`) are valid input — the command processes only the `in_progress` ones and leaves `approved` entries untouched.
+
+## US-003 — `create prototype` iterates over all PRDs and their user stories
+
+**Summary:** Refactored `runCreatePrototype` to process every approved PRD in sequence (PRD1→UC1…UCn, PRD2→UC1…UCn, …). Changed `state.phases.prototype.prototype_creation` from a single `{status, file}` object to an array of `{index, status, file}` entries. Extracted `parsePrd` from `approve-requirement.ts` into a new shared module `src/prd-parser.ts`. Per-PRD progress files now use naming `it_XXXXXX_prototype-creation_NNN.json`.
+
+**Key Decisions:**
+- **Backward-compat file existence check**: the primary path (markdown files) is only used when the markdown files actually exist on disk. If they don't exist (old state or tests that only provide JSON), the code falls back to the JSON PRD. This avoids breaking existing compat tests that set up `requirement_definition` entries without providing the actual markdown files.
+- **z.preprocess does NOT fire for injected state**: Tests that inject state via `readStateFn` bypass `StateSchema.safeParse()`, so the array migration never runs. `audit-prototype.ts` and `create-prototype.ts` both defensively handle both the legacy object format and the new array format using `Array.isArray()`.
+- **`prd_generation` left as single object**: US-002 tests assert `prd_generation.file === "it_000044_PRD.json"` and count `invokeWriteJsonFn` calls. Changing `prd_generation` to an array would have broken those tests. The multi-PRD content is instead derived from `requirement_definition` markdown files directly.
+- **`start-iteration.ts` initialises with `[]`**: New iterations start with an empty array, consistent with the schema.
+
+**Pitfalls Encountered:**
+- `parsePrd` uses regex `US-\d+` to match user story IDs. Test markdown that used non-standard IDs like `US-A01` silently produced empty `userStories`, causing the command to exit early with "No pending or failed user stories". Always use `US-\d+` format in test PRD markdown.
+- AC04 tests passed even when stories were empty because `writeJsonArtifactFn` is invoked unconditionally before the eligibility check, but AC01/AC03 tests failed. This asymmetry made the root cause non-obvious.
+
+**Useful Context for Future Agents:**
+- `src/prd-parser.ts` is the shared parser for PRD markdown. Both `approve-requirement` and `create-prototype` use it. If the markdown format changes, update both the parser and the test fixtures.
+- The `WriteJsonArtifactFn` mock `async () => {}` is a no-op — progress JSON is never written to disk in tests. The code compensates by keeping `progressData` in memory. Tests that check file paths use `writtenPaths` captured in the mock closure, not real disk reads.
+- The pre-existing failure `US-003-AC08a: nvst approve requirement runs without error` (in `us-003-command-compatibility.test.ts`) was present before this iteration and is unrelated to US-003.

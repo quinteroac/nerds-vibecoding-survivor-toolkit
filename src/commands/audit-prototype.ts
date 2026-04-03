@@ -39,11 +39,16 @@ function auditAllowed(state: State): boolean {
   if (state.current_phase !== "prototype") {
     return false;
   }
-  const prototypeCreation = state.phases.prototype.prototype_creation;
-  if (!prototypeCreation) {
+  const creation = state.phases.prototype.prototype_creation;
+  if (!creation) {
     return false;
   }
-  return prototypeCreation.status !== "pending";
+  // Support both the new array format and legacy injected objects (tests that bypass readState).
+  if (Array.isArray(creation)) {
+    return creation.length > 0 && creation.every((e) => e.status !== "pending");
+  }
+  // Legacy single-object format (only reachable when state is injected directly in tests).
+  return (creation as unknown as { status: string }).status !== "pending";
 }
 
 export async function runAuditPrototype(
