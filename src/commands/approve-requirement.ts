@@ -217,15 +217,18 @@ export async function runApproveRequirement(
   const mergedDeps: ApproveRequirementDeps = { ...defaultDeps, ...deps };
 
   // --- US-001: Validate status ---
-  const requirementDefinition = state.phases.define.requirement_definition;
+  const requirementDefinitions = state.phases.define.requirement_definition;
+  const lastInProgress = [...requirementDefinitions].reverse().find((e) => e.status === "in_progress");
   await assertGuardrail(
     state,
-    requirementDefinition.status !== "in_progress",
-    `Cannot approve requirement from status '${requirementDefinition.status}'. Expected in_progress.`,
+    !lastInProgress,
+    "Cannot approve requirement: no in_progress requirement definition found.",
     { force },
   );
 
-  const requirementFile = requirementDefinition.file;
+  if (!lastInProgress) return;
+
+  const requirementFile = lastInProgress.file;
   if (!requirementFile) {
     throw new Error("Cannot approve requirement: define.requirement_definition.file is missing.");
   }
@@ -260,7 +263,7 @@ export async function runApproveRequirement(
   }
 
   // --- US-001: Transition status only after successful JSON generation ---
-  requirementDefinition.status = "approved";
+  lastInProgress.status = "approved";
 
   // --- US-002: Record PRD generation in state ---
   state.phases.define.prd_generation.status = "completed";

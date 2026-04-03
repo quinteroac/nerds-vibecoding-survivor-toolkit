@@ -9,15 +9,33 @@ const statusFile = z.object({
   file: z.string().nullable(),
 });
 
+export const RequirementDefinitionEntrySchema = z.object({
+  index: z.number().int().positive(),
+  status: z.enum(["pending", "in_progress", "approved"]),
+  file: z.string().nullable(),
+});
+
+export type RequirementDefinitionEntry = z.infer<typeof RequirementDefinitionEntrySchema>;
+
+// Accepts both the legacy single-object format and the new array format.
+// Legacy { status, file } objects are auto-migrated to [{ index: 1, status, file }].
+const requirementDefinitionField = z.preprocess(
+  (val) => {
+    if (val !== null && typeof val === "object" && !Array.isArray(val)) {
+      const obj = val as { status?: unknown; file?: unknown };
+      return [{ index: 1, status: obj.status, file: obj.file ?? null }];
+    }
+    return val;
+  },
+  z.array(RequirementDefinitionEntrySchema),
+);
+
 const definePhase = z.object({
   ideation: z.object({
     status: z.enum(["pending", "in_progress", "completed"]),
     file: z.string().nullable(),
   }).optional(),
-  requirement_definition: z.object({
-    status: z.enum(["pending", "in_progress", "approved"]),
-    file: z.string().nullable(),
-  }),
+  requirement_definition: requirementDefinitionField,
   prd_generation: z.object({
     status: z.enum(["pending", "completed"]),
     file: z.string().nullable(),

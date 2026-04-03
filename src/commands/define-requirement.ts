@@ -3,17 +3,18 @@ import { join } from "node:path";
 
 import { buildPrompt, invokeAgent, loadSkill, type AgentProvider } from "../agent";
 import { parseOpenQuestionsFromPrd } from "../prd-open-questions";
-import { assertGuardrail } from "../guardrail";
+import { assertGuardrail, type ReadLineFn } from "../guardrail";
 import { readState, writeState } from "../state";
 
 export interface DefineRequirementOptions {
   provider: AgentProvider;
   force?: boolean;
   yolo?: boolean;
+  readLineFn?: ReadLineFn;
 }
 
 export async function runDefineRequirement(opts: DefineRequirementOptions): Promise<void> {
-  const { provider, force = false, yolo = false } = opts;
+  const { provider, force = false, yolo = false, readLineFn } = opts;
   const projectRoot = process.cwd();
   const state = await readState(projectRoot);
 
@@ -21,15 +22,17 @@ export async function runDefineRequirement(opts: DefineRequirementOptions): Prom
     state,
     state.current_phase !== "define",
     "Cannot define requirement: current_phase must be 'define'.",
-    { force },
+    { force, readLineFn },
   );
 
-  const requirementDefinition = state.phases.define.requirement_definition;
+  // AC04: block if any entry has already been approved
+  const requirementDefinitions = state.phases.define.requirement_definition;
+  const hasApproved = requirementDefinitions.some((e) => e.status === "approved");
   await assertGuardrail(
     state,
-    requirementDefinition.status !== "pending",
-    `Cannot define requirement from status '${requirementDefinition.status}'. Expected pending.`,
-    { force },
+    hasApproved,
+    "Cannot define requirement: a requirement has already been approved. Use --force to bypass.",
+    { force, readLineFn },
   );
 
   const skillBody = await loadSkill(projectRoot, "define-requirement");
@@ -48,9 +51,12 @@ export async function runDefineRequirement(opts: DefineRequirementOptions): Prom
     throw new Error(`Agent invocation failed with exit code ${result.exitCode}.`);
   }
 
-  requirementDefinition.status = "in_progress";
-  const prdFileName = `it_${state.current_iteration}_product-requirement-document.md`;
-  requirementDefinition.file = prdFileName;
+  // Determine next index and build filename with 3-digit padded suffix
+  const nextIndex = requirementDefinitions.length + 1;
+  const paddedIndex = String(nextIndex).padStart(3, "0");
+  const prdFileName = `it_${state.current_iteration}_product-requirement-document_${paddedIndex}.md`;
+
+  requirementDefinitions.push({ index: nextIndex, status: "in_progress", file: prdFileName });
   state.last_updated = new Date().toISOString();
   state.updated_by = "nvst:define-requirement";
 

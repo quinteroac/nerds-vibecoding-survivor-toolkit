@@ -16,10 +16,7 @@ function createValidState(overrides: Partial<State> = {}): State {
     current_phase: "define",
     phases: {
       define: {
-        requirement_definition: {
-          status: "pending",
-          file: null,
-        },
+        requirement_definition: [],
         prd_generation: {
           status: "pending",
           file: null,
