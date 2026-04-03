@@ -14,16 +14,17 @@ Implement the provided user story by writing production code and tests that sati
 
 1. Read the **user story** and its **acceptance criteria** carefully.
 2. Review the **project context** to understand conventions, tech stack, testing strategy, and module structure.
-3. Plan the implementation: identify which files to create or modify, what tests to write, and how the change fits into the existing architecture.
-4. Implement the user story:
+3. **Review lessons learned** — if the `lessons_learned` context variable is present and non-empty, read it carefully before planning. It contains insights from previous agents working on this iteration. Skip this step silently if `lessons_learned` is absent or empty.
+4. Plan the implementation: identify which files to create or modify, what tests to write, and how the change fits into the existing architecture.
+5. Implement the user story:
    - Write production code that satisfies every acceptance criterion.
    - Write tests that verify each acceptance criterion (follow the testing strategy from the project context).
    - Follow all naming conventions, code standards, and forbidden patterns from the project context.
-5. Verify your work:
+6. Verify your work:
    - Ensure the code compiles / type-checks without errors.
    - Run any quality checks defined in the project context.
    - Fix any issues before finishing.
-6. Do **not** commit — the calling command handles git commits.
+7. Do **not** commit — the calling command handles git commits.
 
 ---
 
@@ -34,6 +35,7 @@ Implement the provided user story by writing production code and tests that sati
 | `user_story` (context variable) | The user story JSON with id, title, description, and acceptanceCriteria |
 | `project_context` (context variable) | Project conventions, tech stack, code standards, testing strategy, and architecture |
 | `iteration` (context variable) | Current iteration number for file naming and context |
+| `lessons_learned` (context variable) | Accumulated insights from previous agents in this iteration; empty string if none exist yet |
 
 ### Standalone Fallback
 
@@ -90,3 +92,28 @@ Before finishing:
 - [ ] No unrelated changes were made
 - [ ] No state files were modified
 - [ ] No git commits were made
+- [ ] Lessons-learned entry written to `.agents/flow/it_{iteration}_lessons-learned.md`
+
+---
+
+## Lessons Learned
+
+After completing your user story, **create or append** a lessons-learned entry to `.agents/flow/it_{iteration}_lessons-learned.md` (replace `{iteration}` with the 6-digit iteration number, e.g. `it_000043_lessons-learned.md`).
+
+Each entry must include the following sections:
+
+```markdown
+## {User Story ID} — {User Story Title}
+
+**Summary:** Brief description of what was implemented.
+
+**Key Decisions:** Important architectural or design choices made during implementation.
+
+**Pitfalls Encountered:** Any mistakes, unexpected behaviours, or dead ends hit during implementation.
+
+**Useful Context for Future Agents:** Any discoveries, patterns, or caveats that will help the next agent working on this codebase.
+```
+
+- If the file does not exist, create it with a top-level heading `# Lessons Learned — Iteration {iteration}` followed by the entry.
+- If the file already exists, append the new entry at the end (do not overwrite existing entries).
+- Use the naming convention `it_{iteration}_lessons-learned.md` (iteration prefix, kebab-case, `.md` extension), consistent with other flow artifacts in `.agents/flow/`.

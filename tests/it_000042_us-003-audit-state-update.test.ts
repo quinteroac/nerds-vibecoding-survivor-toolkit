@@ -37,6 +37,7 @@ const fakeInvoke = async (_options: AgentInvokeOptions) => ({
   stdout: "",
   stderr: "",
 });
+const fakeExistsFn = async () => true;
 
 // ---------------------------------------------------------------------------
 // AC01: prototype_audit.status → "completed" after successful run
@@ -49,6 +50,7 @@ describe("US-003-AC01: prototype_audit.status is set to completed", () => {
     await runAuditPrototype(
       { provider: "claude" },
       {
+        existsFn: fakeExistsFn,
         invokeAgentFn: fakeInvoke,
         readStateFn: async () => makeState(),
         loadSkillFn: fakeLoadSkill,
@@ -69,6 +71,7 @@ describe("US-003-AC01: prototype_audit.status is set to completed", () => {
     await runAuditPrototype(
       { provider: "claude" },
       {
+        existsFn: fakeExistsFn,
         invokeAgentFn: fakeInvoke,
         readStateFn: async () =>
           makeState({ prototype_audit: { status: "in_progress", file: existingFile } }),
@@ -94,6 +97,7 @@ describe("US-003-AC02: last_updated and updated_by are set", () => {
     await runAuditPrototype(
       { provider: "claude" },
       {
+        existsFn: fakeExistsFn,
         invokeAgentFn: fakeInvoke,
         readStateFn: async () => makeState(),
         loadSkillFn: fakeLoadSkill,
@@ -112,6 +116,7 @@ describe("US-003-AC02: last_updated and updated_by are set", () => {
     await runAuditPrototype(
       { provider: "claude" },
       {
+        existsFn: fakeExistsFn,
         invokeAgentFn: fakeInvoke,
         readStateFn: async () => makeState(),
         loadSkillFn: fakeLoadSkill,
@@ -138,6 +143,7 @@ describe("US-003-AC03: refactor prototype can run after audit without --force", 
     await runAuditPrototype(
       { provider: "claude" },
       {
+        existsFn: fakeExistsFn,
         invokeAgentFn: fakeInvoke,
         readStateFn: async () => makeState(),
         loadSkillFn: fakeLoadSkill,
@@ -225,6 +231,7 @@ describe("US-003-AC04: auditAllowed guard still works correctly", () => {
       runAuditPrototype(
         { provider: "claude" },
         {
+          existsFn: fakeExistsFn,
           invokeAgentFn: fakeInvoke,
           readStateFn: async () => makeState(),
           loadSkillFn: fakeLoadSkill,

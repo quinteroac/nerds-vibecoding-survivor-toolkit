@@ -271,6 +271,7 @@ describe("US-001-AC07 (additional): AuditPrototypeOptions.interactive is honoure
       { provider: "claude", interactive: false },
       {
         invokeAgentFn: fakeInvoke,
+        existsFn: async () => true,
         readStateFn: async () => fakeState,
         loadSkillFn: async () => "skill body",
         writeStateFn: async () => {},
@@ -315,6 +316,7 @@ describe("US-001-AC07 (additional): AuditPrototypeOptions.interactive is honoure
       { provider: "claude" },
       {
         invokeAgentFn: fakeInvoke,
+        existsFn: async () => true,
         readStateFn: async () => fakeState,
         loadSkillFn: async () => "skill body",
         writeStateFn: async () => {},
