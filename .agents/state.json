@@ -1,79 +1,38 @@
 {
-  "current_iteration": "000044",
+  "current_iteration": "000038",
   "current_phase": "prototype",
+  "flow_guardrail": "off",
+  "last_updated": "2026-04-03T03:40:20.513Z",
+  "updated_by": "nvst:refactor-prototype",
   "phases": {
     "define": {
-      "ideation": {
-        "status": "pending",
-        "file": null
-      },
+      "ideation": null,
       "requirement_definition": {
         "status": "approved",
-        "file": "it_000044_product-requirement-document.md"
-      },
-      "prd_generation": {
-        "status": "completed",
-        "file": "it_000044_PRD.json"
+        "file": "prd.md"
       }
     },
     "prototype": {
+      "project_context": {
+        "status": "created",
+        "file": "ctx.md"
+      },
       "prototype_creation": {
-        "status": "in_progress",
-        "file": "it_000044_progress.json"
+        "status": "completed",
+        "file": null
       },
       "prototype_audit": {
-        "status": "pending",
+        "status": "completed",
         "file": null
       },
-      "prototype_refactor": {
-        "status": "pending",
-        "file": null
-      },
-      "prototype_approval": {
-        "status": "pending",
-        "file": null
-      },
-      "project_context": {
-        "status": "pending",
-        "file": null
-      },
-      "test_plan": {
-        "status": "pending",
-        "file": null
-      },
-      "tp_generation": {
-        "status": "pending",
-        "file": null
-      },
-      "prototype_build": {
-        "status": "pending",
-        "file": null
-      },
-      "test_execution": {
-        "status": "pending",
-        "file": null
-      },
-      "prototype_approved": false
-    },
-    "refactor": {
-      "evaluation_report": {
-        "status": "pending",
-        "file": null
-      },
-      "refactor_plan": {
-        "status": "pending",
-        "file": null
-      },
-      "refactor_execution": {
-        "status": "pending",
-        "file": null
-      },
-      "changelog": {
-        "status": "pending",
-        "file": null
-      }
+      "prototype_refactor": [
+        {
+          "index": 1,
+          "status": "completed",
+          "file": "it_000038_refactor-plan_001.md"
+        }
+      ],
+      "prototype_approval": null
     }
-  },
-  "last_updated": "2026-04-03T02:06:49.256Z",
-  "updated_by": "nvst:create-prototype"
+  }
 }

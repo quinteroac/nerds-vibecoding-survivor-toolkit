@@ -118,3 +118,20 @@
 - `z.preprocess` in the schema guarantees all four state fields (`requirement_definition`, `prototype_creation`, `prototype_audit`, `prototype_refactor`) produce arrays even when reading legacy single-object state files.
 - Tests for migration must write raw JSON directly (bypassing `writeState`) to simulate a legacy file — do not use `writeState` to write legacy format as it will serialize the TypeScript array form.
 - The `audit-prototype.ts` `Array.isArray` guard (lines 73–83) is a noop at runtime and can be removed in a future cleanup iteration.
+
+## US-007 — `auto` mode supports multi-PRD flow
+
+**Summary:** Implemented test coverage for the `nvst auto` command operating over multi-PRD state. The existing `runAuto` implementation was already correct — it calls `runCreatePrototype`, `runAuditPrototype`, and `runRefactorPrototype` once each, and those commands internally iterate over all PRD entries. No production code changes were needed.
+
+**Key Decisions:**
+- The "loop through all PRD entries" described in AC01 is fulfilled collectively by the phase commands, each of which iterates over all PRD entries in a single call. `auto.ts` dispatches the three phases in sequence; the multi-PRD loop lives inside each command.
+- Each phase command is called exactly once per `runAuto` invocation regardless of PRD count; the per-PRD iteration is encapsulated inside `runCreatePrototype`, `runAuditPrototype`, and `runRefactorPrototype`.
+- Added tests covering: 2-PRD and 3-PRD states, mixed-status states (some approved, some in_progress), failure propagation (create/audit failure stops the pipeline), and option forwarding (provider, force, yolo, interactive: false).
+
+**Pitfalls Encountered:**
+- When testing `GuardrailAbortError` (relaxed mode + 'n' response), the guardrail sets `process.exitCode = 1`. Restoring `process.exitCode = originalExitCode` where `originalExitCode` is `undefined` does NOT reset the exit code to 0 in Bun. Must use `process.exitCode = originalExitCode ?? 0` to explicitly restore to zero.
+
+**Useful Context for Future Agents:**
+- Any test that expects `rejects.toBeInstanceOf(GuardrailAbortError)` must save and restore `process.exitCode` using `process.exitCode = originalExitCode ?? 0` (not just `process.exitCode = originalExitCode`) to prevent the bun test runner from exiting with code 1.
+- The guardrail check in `auto.ts` uses `requirementDefinitions.some(e => e.status === "approved")` — the pipeline runs as long as at least one PRD is approved. PRDs that are still `in_progress` or `pending` are passed through to the phase commands, which apply their own per-PRD filtering.
+- No additional `prdIndex` parameter is needed on the phase command option types for multi-PRD support — each command reads state itself and determines which entries to process.
