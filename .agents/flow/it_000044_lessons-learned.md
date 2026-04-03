@@ -81,3 +81,24 @@
 - When adding a new array-format field that replaces a legacy single-object field in the schema, always: (1) add `z.preprocess` migration in `tmpl_state.ts`, (2) update `start-iteration.ts` to initialise with `[]`, (3) add defensive Array.isArray handling in any command that accesses the field if many existing tests inject state directly.
 - The audit report naming convention is `it_XXXXXX_audit-report_NNN.json` where NNN is the zero-padded PRD index. The old `it_XXXXXX_audit.json` format is kept as a fallback in `refactor-prototype` only.
 - Test files are NOT in the tsconfig `include`, so TypeScript errors in tests are only caught at bun test runtime, not by `bun tsc --noEmit`.
+
+## US-005 — `refactor prototype` runs one refactor pass per audit report
+
+**Summary:** Extended `runRefactorPrototype` to iterate over all audit entries in state, run one agent pass per entry, name refactor artifacts `it_XXXXXX_refactor-plan_001.md` / `_002.md` etc., and persist an array of `PrototypeRefactorEntry` objects back to `state.json` under `phases.prototype.prototype_refactor`.
+
+**Key Decisions:**
+- `prototype_refactor` in `tmpl_state.ts` was migrated from a single `statusFile` object to an array (`prototypeRefactorField`), following the exact same `z.preprocess` auto-migration pattern used for `prototype_audit` and `prototype_creation`.
+- `start-iteration.ts` initialises `prototype_refactor` as `[]` (empty array) to match the new type.
+- `runRefactorPrototype` now has a `writeStateFn` dep (like `audit-prototype`) to persist state after all passes.
+- The SKILL.md was updated to document `refactor_plan_file` and `refactor_plan_index` context variables so agents know the expected output artifact name.
+- Legacy fallback (to `it_XXXXXX_audit.json` / `it_XXXXXX_audit.md`) is preserved when there is a single audit entry with no file tracked in state.
+
+**Pitfalls Encountered:**
+- The actual `.agents/state.json` on disk is read by some integration tests that don't inject `readStateFn`. If any test writes to it (via `writeState`), subsequent tests fail. Always restore the file (`git checkout -- .agents/state.json`) between test runs.
+- `bun tsc --noEmit` only type-checks `src/`; TypeScript errors in `tests/` are NOT caught by the typecheck script (they're caught at bun test runtime).
+- The `nvst-skills-manifest.ts` is auto-generated from SKILL.md files — always run `bun run generate:nvst-skills-manifest` after modifying a SKILL.md.
+
+**Useful Context for Future Agents:**
+- Refactor artifact naming convention: `it_XXXXXX_refactor-plan_NNN.md` where NNN is the zero-padded audit entry index.
+- `prototype_refactor` is now `PrototypeRefactorEntry[] | undefined` (not a single object). The preprocessor auto-migrates legacy `{ status, file }` objects.
+- The `refactorAllowed()` guard still supports the legacy single-object format for tests that bypass `readState`.

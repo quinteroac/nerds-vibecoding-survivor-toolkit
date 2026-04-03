@@ -8,9 +8,9 @@ import {
   type AgentProvider,
   type AgentResult,
 } from "../agent";
-import type { State } from "../schemas/tmpl_state";
+import type { PrototypeRefactorEntry, State } from "../schemas/tmpl_state";
 import { assertGuardrail } from "../guardrail";
-import { exists, FLOW_REL_DIR, readState } from "../state";
+import { exists, FLOW_REL_DIR, readState, writeState } from "../state";
 
 export interface RefactorPrototypeOptions {
   provider: AgentProvider;
@@ -23,6 +23,7 @@ interface RefactorPrototypeDeps {
   loadSkillFn: (projectRoot: string, skillName: string) => Promise<string>;
   invokeAgentFn: (options: AgentInvokeOptions) => Promise<AgentResult>;
   readStateFn: (projectRoot: string) => Promise<State>;
+  writeStateFn: (projectRoot: string, state: State) => Promise<void>;
 }
 
 const defaultDeps: RefactorPrototypeDeps = {
@@ -30,6 +31,7 @@ const defaultDeps: RefactorPrototypeDeps = {
   loadSkillFn: loadSkill,
   invokeAgentFn: invokeAgent,
   readStateFn: readState,
+  writeStateFn: writeState,
 };
 
 function refactorAllowed(state: State): boolean {
@@ -64,9 +66,8 @@ export async function runRefactorPrototype(
     { force },
   );
 
-  // Collect audit artifact paths from state entries (new multi-report format).
+  // Collect audit entries from state (new multi-report format, with legacy fallback).
   const rawAuditEntries = state.phases.prototype.prototype_audit;
-  // Support legacy single-object format for state objects injected directly in tests.
   const auditEntries = Array.isArray(rawAuditEntries)
     ? rawAuditEntries
     : rawAuditEntries
@@ -78,31 +79,43 @@ export async function runRefactorPrototype(
           },
         ]
       : [];
-  const auditPaths: string[] = [];
+
+  // Resolve audit artifact paths, one per entry. Entries without a file fall back to legacy names.
+  interface ResolvedAuditEntry {
+    index: number;
+    auditPath: string;
+  }
+  const resolvedAuditEntries: ResolvedAuditEntry[] = [];
+
   for (const entry of auditEntries) {
     if (entry.file) {
       const p = join(projectRoot, FLOW_REL_DIR, entry.file);
       if (await mergedDeps.existsFn(p)) {
-        auditPaths.push(p);
+        resolvedAuditEntries.push({ index: entry.index, auditPath: p });
+        continue;
+      }
+    }
+    // Legacy single-artifact fallback (only applies when no file is tracked in state).
+    if (auditEntries.length === 1) {
+      const auditJsonPath = join(
+        projectRoot,
+        FLOW_REL_DIR,
+        `it_${state.current_iteration}_audit.json`,
+      );
+      const auditMdPath = join(
+        projectRoot,
+        FLOW_REL_DIR,
+        `it_${state.current_iteration}_audit.md`,
+      );
+      if (await mergedDeps.existsFn(auditJsonPath)) {
+        resolvedAuditEntries.push({ index: entry.index, auditPath: auditJsonPath });
+      } else if (await mergedDeps.existsFn(auditMdPath)) {
+        resolvedAuditEntries.push({ index: entry.index, auditPath: auditMdPath });
       }
     }
   }
 
-  // Fall back to legacy single-artifact naming when no entry files are resolved.
-  if (auditPaths.length === 0) {
-    const auditJsonFileName = `it_${state.current_iteration}_audit.json`;
-    const auditJsonPath = join(projectRoot, FLOW_REL_DIR, auditJsonFileName);
-    const auditMdFileName = `it_${state.current_iteration}_audit.md`;
-    const auditMdPath = join(projectRoot, FLOW_REL_DIR, auditMdFileName);
-
-    if (await mergedDeps.existsFn(auditJsonPath)) {
-      auditPaths.push(auditJsonPath);
-    } else if (await mergedDeps.existsFn(auditMdPath)) {
-      auditPaths.push(auditMdPath);
-    }
-  }
-
-  if (auditPaths.length === 0) {
+  if (resolvedAuditEntries.length === 0) {
     const auditJsonFileName = `it_${state.current_iteration}_audit.json`;
     const auditMdFileName = `it_${state.current_iteration}_audit.md`;
     throw new Error(
@@ -110,20 +123,38 @@ export async function runRefactorPrototype(
     );
   }
 
-  const auditPlanPath = auditPaths[0];
   const skillBody = await mergedDeps.loadSkillFn(projectRoot, "refactor-prototype");
-  const prompt = buildPrompt(skillBody, {
-    iteration: state.current_iteration,
-    audit_json_path: auditPlanPath,
-  });
-  const result = await mergedDeps.invokeAgentFn({
-    provider: opts.provider,
-    prompt,
-    cwd: projectRoot,
-    interactive: true,
-    yolo: opts.yolo ?? false,
-  });
-  if (result.exitCode !== 0) {
-    throw new Error(`Agent invocation failed with exit code ${result.exitCode}.`);
+  const refactorEntries: PrototypeRefactorEntry[] = [];
+
+  for (const { index, auditPath } of resolvedAuditEntries) {
+    const paddedIndex = String(index).padStart(3, "0");
+    const refactorPlanFileName = `it_${state.current_iteration}_refactor-plan_${paddedIndex}.md`;
+
+    const prompt = buildPrompt(skillBody, {
+      iteration: state.current_iteration,
+      audit_json_path: auditPath,
+      refactor_plan_index: paddedIndex,
+      refactor_plan_file: refactorPlanFileName,
+    });
+
+    const result = await mergedDeps.invokeAgentFn({
+      provider: opts.provider,
+      prompt,
+      cwd: projectRoot,
+      interactive: true,
+      yolo: opts.yolo ?? false,
+    });
+
+    if (result.exitCode !== 0) {
+      throw new Error(
+        `Agent invocation failed with exit code ${result.exitCode} for audit entry ${paddedIndex}.`,
+      );
+    }
+
+    refactorEntries.push({ index, status: "completed", file: refactorPlanFileName });
   }
+
+  state.phases.prototype.prototype_refactor = refactorEntries;
+  state.updated_by = "nvst:refactor-prototype";
+  await mergedDeps.writeStateFn(projectRoot, state);
 }

@@ -72,6 +72,27 @@ const prototypeAuditField = z.preprocess(
   z.array(PrototypeAuditEntrySchema),
 );
 
+export const PrototypeRefactorEntrySchema = z.object({
+  index: z.number().int().positive(),
+  status: z.enum(["pending", "in_progress", "completed", "failed"]),
+  file: z.string().nullable(),
+});
+
+export type PrototypeRefactorEntry = z.infer<typeof PrototypeRefactorEntrySchema>;
+
+// Accepts both the legacy single-object format and the new array format.
+// Legacy { status, file } objects are auto-migrated to [{ index: 1, status, file }].
+const prototypeRefactorField = z.preprocess(
+  (val) => {
+    if (val !== null && typeof val === "object" && !Array.isArray(val)) {
+      const obj = val as { status?: unknown; file?: unknown };
+      return [{ index: 1, status: obj.status ?? "pending", file: obj.file ?? null }];
+    }
+    return val;
+  },
+  z.array(PrototypeRefactorEntrySchema),
+);
+
 const definePhase = z.object({
   ideation: z.object({
     status: z.enum(["pending", "in_progress", "completed"]),
@@ -87,9 +108,7 @@ const definePhase = z.object({
 const prototypePhase = z.object({
   prototype_creation: prototypeCreationField.optional(),
   prototype_audit: prototypeAuditField.optional(),
-  prototype_refactor: statusFile.extend({
-    status: z.enum(["pending", "in_progress", "completed"]),
-  }).optional(),
+  prototype_refactor: prototypeRefactorField.optional(),
   prototype_approval: statusFile.extend({
     status: z.enum(["pending", "approved", "completed"]),
   }).optional(),
