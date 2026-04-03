@@ -102,3 +102,19 @@
 - Refactor artifact naming convention: `it_XXXXXX_refactor-plan_NNN.md` where NNN is the zero-padded audit entry index.
 - `prototype_refactor` is now `PrototypeRefactorEntry[] | undefined` (not a single object). The preprocessor auto-migrates legacy `{ status, file }` objects.
 - The `refactorAllowed()` guard still supports the legacy single-object format for tests that bypass `readState`.
+
+## US-006 — Backward compatibility — single-PRD iterations continue to work
+
+**Summary:** Added a dedicated test suite verifying that legacy `requirement_definition` single-object `{ status, file }` format is auto-migrated to `[{ index: 1, status, file }]` by the Zod schema's `z.preprocess` on `readState()`. All commands already receive a typed array from the schema, so no production code changes were needed.
+
+**Key Decisions:**
+- The migration was already implemented in `src/schemas/tmpl_state.ts` via `z.preprocess`. This story's contribution was test coverage proving it works end-to-end (through `readState`) and at the schema level (via `StateSchema.safeParse`).
+- Kept `audit-prototype.ts`'s `Array.isArray` defensive guard unchanged — it is technically dead code since the TypeScript type always gives an array, but removing it is out of scope for this story.
+
+**Pitfalls Encountered:**
+- No production code pitfalls — the migration logic was already correct. The main task was writing tests that exercised the path (writing raw JSON with legacy shape to disk, then calling `readState`).
+
+**Useful Context for Future Agents:**
+- `z.preprocess` in the schema guarantees all four state fields (`requirement_definition`, `prototype_creation`, `prototype_audit`, `prototype_refactor`) produce arrays even when reading legacy single-object state files.
+- Tests for migration must write raw JSON directly (bypassing `writeState`) to simulate a legacy file — do not use `writeState` to write legacy format as it will serialize the TypeScript array form.
+- The `audit-prototype.ts` `Array.isArray` guard (lines 73–83) is a noop at runtime and can be removed in a future cleanup iteration.
