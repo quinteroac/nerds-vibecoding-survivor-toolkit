@@ -4,6 +4,8 @@ import { $ } from "bun";
 
 import { CLI_COMMAND } from "../cli-path";
 import { assertGuardrail } from "../guardrail";
+import type { ReadLineFn } from "../guardrail";
+import { defaultReadLine } from "../readline";
 import type { Prd } from "../schemas/tmpl_prd";
 import { exists, readState, writeState, FLOW_REL_DIR } from "../state";
 
@@ -170,6 +172,8 @@ interface ApproveRequirementDeps {
   ) => Promise<WriteJsonResult>;
   nowFn: () => Date;
   readFileFn: typeof readFile;
+  readLineFn: ReadLineFn;
+  stdoutWriteFn: (message: string) => void;
 }
 
 async function runWriteJsonCommand(
@@ -195,6 +199,8 @@ const defaultDeps: ApproveRequirementDeps = {
   invokeWriteJsonFn: runWriteJsonCommand,
   nowFn: () => new Date(),
   readFileFn: readFile,
+  readLineFn: defaultReadLine,
+  stdoutWriteFn: (message: string) => process.stdout.write(`${message}\n`),
 };
 
 export async function runApproveRequirement(
@@ -209,6 +215,8 @@ export async function runApproveRequirement(
       || "invokeWriteJsonFn" in optsOrDeps
       || "nowFn" in optsOrDeps
       || "readFileFn" in optsOrDeps
+      || "readLineFn" in optsOrDeps
+      || "stdoutWriteFn" in optsOrDeps
     );
   const force = isDepsArg ? false : ((optsOrDeps as { force?: boolean }).force ?? false);
   const projectRoot = process.cwd();
@@ -216,64 +224,91 @@ export async function runApproveRequirement(
   const deps = isDepsArg ? optsOrDeps : maybeDeps;
   const mergedDeps: ApproveRequirementDeps = { ...defaultDeps, ...deps };
 
-  // --- US-001: Validate status ---
+  // Collect all in_progress entries (AC01 / AC02)
   const requirementDefinitions = state.phases.define.requirement_definition;
-  const lastInProgress = [...requirementDefinitions].reverse().find((e) => e.status === "in_progress");
+  const inProgressEntries = requirementDefinitions.filter((e) => e.status === "in_progress");
+
   await assertGuardrail(
     state,
-    !lastInProgress,
+    inProgressEntries.length === 0,
     "Cannot approve requirement: no in_progress requirement definition found.",
     { force },
   );
 
-  if (!lastInProgress) return;
+  if (inProgressEntries.length === 0) return;
 
-  const requirementFile = lastInProgress.file;
-  if (!requirementFile) {
-    throw new Error("Cannot approve requirement: define.requirement_definition.file is missing.");
+  // AC03: List all PRDs that will be approved
+  mergedDeps.stdoutWriteFn("The following PRDs will be approved:");
+  for (const entry of inProgressEntries) {
+    mergedDeps.stdoutWriteFn(`  - ${entry.file ?? `entry #${entry.index}`}`);
   }
 
-  const requirementPath = join(projectRoot, FLOW_REL_DIR, requirementFile);
-  if (!(await mergedDeps.existsFn(requirementPath))) {
-    throw new Error(`Cannot approve requirement: file not found at ${requirementPath}`);
-  }
-
-  // --- US-002: Parse PRD markdown and generate JSON ---
-  const markdown = await mergedDeps.readFileFn(requirementPath, "utf-8");
-  const prdData = parsePrd(markdown);
-  const prdJsonFileName = `it_${state.current_iteration}_PRD.json`;
-  const prdJsonRelPath = join(FLOW_REL_DIR, prdJsonFileName);
-
-  // Invoke write-json CLI to validate and write the PRD JSON
-  const result = await mergedDeps.invokeWriteJsonFn(
-    projectRoot,
-    "prd",
-    prdJsonRelPath,
-    JSON.stringify(prdData),
-  );
-
-  if (result.exitCode !== 0) {
-    const stderr = result.stderr.trim();
-    console.error("PRD JSON generation failed. Requirement remains in_progress.");
-    if (stderr) {
-      console.error(stderr);
+  // AC03: Confirmation prompt (skipped when force=true)
+  if (!force) {
+    mergedDeps.stdoutWriteFn("Proceed? [y/N]");
+    let line: string | null;
+    try {
+      line = await mergedDeps.readLineFn();
+    } catch {
+      line = null;
     }
-    process.exitCode = 1;
-    return;
+    if (!line || (line.trim() !== "y" && line.trim() !== "Y")) {
+      mergedDeps.stdoutWriteFn("Aborted.");
+      return;
+    }
   }
 
-  // --- US-001: Transition status only after successful JSON generation ---
-  lastInProgress.status = "approved";
+  // AC01 / AC04: Approve each in_progress entry and generate PRD JSON
+  let lastPrdJsonFileName: string | null = null;
+  for (const entry of inProgressEntries) {
+    const requirementFile = entry.file;
+    if (!requirementFile) {
+      throw new Error(`Cannot approve requirement entry #${entry.index}: file is missing.`);
+    }
 
-  // --- US-002: Record PRD generation in state ---
-  state.phases.define.prd_generation.status = "completed";
-  state.phases.define.prd_generation.file = prdJsonFileName;
+    const requirementPath = join(projectRoot, FLOW_REL_DIR, requirementFile);
+    if (!(await mergedDeps.existsFn(requirementPath))) {
+      throw new Error(`Cannot approve requirement: file not found at ${requirementPath}`);
+    }
+
+    const markdown = await mergedDeps.readFileFn(requirementPath, "utf-8");
+    const prdData = parsePrd(markdown);
+    const prdJsonFileName = `it_${state.current_iteration}_PRD.json`;
+    const prdJsonRelPath = join(FLOW_REL_DIR, prdJsonFileName);
+
+    const result = await mergedDeps.invokeWriteJsonFn(
+      projectRoot,
+      "prd",
+      prdJsonRelPath,
+      JSON.stringify(prdData),
+    );
+
+    if (result.exitCode !== 0) {
+      const stderr = result.stderr.trim();
+      console.error(`PRD JSON generation failed for ${requirementFile}. Requirement remains in_progress.`);
+      if (stderr) {
+        console.error(stderr);
+      }
+      process.exitCode = 1;
+      return;
+    }
+
+    entry.status = "approved";
+    lastPrdJsonFileName = prdJsonFileName;
+  }
+
+  // AC04: Persist state with all entries marked approved
+  if (lastPrdJsonFileName) {
+    state.phases.define.prd_generation.status = "completed";
+    state.phases.define.prd_generation.file = lastPrdJsonFileName;
+  }
 
   state.last_updated = mergedDeps.nowFn().toISOString();
   state.updated_by = "nvst:approve-requirement";
 
   await writeState(projectRoot, state);
 
-  console.log("Requirement approved.");
-  console.log(`PRD JSON written to ${prdJsonRelPath}`);
+  const prdRelPath = join(FLOW_REL_DIR, lastPrdJsonFileName!);
+  mergedDeps.stdoutWriteFn(`All ${inProgressEntries.length} requirement(s) approved.`);
+  mergedDeps.stdoutWriteFn(`PRD JSON written to ${prdRelPath}`);
 }

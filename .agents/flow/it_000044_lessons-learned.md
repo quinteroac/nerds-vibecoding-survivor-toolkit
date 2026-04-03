@@ -21,3 +21,24 @@
 - Any command that previously read `state.phases.define.requirement_definition.status` must now use array helpers (`.some()`, `.find()`, etc.).
 - The `z.preprocess` migration is idempotent: arrays pass through unchanged; legacy objects are wrapped in a one-element array with `index: 1`.
 - State initialised by `start-iteration.ts` now uses `requirement_definition: []` — tests that check the freshly-initialised define phase should expect an empty array, not the old `{ status: "pending", file: null }`.
+
+## US-002 — `approve requirement` approves all pending PRDs
+
+**Summary:** Updated `runApproveRequirement` to approve ALL `in_progress` entries in the `requirement_definition` array instead of only the last one. Added a confirmation prompt that lists all PRDs to be approved before proceeding; `--force` skips the prompt.
+
+**Key Decisions:**
+- Added `readLineFn: ReadLineFn` and `stdoutWriteFn: (msg: string) => void` to `ApproveRequirementDeps` for injectable testing of the confirmation prompt.
+- Confirmation uses a simple `[y/N]` pattern (accepts `"y"` or `"Y"`); any other input or null aborts without error.
+- `force: true` bypasses the confirmation prompt entirely (consistent with other commands' `--force` behaviour).
+- The guardrail (`assertGuardrail`) still fires when the `inProgressEntries` array is empty — this preserves the existing "no in_progress entries" error message.
+- PRD JSON is generated for each `in_progress` entry in order; the last one's filename is recorded in `prd_generation.file` (all share the same `it_XXXXXX_PRD.json` name, so each overwrites the previous, with the last entry winning).
+
+**Pitfalls Encountered:**
+- The `isDepsArg` detection guard needed to be extended to also check for `"readLineFn"` and `"stdoutWriteFn"` keys; otherwise passing a deps object with only those new fields would be misinterpreted as an opts object.
+- The `optsOrDeps` dual-overload signature is tricky — when passing only `{}` (no force, no deps fields), `force` defaults to `false` and a `readLineFn` must be injected via `maybeDeps` to test the confirmation prompt.
+- `process.exitCode` is set to `1` on write-json failure but the function `return`s early without throwing, so tests must reset `process.exitCode` after testing that path.
+
+**Useful Context for Future Agents:**
+- Use `stdoutWriteFn` (from deps) for all output in `runApproveRequirement` rather than `console.log` directly, so tests can capture and assert on output without real stdout.
+- The `fakeWriteJsonOk` / `fakeWriteJsonFail` pattern (small inline arrow functions returning `{ exitCode, stderr }`) is the preferred way to stub `invokeWriteJsonFn` in tests for this command.
+- Mixed arrays (some `approved`, some `in_progress`) are valid input — the command processes only the `in_progress` ones and leaves `approved` entries untouched.
