@@ -26,7 +26,7 @@ const fakeState: State = {
     prototype: {
       project_context: { status: "created" as const, file: "ctx.md" },
       prototype_creation: { status: "completed" as const, file: null },
-      prototype_audit: { status: "completed" as const, file: null },
+      prototype_audit: [{ index: 1, status: "completed" as const, file: null }],
       prototype_refactor: { status: "pending", file: null },
       prototype_approval: { status: "pending", file: null },
     },

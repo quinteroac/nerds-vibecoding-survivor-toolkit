@@ -468,7 +468,7 @@ describe("US-003: All existing commands work identically after migration", () =>
       await writeState(projectRoot, state);
       await writeSkill(projectRoot, "audit-prototype");
       await writeFile(
-        join(projectRoot, ".agents", "flow", "it_000001_audit.json"),
+        join(projectRoot, ".agents", "flow", "it_000001_audit-report_001.json"),
         JSON.stringify({ summary: "Audit complete", refactor_plan: [] }, null, 2),
         "utf8",
       );

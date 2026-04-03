@@ -61,3 +61,23 @@
 - `src/prd-parser.ts` is the shared parser for PRD markdown. Both `approve-requirement` and `create-prototype` use it. If the markdown format changes, update both the parser and the test fixtures.
 - The `WriteJsonArtifactFn` mock `async () => {}` is a no-op — progress JSON is never written to disk in tests. The code compensates by keeping `progressData` in memory. Tests that check file paths use `writtenPaths` captured in the mock closure, not real disk reads.
 - The pre-existing failure `US-003-AC08a: nvst approve requirement runs without error` (in `us-003-command-compatibility.test.ts`) was present before this iteration and is unrelated to US-003.
+
+## US-004 — `audit prototype` produces one audit report per PRD
+
+**Summary:** Changed `audit-prototype` to iterate over each `requirement_definition` entry and invoke the agent once per PRD, producing `it_XXXXXX_audit-report_NNN.json` per PRD. `prototype_audit` in state.json is now a `PrototypeAuditEntry[]` array (with preprocess migration from the legacy single-object format). `refactor-prototype` was updated to handle both the new array and legacy single-object formats.
+
+**Key Decisions:**
+- Followed the same `z.preprocess` migration pattern already used for `requirement_definition` and `prototype_creation` — the legacy `{ status, file }` single object is auto-migrated to `[{ index: 1, status, file }]` on `readState`.
+- Added defensive legacy-format handling **inside the commands** (not just schema) because many existing tests inject state directly, bypassing `readState` and schema migration. This avoids a cascade of test updates and mirrors the existing `auditAllowed` pattern for `prototype_creation`.
+- `start-iteration.ts` initialises `prototype_audit` as `[]` (empty array) instead of the old `{ status: "pending", file: null }` object.
+- The `refactor-prototype` artifact lookup was updated to first scan state's `prototype_audit` entries for resolved file paths, then fall back to the legacy `it_XXXXXX_audit.json` / `it_XXXXXX_audit.md` naming — preserving backward compatibility.
+
+**Pitfalls Encountered:**
+- `bun tsc --noEmit` only covers `src/` (not `tests/`), so test files can use legacy state shapes without TypeScript errors. Relying on `bun tsc` alone is insufficient to verify test compatibility.
+- The auto-mode directive in `audit-prototype` now includes the actual resolved filename (e.g., `it_000042_audit-report_001.json`) instead of the old template string (`it_{iteration}_audit.json`). One existing test (`it_000042_us-001-auto-pipeline.test.ts`) was asserting on the old template string and needed to be updated.
+- AC08a in `us-003-command-compatibility.test.ts` was already failing before this iteration — confirmed by stashing changes and running the baseline.
+
+**Useful Context for Future Agents:**
+- When adding a new array-format field that replaces a legacy single-object field in the schema, always: (1) add `z.preprocess` migration in `tmpl_state.ts`, (2) update `start-iteration.ts` to initialise with `[]`, (3) add defensive Array.isArray handling in any command that accesses the field if many existing tests inject state directly.
+- The audit report naming convention is `it_XXXXXX_audit-report_NNN.json` where NNN is the zero-padded PRD index. The old `it_XXXXXX_audit.json` format is kept as a fallback in `refactor-prototype` only.
+- Test files are NOT in the tsconfig `include`, so TypeScript errors in tests are only caught at bun test runtime, not by `bun tsc --noEmit`.

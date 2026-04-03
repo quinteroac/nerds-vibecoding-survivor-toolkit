@@ -16,7 +16,7 @@ function createInitialState(nowIso: string): State {
       },
       prototype: {
         prototype_creation: [],
-        prototype_audit: { status: "pending", file: null },
+        prototype_audit: [],
         prototype_refactor: { status: "pending", file: null },
         prototype_approval: { status: "pending", file: null },
         project_context: { status: "pending", file: null },

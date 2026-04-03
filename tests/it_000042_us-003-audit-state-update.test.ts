@@ -16,17 +16,19 @@ function makeState(overrides: Partial<State["phases"]["prototype"]> = {}): State
     updated_by: "test",
     phases: {
       define: {
-        ideation: null,
-        requirement_definition: { status: "approved", file: "prd.md" },
+        ideation: undefined,
+        requirement_definition: [{ index: 1, status: "approved", file: "prd.md" }],
+        prd_generation: { status: "completed", file: null },
       },
       prototype: {
         project_context: { status: "created", file: "ctx.md" },
-        prototype_creation: { status: "completed", file: null },
-        prototype_audit: { status: "pending", file: null },
-        prototype_refactor: null,
-        prototype_approval: null,
+        prototype_creation: [{ index: 1, status: "completed", file: null }],
+        prototype_audit: [{ index: 1, status: "pending", file: null }],
+        prototype_refactor: undefined,
+        prototype_approval: undefined,
         ...overrides,
       },
+      refactor: {},
     },
   };
 }
@@ -61,20 +63,18 @@ describe("US-003-AC01: prototype_audit.status is set to completed", () => {
     );
 
     expect(capturedState).toBeDefined();
-    expect(capturedState!.phases.prototype.prototype_audit?.status).toBe("completed");
+    expect(capturedState!.phases.prototype.prototype_audit?.[0]?.status).toBe("completed");
   });
 
-  it("preserves the existing file value when updating prototype_audit", async () => {
+  it("audit report entry file matches expected naming convention", async () => {
     let capturedState: State | undefined;
-    const existingFile = "it_000042_audit.json";
 
     await runAuditPrototype(
       { provider: "claude" },
       {
         existsFn: fakeExistsFn,
         invokeAgentFn: fakeInvoke,
-        readStateFn: async () =>
-          makeState({ prototype_audit: { status: "in_progress", file: existingFile } }),
+        readStateFn: async () => makeState(),
         loadSkillFn: fakeLoadSkill,
         writeStateFn: async (_root, state) => {
           capturedState = state;
@@ -82,7 +82,13 @@ describe("US-003-AC01: prototype_audit.status is set to completed", () => {
       },
     );
 
-    expect(capturedState!.phases.prototype.prototype_audit?.file).toBe(existingFile);
+    const entries = capturedState!.phases.prototype.prototype_audit as Array<{
+      index: number;
+      status: string;
+      file: string | null;
+    }>;
+    expect(entries.length).toBe(1);
+    expect(entries[0].file).toBe("it_000042_audit-report_001.json");
   });
 });
 
@@ -148,7 +154,7 @@ describe("US-003-AC03: refactor prototype can run after audit without --force", 
         readStateFn: async () => makeState(),
         loadSkillFn: fakeLoadSkill,
         writeStateFn: async (_root, state) => {
-          persistedStatus = state.phases.prototype.prototype_audit?.status;
+          persistedStatus = state.phases.prototype.prototype_audit?.[0]?.status;
         },
       },
     );

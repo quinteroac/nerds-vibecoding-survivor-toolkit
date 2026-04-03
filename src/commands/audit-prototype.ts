@@ -8,7 +8,7 @@ import {
   type AgentProvider,
   type AgentResult,
 } from "../agent";
-import type { State } from "../schemas/tmpl_state";
+import type { PrototypeAuditEntry, State } from "../schemas/tmpl_state";
 import { assertGuardrail } from "../guardrail";
 import { exists, FLOW_REL_DIR, readState, writeState } from "../state";
 
@@ -69,44 +69,67 @@ export async function runAuditPrototype(
 
   const skillBody = await mergedDeps.loadSkillFn(projectRoot, "audit-prototype");
   const nonInteractive = opts.interactive === false;
-  const skillWithModeDirective = nonInteractive
-    ? `${skillBody}\n\n## Auto Mode Directive\nThis execution is non-interactive (auto mode). Do not ask the user to choose options after the compliance report. Assume option (a) Follow recommendations and proceed immediately. You must write both .agents/flow/it_{iteration}_audit.md and .agents/flow/it_{iteration}_audit.json in this run.`
-    : skillBody;
-  const prompt = buildPrompt(skillWithModeDirective, { iteration: state.current_iteration });
-  const result = await mergedDeps.invokeAgentFn({
-    provider: opts.provider,
-    prompt,
-    cwd: projectRoot,
-    interactive: opts.interactive ?? true,
-    yolo: opts.yolo ?? false,
-  });
-  if (result.exitCode !== 0) {
-    throw new Error(`Agent invocation failed with exit code ${result.exitCode}.`);
-  }
 
-  const auditJsonFileName = `it_${state.current_iteration}_audit.json`;
-  const auditJsonPath = join(projectRoot, FLOW_REL_DIR, auditJsonFileName);
-  const auditMdFileName = `it_${state.current_iteration}_audit.md`;
-  const auditMdPath = join(projectRoot, FLOW_REL_DIR, auditMdFileName);
+  const rawRequirementDefs = state.phases.define.requirement_definition;
+  // Support legacy single-object format for state objects injected directly in tests.
+  const requirementDefs = Array.isArray(rawRequirementDefs)
+    ? rawRequirementDefs
+    : [
+        {
+          index: 1,
+          status: (rawRequirementDefs as unknown as { status: string }).status,
+          file: (rawRequirementDefs as unknown as { file: string | null }).file ?? null,
+        },
+      ];
+  const prdEntries = [...requirementDefs].sort((a, b) => a.index - b.index);
 
-  let auditArtifactFile: string | null = null;
-  if (await mergedDeps.existsFn(auditJsonPath)) {
-    auditArtifactFile = auditJsonFileName;
-  } else if (await mergedDeps.existsFn(auditMdPath)) {
-    auditArtifactFile = auditMdFileName;
-  }
-
-  if (!auditArtifactFile) {
+  if (prdEntries.length === 0) {
     throw new Error(
-      `Audit artifact not found after audit step: expected either ${join(FLOW_REL_DIR, auditJsonFileName)} or ${join(FLOW_REL_DIR, auditMdFileName)}.`,
+      "No requirement definitions found. Run `nvst define requirement` and `nvst approve requirement` first.",
     );
   }
 
-  state.phases.prototype.prototype_audit = {
-    ...state.phases.prototype.prototype_audit,
-    status: "completed",
-    file: auditArtifactFile,
-  };
+  const auditEntries: PrototypeAuditEntry[] = [];
+
+  for (const prdEntry of prdEntries) {
+    const paddedIndex = String(prdEntry.index).padStart(3, "0");
+    const auditReportFileName = `it_${state.current_iteration}_audit-report_${paddedIndex}.json`;
+    const auditReportPath = join(projectRoot, FLOW_REL_DIR, auditReportFileName);
+
+    const autoModeNote = nonInteractive
+      ? `\n\n## Auto Mode Directive\nThis execution is non-interactive (auto mode). This audit targets PRD index ${paddedIndex}${prdEntry.file ? ` (file: ${prdEntry.file})` : ""}. Do not ask the user to choose options after the compliance report. Assume option (a) Follow recommendations and proceed immediately. You must write .agents/flow/${auditReportFileName} in this run.`
+      : "";
+
+    const prompt = buildPrompt(`${skillBody}${autoModeNote}`, {
+      iteration: state.current_iteration,
+      prd_index: paddedIndex,
+      prd_file: prdEntry.file ?? "",
+    });
+
+    const result = await mergedDeps.invokeAgentFn({
+      provider: opts.provider,
+      prompt,
+      cwd: projectRoot,
+      interactive: opts.interactive ?? true,
+      yolo: opts.yolo ?? false,
+    });
+
+    if (result.exitCode !== 0) {
+      throw new Error(
+        `Agent invocation failed with exit code ${result.exitCode} for PRD ${paddedIndex}.`,
+      );
+    }
+
+    if (!(await mergedDeps.existsFn(auditReportPath))) {
+      throw new Error(
+        `Audit report not found after audit step: expected ${join(FLOW_REL_DIR, auditReportFileName)}.`,
+      );
+    }
+
+    auditEntries.push({ index: prdEntry.index, status: "completed", file: auditReportFileName });
+  }
+
+  state.phases.prototype.prototype_audit = auditEntries;
   state.updated_by = "nvst:audit-prototype";
   await mergedDeps.writeStateFn(projectRoot, state);
 }

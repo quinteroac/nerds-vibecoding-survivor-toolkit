@@ -281,7 +281,7 @@ describe("US-001-AC07 (additional): AuditPrototypeOptions.interactive is honoure
     expect(capturedInteractive).toBe(false);
     expect(capturedPrompt).toContain("Auto Mode Directive");
     expect(capturedPrompt).toContain("Do not ask the user to choose options");
-    expect(capturedPrompt).toContain("it_{iteration}_audit.json");
+    expect(capturedPrompt).toContain("audit-report_001.json");
   });
 
   it("runAuditPrototype defaults interactive to true when not set", async () => {
