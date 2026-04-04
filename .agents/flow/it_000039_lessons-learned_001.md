@@ -29,3 +29,13 @@
 **Pitfalls Encountered:** None — pure Markdown change; no TypeScript involved.
 
 **Useful Context for Future Agents:** The `## Reasoning Protocol` CoD pattern is now consistently applied across `define-requirement`, `refine-requirement`, and `create-prototype`. For any remaining skills needing CoD (e.g. `audit-prototype`, `refactor-prototype`), follow the same placement and tailor the example draft steps to the skill domain. No typecheck or build steps are required for SKILL.md edits.
+
+## US-004 — CoD Reasoning in `audit-prototype` skill
+
+**Summary:** Added a `## Reasoning Protocol` section to `nvst-skills/audit-prototype/SKILL.md` with Chain of Draft (CoD) instructions for internal AI reasoning.
+
+**Key Decisions:** Placed the new section between the title/description block and `## Context`, before any execution sections, consistent with the pattern used in the other three skills. Example draft steps were tailored to audit context (e.g. "AC01 missing test", "FR-02 partially covered").
+
+**Pitfalls Encountered:** None — pure Markdown change; no TypeScript involved. `audit-prototype` has no `## The Job` section (unlike other skills), so the section was placed right after the introductory paragraph, before `## Context`.
+
+**Useful Context for Future Agents:** The `## Reasoning Protocol` CoD pattern is now applied to all four skills: `define-requirement`, `refine-requirement`, `create-prototype`, and `audit-prototype`. The placement rule is: insert after the introductory block, before the first substantive section. No typecheck or build steps are required for SKILL.md edits.
