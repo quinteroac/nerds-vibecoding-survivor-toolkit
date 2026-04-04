@@ -10,6 +10,16 @@ Lead a focused ideation session with the developer. Read context, conduct a one-
 
 ---
 
+## Reasoning Protocol
+
+Use **Chain of Draft (CoD)** for all internal reasoning steps. Before producing any user-facing output, think through your reasoning in ultra-compact draft steps:
+
+- Each draft step must be **≤ ~5 words** (e.g. "read roadmap first", "scope: new feature", "avoid duplicate idea", "effort: M fits iteration").
+- CoD applies **only to internal reasoning** — the actual ideation output (interview questions, idea proposals, ROADMAP.md updates) must remain complete, clear, and readable.
+- Use CoD when evaluating which ideas to propose, assessing fit against constraints, and deciding ROADMAP.md placement.
+
+---
+
 ## The Job
 
 1. Read `ROADMAP.md` and `PROJECT_CONTEXT.md` from the project root (if they exist) before starting the interview. Use them to understand existing direction, tech stack, and audience.

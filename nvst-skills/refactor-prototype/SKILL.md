@@ -8,6 +8,15 @@ user-invocable: true
 
 Apply the refactor plan produced by the audit phase to the codebase in a **single, autonomous agent session**.
 
+## Reasoning Protocol
+
+Use **Chain of Draft (CoD)** for all internal reasoning before generating the refactor plan or applying any changes.
+
+- **Scope:** Internal reasoning only — draft steps are never shown to the user; all output (reports, code, comments) remains complete and readable.
+- **Step length:** Each draft step must be ≤ ~5 words (e.g. "parse audit JSON first", "group items by file", "run typecheck after each change", "no deviations found").
+- **Purpose:** Rapidly evaluate refactor strategies, prioritise items, and detect conflicts before committing to changes.
+- **Output guarantee:** The refactor completion report and all code changes are always full, unabbreviated, and production-ready.
+
 ## Your task
 
 1. **Read the audit JSON** at the path provided in the Context section below (`audit_json_path`). This file contains the refactor plan (e.g. goals, user stories, refactor items, and quality checks) from `nvst audit prototype`.

@@ -12,6 +12,15 @@ Your goal is to keep the **project documentation in sync** with the latest itera
 
 All generated content **must be in English**.
 
+## Reasoning Protocol
+
+Use **Chain of Draft (CoD)** for all internal reasoning steps before producing any output.
+
+- **Scope:** applies only to your internal thinking — approval output, plans, and user communication remain complete and unabbreviated.
+- **Step length:** each draft step must be ≤ ~5 words (e.g. "read PRD artifacts first", "context doc needs update", "roadmap item completed").
+- **Purpose:** reduces token usage for intermediate reasoning while keeping all final output intact and user-facing content unaffected.
+- **Guarantee:** nothing in CoD reasoning appears in the final output shown to the user.
+
 ## Files and artifacts you must use
 
 Iteration artifacts live under `.agents/flow/`.

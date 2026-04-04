@@ -16,6 +16,17 @@ Update `it_{current_iteration}_product-requirement-document.md` in place based o
 
 ---
 
+## Reasoning Protocol
+
+Use **Chain of Draft (CoD)** for all internal reasoning steps performed while executing this skill.
+
+- **Scope:** applies to internal reasoning only — draft steps are never shown to the user.
+- **Step length:** each draft step must be ≤ ~5 words (e.g. "missing edge case found", "scope creep in US-003").
+- **Purpose:** reduce token usage during reasoning (document analysis, challenge identification, change scoping) without degrading output quality.
+- **User-facing output is unaffected:** clarifying questions, challenge findings, updated PRD content, and state updates must remain complete, clear, and fully formed.
+
+---
+
 ## The Job
 
 1. Check if `.agents/state.json` exists. If it does, read it to obtain `requirement_definition.file` (e.g. `it_000001_product-requirement-document.md`). If it does not exist, ask the user to provide the required information:

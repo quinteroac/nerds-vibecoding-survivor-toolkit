@@ -8,6 +8,15 @@ user-invocable: true
 
 Validate the product requirement document (PRD) for the current iteration against the implemented code.
 
+## Reasoning Protocol
+
+Use **Chain of Draft (CoD)** for all internal reasoning before producing the compliance report.
+
+- **Scope:** applies only to your internal thinking; the audit report output must remain complete and readable.
+- **Step length:** each draft step ≤ ~5 words (e.g. "AC01 missing test", "FR-02 partially covered", "no edge case handled").
+- **Purpose:** rapidly triage findings, surface gaps, and prioritise issues before writing the final report.
+- **Guarantee:** draft steps are never shown in the output; only the finished compliance report and artifacts are presented to the user.
+
 ## Context
 
 - Iteration artifacts live under `.agents/flow/`.

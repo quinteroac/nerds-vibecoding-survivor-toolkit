@@ -10,6 +10,17 @@ Attempt to resolve the provided issue safely and deterministically by following 
 
 ---
 
+## Reasoning Protocol
+
+Use **Chain of Draft (CoD)** for all internal reasoning. Before diagnosing, planning, or implementing any fix, think step by step in short drafts — each step ≤ ~5 words.
+
+- **Scope:** Internal reasoning only — diagnosis, root-cause analysis, fix planning, verification steps.
+- **Step length:** Each draft step must be ≤ ~5 words (e.g. "reproduce: missing null check", "root cause: state not reset", "fix: add guard clause", "verify: re-run failing test").
+- **Purpose:** Reduce token use and latency while maintaining accuracy in root-cause identification and fix planning.
+- **Guarantee:** Fix implementation, checklist output, and any user-facing communication remain complete and unabbreviated.
+
+---
+
 ## Inputs
 
 | Source | Used for |

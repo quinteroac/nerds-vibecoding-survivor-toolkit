@@ -1,0 +1,305 @@
+{
+  "goals": [
+    "Reduce token consumption during agent reasoning steps by 75–92% across all NVST workflow skills.",
+    "Maintain full quality and completeness of user-facing output (documents, questions, prompts).",
+    "Establish a consistent, reusable CoD instruction pattern across all workflow SKILL.md files."
+  ],
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "CoD Reasoning in `define-requirement` skill",
+      "description": "As an AI agent executing the `define-requirement` skill, I want to use Chain of Draft for my internal reasoning steps so that I consume fewer tokens when deciding which clarifying questions to ask and how to structure the PRD, without reducing the quality of questions or the final document.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-001-AC01",
+          "text": "`nvst-skills/define-requirement/SKILL.md` contains a `## Reasoning Protocol` section (or equivalent clearly-labeled block) with CoD instructions."
+        },
+        {
+          "id": "US-001-AC02",
+          "text": "The CoD section explicitly states it applies to internal reasoning only, not to user-facing output."
+        },
+        {
+          "id": "US-001-AC03",
+          "text": "CoD instructions specify that each draft step must be ≤ ~5 words."
+        },
+        {
+          "id": "US-001-AC04",
+          "text": "All existing user-facing sections (job steps, output structure, questions flow) remain complete and unmodified in substance."
+        },
+        {
+          "id": "US-001-AC05",
+          "text": "Typecheck / lint passes."
+        }
+      ]
+    },
+    {
+      "id": "US-002",
+      "title": "CoD Reasoning in `refine-requirement` skill",
+      "description": "As an AI agent executing the `refine-requirement` skill, I want to apply CoD for internal reasoning so that I efficiently determine what aspects of the PRD need refinement before communicating feedback to the user.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-002-AC01",
+          "text": "`nvst-skills/refine-requirement/SKILL.md` contains the CoD `## Reasoning Protocol` section."
+        },
+        {
+          "id": "US-002-AC02",
+          "text": "CoD applies only to internal reasoning; user-facing output (clarifying questions, updated PRD) is unaffected."
+        },
+        {
+          "id": "US-002-AC03",
+          "text": "Each draft step ≤ ~5 words."
+        },
+        {
+          "id": "US-002-AC04",
+          "text": "Existing sections remain intact."
+        },
+        {
+          "id": "US-002-AC05",
+          "text": "Typecheck / lint passes."
+        }
+      ]
+    },
+    {
+      "id": "US-003",
+      "title": "CoD Reasoning in `create-prototype` skill",
+      "description": "As an AI agent executing the `create-prototype` skill, I want to use CoD for internal reasoning so that I efficiently plan implementation decisions (file structure, test strategy, approach) before writing code or producing prompts.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-003-AC01",
+          "text": "`nvst-skills/create-prototype/SKILL.md` contains the CoD `## Reasoning Protocol` section."
+        },
+        {
+          "id": "US-003-AC02",
+          "text": "CoD applies only to internal reasoning; implementation prompts and user output remain complete."
+        },
+        {
+          "id": "US-003-AC03",
+          "text": "Each draft step ≤ ~5 words."
+        },
+        {
+          "id": "US-003-AC04",
+          "text": "Existing sections remain intact."
+        },
+        {
+          "id": "US-003-AC05",
+          "text": "Typecheck / lint passes."
+        }
+      ]
+    },
+    {
+      "id": "US-004",
+      "title": "CoD Reasoning in `audit-prototype` skill",
+      "description": "As an AI agent executing the `audit-prototype` skill, I want to apply CoD when reasoning about findings so that I efficiently triage issues before producing the audit report.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-004-AC01",
+          "text": "`nvst-skills/audit-prototype/SKILL.md` contains the CoD `## Reasoning Protocol` section."
+        },
+        {
+          "id": "US-004-AC02",
+          "text": "CoD applies only to internal reasoning; the audit report output is complete and readable."
+        },
+        {
+          "id": "US-004-AC03",
+          "text": "Each draft step ≤ ~5 words."
+        },
+        {
+          "id": "US-004-AC04",
+          "text": "Existing sections remain intact."
+        },
+        {
+          "id": "US-004-AC05",
+          "text": "Typecheck / lint passes."
+        }
+      ]
+    },
+    {
+      "id": "US-005",
+      "title": "CoD Reasoning in `refactor-prototype` skill",
+      "description": "As an AI agent executing the `refactor-prototype` skill, I want to use CoD for internal reasoning so that I efficiently plan refactoring decisions before generating the refactor plan.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-005-AC01",
+          "text": "`nvst-skills/refactor-prototype/SKILL.md` contains the CoD `## Reasoning Protocol` section."
+        },
+        {
+          "id": "US-005-AC02",
+          "text": "CoD applies only to internal reasoning; the refactor plan output is complete and readable."
+        },
+        {
+          "id": "US-005-AC03",
+          "text": "Each draft step ≤ ~5 words."
+        },
+        {
+          "id": "US-005-AC04",
+          "text": "Existing sections remain intact."
+        },
+        {
+          "id": "US-005-AC05",
+          "text": "Typecheck / lint passes."
+        }
+      ]
+    },
+    {
+      "id": "US-006",
+      "title": "CoD Reasoning in `approve-prototype` skill",
+      "description": "As an AI agent executing the `approve-prototype` skill, I want to use CoD for internal reasoning so that I efficiently evaluate approval criteria before producing the approval output and triggering downstream steps.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-006-AC01",
+          "text": "`nvst-skills/approve-prototype/SKILL.md` contains the CoD `## Reasoning Protocol` section."
+        },
+        {
+          "id": "US-006-AC02",
+          "text": "CoD applies only to internal reasoning; approval output and user communication remain complete."
+        },
+        {
+          "id": "US-006-AC03",
+          "text": "Each draft step ≤ ~5 words."
+        },
+        {
+          "id": "US-006-AC04",
+          "text": "Existing sections remain intact."
+        },
+        {
+          "id": "US-006-AC05",
+          "text": "Typecheck / lint passes."
+        }
+      ]
+    },
+    {
+      "id": "US-007",
+      "title": "CoD Reasoning in `create-project-context` skill",
+      "description": "As an AI agent executing the `create-project-context` skill, I want to apply CoD when reasoning about codebase conventions so that I efficiently synthesize patterns before writing `PROJECT_CONTEXT.md`.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-007-AC01",
+          "text": "`nvst-skills/create-project-context/SKILL.md` contains the CoD `## Reasoning Protocol` section."
+        },
+        {
+          "id": "US-007-AC02",
+          "text": "CoD applies only to internal reasoning; the generated `PROJECT_CONTEXT.md` is complete and unaffected."
+        },
+        {
+          "id": "US-007-AC03",
+          "text": "Each draft step ≤ ~5 words."
+        },
+        {
+          "id": "US-007-AC04",
+          "text": "Existing sections remain intact."
+        },
+        {
+          "id": "US-007-AC05",
+          "text": "Typecheck / lint passes."
+        }
+      ]
+    },
+    {
+      "id": "US-008",
+      "title": "CoD Reasoning in `refine-project-context` skill",
+      "description": "As an AI agent executing the `refine-project-context` skill, I want to use CoD for internal reasoning so that I efficiently detect discrepancies between the documented context and the actual codebase before proposing updates.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-008-AC01",
+          "text": "`nvst-skills/refine-project-context/SKILL.md` contains the CoD `## Reasoning Protocol` section."
+        },
+        {
+          "id": "US-008-AC02",
+          "text": "CoD applies only to internal reasoning; all user-facing output and context updates remain complete."
+        },
+        {
+          "id": "US-008-AC03",
+          "text": "Each draft step ≤ ~5 words."
+        },
+        {
+          "id": "US-008-AC04",
+          "text": "Existing sections remain intact."
+        },
+        {
+          "id": "US-008-AC05",
+          "text": "Typecheck / lint passes."
+        }
+      ]
+    },
+    {
+      "id": "US-009",
+      "title": "CoD Reasoning in `ideate` skill",
+      "description": "As an AI agent executing the `ideate` skill, I want to apply CoD when reasoning about ideas and roadmap candidates so that I efficiently evaluate options before presenting them to the user.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-009-AC01",
+          "text": "`nvst-skills/ideate/SKILL.md` contains the CoD `## Reasoning Protocol` section."
+        },
+        {
+          "id": "US-009-AC02",
+          "text": "CoD applies only to internal reasoning; the ideation output (interview, roadmap proposals) remains complete and readable."
+        },
+        {
+          "id": "US-009-AC03",
+          "text": "Each draft step ≤ ~5 words."
+        },
+        {
+          "id": "US-009-AC04",
+          "text": "Existing sections remain intact."
+        },
+        {
+          "id": "US-009-AC05",
+          "text": "Typecheck / lint passes."
+        }
+      ]
+    },
+    {
+      "id": "US-010",
+      "title": "CoD Reasoning in `execute-automated-fix` skill",
+      "description": "As an AI agent executing the `execute-automated-fix` skill, I want to use CoD for internal reasoning so that I efficiently diagnose and plan fixes before modifying code.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-010-AC01",
+          "text": "`nvst-skills/execute-automated-fix/SKILL.md` contains the CoD `## Reasoning Protocol` section."
+        },
+        {
+          "id": "US-010-AC02",
+          "text": "CoD applies only to internal reasoning; the fix implementation and user communication remain complete."
+        },
+        {
+          "id": "US-010-AC03",
+          "text": "Each draft step ≤ ~5 words."
+        },
+        {
+          "id": "US-010-AC04",
+          "text": "Existing sections remain intact."
+        },
+        {
+          "id": "US-010-AC05",
+          "text": "Typecheck / lint passes."
+        }
+      ]
+    }
+  ],
+  "functionalRequirements": [
+    {
+      "id": "FR-1",
+      "description": "** Each of the 10 NVST workflow SKILL.md files (`define-requirement`, `refine-requirement`, `create-prototype`, `audit-prototype`, `refactor-prototype`, `approve-prototype`, `create-project-context`, `refine-project-context`, `ideate`, `execute-automated-fix`) must include a `## Reasoning Protocol` section."
+    },
+    {
+      "id": "FR-2",
+      "description": "** The `## Reasoning Protocol` section must instruct the model to use Chain of Draft for all internal reasoning: concise draft steps of ≤ ~5 words each, written only in a private scratchpad or thinking block, never surfaced to the user."
+    },
+    {
+      "id": "FR-3",
+      "description": "** The `## Reasoning Protocol` section must explicitly distinguish between internal reasoning (CoD, concise) and user-facing output (normal, complete prose)."
+    },
+    {
+      "id": "FR-4",
+      "description": "** The CoD instruction pattern must be consistent in wording and placement across all 10 skills to establish a reusable standard."
+    },
+    {
+      "id": "FR-5",
+      "description": "** No existing user-facing section in any SKILL.md may be removed or substantively altered — only the CoD section is added."
+    },
+    {
+      "id": "FR-6",
+      "description": "** The `## Reasoning Protocol` section must be placed near the top of each SKILL.md, after the frontmatter and title, before the main job steps — so it is loaded into context first."
+    }
+  ]
+}

@@ -12,6 +12,17 @@ Produce `it_{current_iteration}_product-requirement-document_{index3}.md` in `.a
 
 ---
 
+## Reasoning Protocol
+
+Use **Chain of Draft (CoD)** for all internal reasoning steps performed while executing this skill.
+
+- **Scope:** applies to internal reasoning only — draft steps are never shown to the user.
+- **Step length:** each draft step must be ≤ ~5 words (e.g. "user wants auth feature", "scope: login + logout").
+- **Purpose:** reduce token usage during reasoning (question selection, scope inference, PRD structuring) without degrading output quality.
+- **User-facing output is unaffected:** questions asked to the user, PRD content, and state updates must remain complete, clear, and fully formed.
+
+---
+
 ## The Job
 
 1. Check if `.agents/state.json` exists. If it does, read it to obtain `current_iteration` (and any other required fields). If it does not exist, ask the user to provide the required information:
