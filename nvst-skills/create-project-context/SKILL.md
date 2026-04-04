@@ -10,6 +10,17 @@ Create or update `.agents/PROJECT_CONTEXT.md` so the agent has a single, stable 
 
 ---
 
+## Reasoning Protocol
+
+Before executing any step below, apply **Chain of Draft (CoD)** reasoning internally:
+
+- Scope: internal scratch-pad only — never include draft steps in `PROJECT_CONTEXT.md` or any user-facing output.
+- Each draft step must be ≤ ~5 words (e.g. "conventions: kebab-case files", "stack: Bun + TypeScript", "testing: bun:test unit").
+- Purpose: compress reasoning into minimal tokens so patterns are synthesised before writing the final document.
+- The generated `PROJECT_CONTEXT.md` must be complete, well-structured, and unaffected by the brevity of internal drafts.
+
+---
+
 ## The Job
 
 1. Check if `.agents/state.json` exists. If it does, read it to obtain `current_iteration` (and any other required fields). If it does not exist, ask the user to provide the required information:
