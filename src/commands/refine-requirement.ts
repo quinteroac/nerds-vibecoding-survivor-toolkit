@@ -17,15 +17,18 @@ export async function runRefineRequirement(opts: RefineRequirementOptions): Prom
   const projectRoot = process.cwd();
   const state = await readState(projectRoot);
 
-  const requirementDefinition = state.phases.define.requirement_definition;
+  const requirementDefinitions = state.phases.define.requirement_definition;
+  const lastInProgress = [...requirementDefinitions].reverse().find((e) => e.status === "in_progress");
   await assertGuardrail(
     state,
-    requirementDefinition.status !== "in_progress",
-    `Cannot refine requirement from status '${requirementDefinition.status}'. Expected in_progress.`,
+    !lastInProgress,
+    "Cannot refine requirement: no in_progress requirement definition found.",
     { force },
   );
 
-  const requirementFile = requirementDefinition.file;
+  if (!lastInProgress) return;
+
+  const requirementFile = lastInProgress.file;
   if (!requirementFile) {
     throw new Error("Cannot refine requirement: define.requirement_definition.file is missing.");
   }

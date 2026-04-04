@@ -41,7 +41,7 @@ export async function runRefineRefactorPlan(
   const state = await readState(projectRoot);
   const mergedDeps: RefineRefactorPlanDeps = { ...defaultDeps, ...deps };
 
-  const refactorPlan = state.phases.refactor.refactor_plan;
+  const refactorPlan = state.phases.refactor?.refactor_plan;
   if (!refactorPlan) {
     throw new Error("Cannot refine refactor plan: refactor.refactor_plan is missing from state.");
   }

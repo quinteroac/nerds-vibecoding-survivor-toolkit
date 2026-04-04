@@ -1,0 +1,62 @@
+{
+  "iteration": "000044",
+  "executiveSummary": "Iteration 000044 implements the multi-PRD scaffolding with broad compliance. The Zod schema, define-requirement, create-prototype, audit-prototype, and refactor-prototype are fully compliant. Three gaps remain: (1) scaffold template still uses legacy single-object format for array fields; (2) approve-prototype guardrail checks legacy filenames only, blocking multi-PRD flows; (3) approve-prototype PR body hardcodes the legacy refactor report path. A breaking output message change in approve-requirement fails the backward-compat test.",
+  "verificationByFR": [
+    { "frId": "FR-1", "assessment": "comply" },
+    { "frId": "FR-2", "assessment": "comply" },
+    { "frId": "FR-3", "assessment": "comply" },
+    { "frId": "FR-4", "assessment": "comply" },
+    { "frId": "FR-5", "assessment": "partially_comply" },
+    { "frId": "FR-6", "assessment": "comply" },
+    { "frId": "FR-7", "assessment": "comply" },
+    { "frId": "FR-8", "assessment": "does_not_comply" },
+    { "frId": "FR-9", "assessment": "partially_comply" }
+  ],
+  "verificationByUS": [
+    { "usId": "US-001", "assessment": "comply" },
+    { "usId": "US-002", "assessment": "partially_comply" },
+    { "usId": "US-003", "assessment": "comply" },
+    { "usId": "US-004", "assessment": "comply" },
+    { "usId": "US-005", "assessment": "comply" },
+    { "usId": "US-006", "assessment": "partially_comply" },
+    { "usId": "US-007", "assessment": "comply" },
+    { "usId": "US-008", "assessment": "partially_comply" }
+  ],
+  "minorObservations": [
+    "approve-requirement generates a single it_XXXXXX_PRD.json even for multiple PRDs (last-wins). Low-risk since it is only a legacy fallback in create-prototype.",
+    "progress.json entries reference audit_artifact_path / refactor_report_path with legacy names; these fields appear unused by core commands.",
+    "New confirmation prompt in approve-requirement blocks non-interactive CI runs that previously worked without --force.",
+    "approve-prototype guardrail does not read state.phases.prototype.prototype_audit / prototype_refactor for completion status."
+  ],
+  "conclusionsAndRecommendations": "Fix four items: (1) update scaffold/templates to use empty arrays []; (2) extend approve-prototype guardrail to recognise per-PRD audit-report_NNN.json and refactor-plan_NNN.md files (or read from state); (3) update approve-prototype PR body to read refactor paths from state.phases.prototype.prototype_refactor; (4) update US-003-AC08a test to expect the new success message and add --force or stdin 'y' to satisfy the confirmation prompt.",
+  "refactorPlan": [
+    {
+      "id": "RP-1",
+      "title": "Fix scaffold template (FR-8)",
+      "file": "scaffold/.agents/tmpl_state.json",
+      "description": "Replace legacy single-object initialisations for requirement_definition, prototype_creation, prototype_audit, and prototype_refactor with empty arrays [].",
+      "priority": "high"
+    },
+    {
+      "id": "RP-2",
+      "title": "Fix approve-prototype guardrail to recognise new file names (FR-9)",
+      "file": "src/commands/approve-prototype.ts",
+      "description": "Extend the hasAuditMd/hasAuditJson/hasRefactorReport check to also pass when state.phases.prototype.prototype_audit is a non-empty all-completed array, and state.phases.prototype.prototype_refactor is a non-empty all-completed array.",
+      "priority": "high"
+    },
+    {
+      "id": "RP-3",
+      "title": "Fix approve-prototype PR body refactor path (FR-9 / US-008-AC03)",
+      "file": "src/commands/approve-prototype.ts",
+      "description": "Replace hardcoded it_XXXXXX_refactor-report.md with paths read from state.phases.prototype.prototype_refactor, falling back to the legacy name only when the array is empty.",
+      "priority": "high"
+    },
+    {
+      "id": "RP-4",
+      "title": "Fix backward-compat test US-003-AC08a (US-006)",
+      "file": "tests/us-003-command-compatibility.test.ts",
+      "description": "Update expected stdout to 'All 1 requirement(s) approved.' and add --force to CLI invocation (or pipe 'y' to stdin) so the confirmation prompt does not abort.",
+      "priority": "medium"
+    }
+  ]
+}

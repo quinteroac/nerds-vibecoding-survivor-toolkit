@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [000040] - 2026-04-03
+
+### Added
+- Use the PRD markdown title as the PR title.
+- Append a footer with a link to the GitHub repository.
+
 ## [000043] - 2026-04-03
 
 ### Added

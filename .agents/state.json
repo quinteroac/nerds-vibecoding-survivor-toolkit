@@ -1,79 +1,49 @@
 {
-  "current_iteration": "000043",
+  "current_iteration": "000038",
   "current_phase": "prototype",
   "phases": {
     "define": {
-      "ideation": {
-        "status": "pending",
-        "file": null
-      },
-      "requirement_definition": {
-        "status": "approved",
-        "file": "it_000043_product-requirement-document.md"
-      },
-      "prd_generation": {
-        "status": "completed",
-        "file": "it_000043_PRD.json"
-      }
+      "ideation": null,
+      "requirement_definition": [
+        {
+          "index": 1,
+          "status": "approved",
+          "file": "prd.md"
+        }
+      ]
     },
     "prototype": {
-      "prototype_creation": {
-        "status": "completed",
-        "file": "it_000043_progress.json"
-      },
-      "prototype_audit": {
-        "status": "completed",
-        "file": "it_000043_audit.json"
-      },
-      "prototype_refactor": {
-        "status": "pending",
-        "file": null
-      },
+      "prototype_creation": [
+        {
+          "index": 1,
+          "status": "completed",
+          "file": null
+        }
+      ],
+      "prototype_audit": [
+        {
+          "index": 1,
+          "status": "completed",
+          "file": null
+        }
+      ],
+      "prototype_refactor": [
+        {
+          "index": 1,
+          "status": "completed",
+          "file": "it_000038_refactor-plan_001.md"
+        }
+      ],
       "prototype_approval": {
         "status": "completed",
         "file": null
       },
       "project_context": {
-        "status": "pending",
-        "file": null
-      },
-      "test_plan": {
-        "status": "pending",
-        "file": null
-      },
-      "tp_generation": {
-        "status": "pending",
-        "file": null
-      },
-      "prototype_build": {
-        "status": "pending",
-        "file": null
-      },
-      "test_execution": {
-        "status": "pending",
-        "file": null
-      },
-      "prototype_approved": false
-    },
-    "refactor": {
-      "evaluation_report": {
-        "status": "pending",
-        "file": null
-      },
-      "refactor_plan": {
-        "status": "pending",
-        "file": null
-      },
-      "refactor_execution": {
-        "status": "pending",
-        "file": null
-      },
-      "changelog": {
-        "status": "pending",
-        "file": null
+        "status": "created",
+        "file": "ctx.md"
       }
     }
   },
-  "last_updated": "2026-04-03T01:33:56.743Z",
+  "last_updated": "2026-04-04T19:40:50.377Z",
   "updated_by": "nvst:approve-prototype"
 }

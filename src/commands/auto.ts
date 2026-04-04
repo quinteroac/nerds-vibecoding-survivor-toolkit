@@ -33,11 +33,12 @@ export async function runAuto(opts: AutoOptions, deps: Partial<AutoDeps> = {}): 
   const projectRoot = process.cwd();
 
   const state = await merged.readStateFn(projectRoot);
-  const requirementStatus = state.phases.define.requirement_definition.status;
+  const requirementDefinitions = state.phases.define.requirement_definition;
+  const hasApproved = requirementDefinitions.some((e) => e.status === "approved");
 
   await assertGuardrail(
     state,
-    requirementStatus !== "approved",
+    !hasApproved,
     "Requirement must be approved before running auto mode. Run `bun nvst approve requirement` first.",
     {
       force: opts.force,

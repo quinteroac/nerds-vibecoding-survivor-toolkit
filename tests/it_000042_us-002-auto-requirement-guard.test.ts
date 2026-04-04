@@ -11,6 +11,12 @@ function makeState(
   reqStatus: "pending" | "in_progress" | "approved",
   guardrail?: "strict" | "relaxed",
 ): State {
+  const requirementDefinition =
+    reqStatus === "approved"
+      ? [{ index: 1 as const, status: "approved" as const, file: null }]
+      : reqStatus === "in_progress"
+        ? [{ index: 1 as const, status: "in_progress" as const, file: null }]
+        : ([] as State["phases"]["define"]["requirement_definition"]);
   return {
     current_iteration: "000042",
     current_phase: "prototype",
@@ -18,7 +24,7 @@ function makeState(
     last_updated: new Date().toISOString(),
     phases: {
       define: {
-        requirement_definition: { status: reqStatus, file: null },
+        requirement_definition: requirementDefinition,
         prd_generation: { status: "completed", file: null },
       },
       prototype: {},

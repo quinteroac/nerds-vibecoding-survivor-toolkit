@@ -34,6 +34,39 @@ export function extractGoalBullets(goalsSection: string): string[] {
     .filter((l) => l.startsWith("- "));
 }
 
+/**
+ * Builds a merged CHANGELOG bullets list from multiple PRDs.
+ * When multiple PRDs contribute goals, each PRD's goal bullets are prefixed with
+ * the PRD index and title, e.g. `- **PRD 001 — My Title:** Original goal text`.
+ * When only a single PRD is present, bullets are returned in their original form.
+ */
+export function buildMultiPrdChangelogBullets(
+  prdEntries: Array<{ index: number; title: string | null; goals: string | null }>,
+): string[] {
+  const withBullets = prdEntries.filter(
+    (e) => e.goals && extractGoalBullets(e.goals).length > 0,
+  );
+  const usePrefix = withBullets.length > 1;
+  const allBullets: string[] = [];
+  for (const { index, title, goals } of prdEntries) {
+    if (!goals) continue;
+    const bullets = extractGoalBullets(goals);
+    if (bullets.length === 0) continue;
+    if (usePrefix) {
+      const prdLabel = title
+        ? `**PRD ${String(index).padStart(3, "0")} — ${title}:**`
+        : `**PRD ${String(index).padStart(3, "0")}:**`;
+      for (const bullet of bullets) {
+        const bulletText = bullet.replace(/^-\s*/, "");
+        allBullets.push(`- ${prdLabel} ${bulletText}`);
+      }
+    } else {
+      allBullets.push(...bullets);
+    }
+  }
+  return allBullets;
+}
+
 /** Builds a Keep a Changelog entry for one iteration. */
 export function buildChangelogEntry(
   iteration: string,
@@ -328,13 +361,27 @@ export async function runApprovePrototype(
     mergedDeps.existsFn(refactorReportPath),
   ]);
 
+  // Check state arrays for multi-PRD completion (RP-2)
+  // Normalise: handle both the new array format and legacy single-object format (not going through Zod).
+  const rawAudit = state.phases.prototype?.prototype_audit;
+  const auditEntries = Array.isArray(rawAudit) ? rawAudit : [];
+  const rawRefactor = state.phases.prototype?.prototype_refactor;
+  const refactorEntries = Array.isArray(rawRefactor) ? rawRefactor : [];
+  const auditCompletedViaState =
+    auditEntries.length > 0 && auditEntries.every((e) => e.status === "completed");
+  const refactorCompletedViaState =
+    refactorEntries.length > 0 && refactorEntries.every((e) => e.status === "completed");
+
+  const effectiveHasAudit = hasAuditMd || hasAuditJson || auditCompletedViaState;
+  const effectiveHasRefactor = hasRefactorReport || refactorCompletedViaState;
+
   let violated = false;
   let message = "";
 
-  if (!hasAuditMd && !hasAuditJson && !hasRefactorReport) {
+  if (!effectiveHasAudit && !effectiveHasRefactor) {
     violated = true;
     message = AUDIT_MISSING_MESSAGE;
-  } else if (hasAuditJson && !hasRefactorReport) {
+  } else if ((hasAuditJson || auditCompletedViaState) && !effectiveHasRefactor) {
     violated = true;
     message = REFACTOR_NOT_RUN_MESSAGE;
   }
@@ -355,39 +402,55 @@ export async function runApprovePrototype(
     throw new Error(`Agent invocation failed with exit code ${result.exitCode}.`);
   }
 
-  // Append iteration goals to CHANGELOG.md (US-002)
+  // Read all PRDs from requirement_definition array (US-008-AC01)
+  const reqDefs = state.phases.define?.requirement_definition ?? [];
+  const sortedReqDefs = [...reqDefs].sort((a, b) => a.index - b.index);
+  const allPrdContents: Array<{ index: number; content: string }> = (
+    await Promise.all(
+      sortedReqDefs
+        .filter((e) => e.file !== null)
+        .map(async (e) => {
+          const content = await mergedDeps.readPrdMarkdownFn(join(flowDir, e.file!));
+          return content !== null ? { index: e.index, content } : null;
+        }),
+    )
+  ).filter((x): x is { index: number; content: string } => x !== null);
+
+  // Legacy fallback: if no PRD entries in the array, try the single-PRD naming convention
+  if (allPrdContents.length === 0) {
+    const legacyPrdPath = join(flowDir, `it_${iteration}_product-requirement-document.md`);
+    const legacyContent = await mergedDeps.readPrdMarkdownFn(legacyPrdPath);
+    if (legacyContent !== null) {
+      allPrdContents.push({ index: 1, content: legacyContent });
+    }
+  }
+
+  // Append iteration goals to CHANGELOG.md (US-008-AC02)
   const changelogPath = join(projectRoot, "CHANGELOG.md");
-  const prdMdPathForChangelog = join(
-    flowDir,
-    `it_${iteration}_product-requirement-document.md`,
-  );
-  const prdForChangelog = await mergedDeps.readPrdMarkdownFn(prdMdPathForChangelog);
-  if (prdForChangelog === null) {
+  if (allPrdContents.length === 0) {
     mergedDeps.warnFn(
-      `Skipping changelog update: PRD not found for iteration ${iteration}.`,
+      `Skipping changelog update: no PRD files found for iteration ${iteration}.`,
     );
   } else {
-    const goalsSection = extractPrdSection(prdForChangelog, "Goals");
-    if (!goalsSection) {
+    const prdGoalEntries = allPrdContents.map(({ index, content }) => ({
+      index,
+      title: extractPrdTitle(content),
+      goals: extractPrdSection(content, "Goals"),
+    }));
+    const bullets = buildMultiPrdChangelogBullets(prdGoalEntries);
+    if (bullets.length === 0) {
       mergedDeps.warnFn(
-        "Skipping changelog update: no ## Goals section found in PRD.",
+        "Skipping changelog update: no ## Goals bullet items found in any PRD.",
       );
     } else {
-      const bullets = extractGoalBullets(goalsSection);
-      if (bullets.length === 0) {
-        mergedDeps.warnFn(
-          "Skipping changelog update: ## Goals section has no bullet items.",
-        );
-      } else {
-        const isoDate = new Date().toISOString().slice(0, 10);
-        const entry = buildChangelogEntry(iteration, isoDate, bullets);
-        const existingChangelog = await mergedDeps.readChangelogFn(changelogPath);
-        const updatedContent =
-          existingChangelog !== null
-            ? insertChangelogEntry(existingChangelog, entry)
-            : CHANGELOG_HEADER + "\n\n" + entry + "\n";
-        await mergedDeps.writeChangelogFn(changelogPath, updatedContent);
-      }
+      const isoDate = new Date().toISOString().slice(0, 10);
+      const entry = buildChangelogEntry(iteration, isoDate, bullets);
+      const existingChangelog = await mergedDeps.readChangelogFn(changelogPath);
+      const updatedContent =
+        existingChangelog !== null
+          ? insertChangelogEntry(existingChangelog, entry)
+          : CHANGELOG_HEADER + "\n\n" + entry + "\n";
+      await mergedDeps.writeChangelogFn(changelogPath, updatedContent);
     }
   }
 
@@ -432,14 +495,12 @@ export async function runApprovePrototype(
       "GitHub CLI (gh) not found. Skipping PR creation. Push was successful.",
     );
   } else {
-    const prdMdPath = join(flowDir, `it_${iteration}_product-requirement-document.md`);
+    // Derive PR title from first PRD's title (US-008-AC03)
     let requirementName = `approve prototype iteration it_${iteration}`;
-
-    const prdMdContent = await mergedDeps.readPrdMarkdownFn(prdMdPath);
-    if (prdMdContent !== null) {
-      const extracted = extractPrdTitle(prdMdContent);
-      if (extracted) {
-        requirementName = extracted;
+    if (allPrdContents.length > 0) {
+      const firstTitle = extractPrdTitle(allPrdContents[0].content);
+      if (firstTitle) {
+        requirementName = firstTitle;
       } else {
         mergedDeps.warnFn(
           "Unable to derive PR title from markdown PRD: no `# Requirement:` heading found.",
@@ -447,18 +508,32 @@ export async function runApprovePrototype(
       }
     } else {
       mergedDeps.warnFn(
-        `Unable to derive PR title from markdown PRD: ${join(FLOW_REL_DIR, `it_${iteration}_product-requirement-document.md`)} missing.`,
+        `Unable to derive PR title from markdown PRD: no PRD files found for iteration ${iteration}.`,
       );
     }
 
-    const refactorReportRelativePath = join(FLOW_REL_DIR, `it_${iteration}_refactor-report.md`);
+    // Derive refactor report path(s) from state.phases.prototype.prototype_refactor (RP-3)
+    const rawRefactorState = state.phases.prototype?.prototype_refactor;
+    const refactorStateEntries = Array.isArray(rawRefactorState) ? rawRefactorState : [];
+    const refactorFilePaths = refactorStateEntries
+      .filter((e) => e.file !== null)
+      .map((e) => join(FLOW_REL_DIR, e.file!));
+    const refactorReportRelativePath =
+      refactorFilePaths.length > 0
+        ? refactorFilePaths.join(", ")
+        : join(FLOW_REL_DIR, `it_${iteration}_refactor-report.md`);
     const prTitle = `feat: it_${iteration} — ${requirementName}`;
 
-    const contextSection = prdMdContent !== null ? extractPrdSection(prdMdContent, "Context") : null;
-    const goalsSection = prdMdContent !== null ? extractPrdSection(prdMdContent, "Goals") : null;
-    const bodySections: string[] = [requirementName];
-    if (contextSection) bodySections.push(contextSection);
-    if (goalsSection) bodySections.push(goalsSection);
+    // Build PR body from all PRDs (US-008-AC03)
+    const bodySections: string[] = [];
+    for (const { content } of allPrdContents) {
+      const title = extractPrdTitle(content);
+      const contextSection = extractPrdSection(content, "Context");
+      const goalsSection = extractPrdSection(content, "Goals");
+      if (title) bodySections.push(title);
+      if (contextSection) bodySections.push(contextSection);
+      if (goalsSection) bodySections.push(goalsSection);
+    }
     bodySections.push(`Refactor report: ${refactorReportRelativePath}`);
     bodySections.push(NVST_PR_FOOTER);
     const prBody = bodySections.join("\n\n");

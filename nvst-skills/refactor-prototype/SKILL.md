@@ -20,7 +20,7 @@ Apply the refactor plan produced by the audit phase to the codebase in a **singl
 
 5. **Perform the full refactor autonomously** — do not stop mid-way to ask the user what to do next or whether to continue. Use the refactor plan and the existing codebase as your source of truth, carry out the entire refactor in this single session, and only use interaction (if any) to report progress and final status.
 
-6. **Write a completion report artifact** — after all refactor changes have been applied and quality checks have passed, write a markdown file named `it_{iteration}_refactor-report.md` into the `.agents/flow/` directory at the project root. This file is the completion indicator used by downstream steps to verify that the refactor finished.
+6. **Write a completion report artifact** — after all refactor changes have been applied and quality checks have passed, write a markdown file into the `.agents/flow/` directory at the project root. Use the filename provided in the `refactor_plan_file` context variable (e.g. `it_{iteration}_refactor-plan_001.md`); if that variable is absent, fall back to `it_{iteration}_refactor-report.md`. This file is the completion indicator used by downstream steps to verify that the refactor finished.
 
    The report **must be in English** and include, at minimum, the following top-level sections with meaningful content:
 
@@ -45,7 +45,9 @@ Before applying refactor items, detect whether any item is a UI task.
 You will receive:
 
 - `iteration`: current iteration (e.g. `000026`).
-- `audit_json_path`: absolute path to `it_{iteration}_audit.json` in `.agents/flow/`. Read this file to get the refactor plan and quality checks.
+- `audit_json_path`: absolute path to the audit report in `.agents/flow/`. Read this file to get the refactor plan and quality checks.
+- `refactor_plan_index`: zero-padded index of this refactor pass (e.g. `001`, `002`). Used to name the output artifact.
+- `refactor_plan_file`: expected output filename (e.g. `it_000026_refactor-plan_001.md`). Write the completion report using this exact name.
 
 ### Standalone Fallback
 

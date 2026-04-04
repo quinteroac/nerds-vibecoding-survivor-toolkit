@@ -11,13 +11,13 @@ function createInitialState(nowIso: string): State {
     phases: {
       define: {
         ideation: { status: "pending", file: null },
-        requirement_definition: { status: "pending", file: null },
+        requirement_definition: [],
         prd_generation: { status: "pending", file: null },
       },
       prototype: {
-        prototype_creation: { status: "pending", file: null },
-        prototype_audit: { status: "pending", file: null },
-        prototype_refactor: { status: "pending", file: null },
+        prototype_creation: [],
+        prototype_audit: [],
+        prototype_refactor: [],
         prototype_approval: { status: "pending", file: null },
         project_context: { status: "pending", file: null },
         test_plan: { status: "pending", file: null },

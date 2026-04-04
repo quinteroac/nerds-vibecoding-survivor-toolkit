@@ -92,13 +92,13 @@ Before finishing:
 - [ ] No unrelated changes were made
 - [ ] No state files were modified
 - [ ] No git commits were made
-- [ ] Lessons-learned entry written to `.agents/flow/it_{iteration}_lessons-learned.md`
+- [ ] Lessons-learned entry written to `.agents/flow/{lessons_learned_file}`
 
 ---
 
 ## Lessons Learned
 
-After completing your user story, **create or append** a lessons-learned entry to `.agents/flow/it_{iteration}_lessons-learned.md` (replace `{iteration}` with the 6-digit iteration number, e.g. `it_000043_lessons-learned.md`).
+After completing your user story, **create or append** a lessons-learned entry to `.agents/flow/{lessons_learned_file}` (the `lessons_learned_file` context variable provides the exact filename for this PRD index, e.g. `it_000043_lessons-learned_001.md`).
 
 Each entry must include the following sections:
 
@@ -116,4 +116,4 @@ Each entry must include the following sections:
 
 - If the file does not exist, create it with a top-level heading `# Lessons Learned — Iteration {iteration}` followed by the entry.
 - If the file already exists, append the new entry at the end (do not overwrite existing entries).
-- Use the naming convention `it_{iteration}_lessons-learned.md` (iteration prefix, kebab-case, `.md` extension), consistent with other flow artifacts in `.agents/flow/`.
+- Use the exact filename from the `lessons_learned_file` context variable (e.g. `it_000043_lessons-learned_001.md`), consistent with other flow artifacts in `.agents/flow/`.
