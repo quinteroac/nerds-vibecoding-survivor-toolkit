@@ -10,6 +10,17 @@ Implement the provided user story by writing production code and tests that sati
 
 ---
 
+## Reasoning Protocol
+
+Use **Chain of Draft (CoD)** for all internal reasoning before writing code or producing prompts.
+
+- **Scope:** applies only to internal planning steps (file structure, test strategy, approach decisions); never appears in user-facing output or generated prompts.
+- **Step length:** each draft step ≤ ~5 words (e.g. "parse argv first", "reuse state helper", "add unit test AC01").
+- **Purpose:** reduce token usage while preserving decision quality during the planning phase.
+- **Guarantee:** implementation prompts, code output, and all user-visible content remain complete and unaffected by CoD.
+
+---
+
 ## The Job
 
 1. Read the **user story** and its **acceptance criteria** carefully.
