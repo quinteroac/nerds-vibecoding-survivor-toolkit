@@ -89,3 +89,13 @@
 **Pitfalls Encountered:** None — pure Markdown change; no TypeScript involved.
 
 **Useful Context for Future Agents:** The `## Reasoning Protocol` CoD pattern is now applied to all nine skills including `ideate`. The placement rule is: insert after the introductory block, before the first substantive section (`## The Job`, `## Inputs`, etc.). No typecheck or build steps are required for SKILL.md edits.
+
+## US-010 — CoD Reasoning in `execute-automated-fix` skill
+
+**Summary:** Added a `## Reasoning Protocol` section to `nvst-skills/execute-automated-fix/SKILL.md` with Chain of Draft (CoD) instructions for internal AI reasoning.
+
+**Key Decisions:** Placed the new section between the `## Inputs` block and `## The Job`, consistent with the placement pattern established across all other skills. Example draft steps were tailored to automated-fix context (e.g. "reproduce: missing null check", "root cause: state not reset", "fix: add guard clause", "verify: re-run failing test").
+
+**Pitfalls Encountered:** None — pure Markdown change; no TypeScript involved.
+
+**Useful Context for Future Agents:** The `## Reasoning Protocol` CoD pattern is now applied to all ten skills including `execute-automated-fix`. The placement rule is: insert after the introductory block, before the first substantive section (`## The Job`, `## Inputs`, etc.). No typecheck or build steps are required for SKILL.md edits.
