@@ -79,3 +79,13 @@
 **Pitfalls Encountered:** None — pure Markdown change; no TypeScript involved.
 
 **Useful Context for Future Agents:** The `## Reasoning Protocol` CoD pattern is now applied to all eight skills including `refine-project-context`. The placement rule is: insert after the introductory block, before the first substantive section (`## Inputs`, `## The Job`, etc.). No typecheck or build steps are required for SKILL.md edits.
+
+## US-009 — CoD Reasoning in `ideate` skill
+
+**Summary:** Added a `## Reasoning Protocol` section to `nvst-skills/ideate/SKILL.md` with Chain of Draft (CoD) instructions for internal AI reasoning.
+
+**Key Decisions:** Placed the new section between the introductory paragraph and `## The Job`, consistent with the placement pattern established across all other skills. Example draft steps were tailored to ideation context (e.g. "read roadmap first", "scope: new feature", "avoid duplicate idea", "effort: M fits iteration").
+
+**Pitfalls Encountered:** None — pure Markdown change; no TypeScript involved.
+
+**Useful Context for Future Agents:** The `## Reasoning Protocol` CoD pattern is now applied to all nine skills including `ideate`. The placement rule is: insert after the introductory block, before the first substantive section (`## The Job`, `## Inputs`, etc.). No typecheck or build steps are required for SKILL.md edits.
