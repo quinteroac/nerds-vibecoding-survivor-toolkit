@@ -16,6 +16,17 @@ Update `.agents/PROJECT_CONTEXT.md` in place based on user feedback or codebase 
 
 ---
 
+## Reasoning Protocol
+
+Use **Chain of Draft (CoD)** for all internal reasoning steps. CoD applies **only** to your private scratchpad — never to user-facing output or document updates, which must remain complete and accurate.
+
+- Draft each internal reasoning step in **≤ 5 words**.
+- Use drafts to trace discrepancies, plan edits, and organise findings before presenting them.
+- Example draft steps: `"conventions: naming mismatch found"`, `"tech stack: Bun version outdated"`, `"check test location convention"`.
+- All output shown to the user and all writes to `.agents/PROJECT_CONTEXT.md` or `.agents/TECHNICAL_DEBT.md` are unaffected by CoD.
+
+---
+
 ## Inputs
 
 | Source | Used for |
