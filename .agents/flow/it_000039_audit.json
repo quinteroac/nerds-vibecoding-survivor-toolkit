@@ -1,0 +1,26 @@
+{
+  "iteration": "000039",
+  "prd_index": "001",
+  "outcome": "follow_recommendations",
+  "refactor_applied": true,
+  "changes": [
+    {
+      "file": "nvst-skills/execute-automated-fix/SKILL.md",
+      "description": "Moved '## Reasoning Protocol' section above '## Inputs' to satisfy FR-6 (protocol loaded into context first).",
+      "type": "reorganisation"
+    },
+    {
+      "file": "nvst-skills/refine-project-context/SKILL.md",
+      "description": "Harmonised step-length wording from '≤ 5 words' to '≤ ~5 words' to satisfy FR-4 (consistent pattern across all skills).",
+      "type": "wording"
+    }
+  ],
+  "finalStatus": {
+    "FR-1": "comply",
+    "FR-2": "comply",
+    "FR-3": "comply",
+    "FR-4": "comply",
+    "FR-5": "comply",
+    "FR-6": "comply"
+  }
+}

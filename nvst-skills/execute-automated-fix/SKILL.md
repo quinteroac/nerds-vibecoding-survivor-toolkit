@@ -10,16 +10,6 @@ Attempt to resolve the provided issue safely and deterministically by following 
 
 ---
 
-## Inputs
-
-| Source | Used for |
-|--------|----------|
-| `issue` (context variable) | The issue to fix, including id, title, description, and reproduction steps |
-| `project_context` (context variable) | Project conventions, tech stack, code standards, testing strategy, and architecture |
-| `iteration` (context variable) | Current iteration number for file naming and context |
-
----
-
 ## Reasoning Protocol
 
 Use **Chain of Draft (CoD)** for all internal reasoning. Before diagnosing, planning, or implementing any fix, think step by step in short drafts — each step ≤ ~5 words.
@@ -28,6 +18,16 @@ Use **Chain of Draft (CoD)** for all internal reasoning. Before diagnosing, plan
 - **Step length:** Each draft step must be ≤ ~5 words (e.g. "reproduce: missing null check", "root cause: state not reset", "fix: add guard clause", "verify: re-run failing test").
 - **Purpose:** Reduce token use and latency while maintaining accuracy in root-cause identification and fix planning.
 - **Guarantee:** Fix implementation, checklist output, and any user-facing communication remain complete and unabbreviated.
+
+---
+
+## Inputs
+
+| Source | Used for |
+|--------|----------|
+| `issue` (context variable) | The issue to fix, including id, title, description, and reproduction steps |
+| `project_context` (context variable) | Project conventions, tech stack, code standards, testing strategy, and architecture |
+| `iteration` (context variable) | Current iteration number for file naming and context |
 
 ---
 

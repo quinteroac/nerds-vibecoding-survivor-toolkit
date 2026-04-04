@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [000039] - 2026-04-04
+
+### Added
+- Reduce token consumption during agent reasoning steps by 75–92% across all NVST workflow skills.
+- Maintain full quality and completeness of user-facing output (documents, questions, prompts).
+- Establish a consistent, reusable CoD instruction pattern across all workflow SKILL.md files.
+
 ## [000040] - 2026-04-03
 
 ### Added
