@@ -122,14 +122,27 @@ export async function runApproveRequirement(
       throw new Error(`Cannot approve requirement entry #${entry.index}: file is missing.`);
     }
 
-    const requirementPath = join(projectRoot, FLOW_REL_DIR, requirementFile);
+    let resolvedRequirementFile = requirementFile;
+    let requirementPath = join(projectRoot, FLOW_REL_DIR, resolvedRequirementFile);
+    if (!(await mergedDeps.existsFn(requirementPath))) {
+      // Backward compatibility: early skills wrote PRDs without _NNN suffix.
+      const legacyRequirementFile = requirementFile.replace(/_\d{3}\.md$/, ".md");
+      if (legacyRequirementFile !== requirementFile) {
+        const legacyRequirementPath = join(projectRoot, FLOW_REL_DIR, legacyRequirementFile);
+        if (await mergedDeps.existsFn(legacyRequirementPath)) {
+          resolvedRequirementFile = legacyRequirementFile;
+          requirementPath = legacyRequirementPath;
+        }
+      }
+    }
     if (!(await mergedDeps.existsFn(requirementPath))) {
       throw new Error(`Cannot approve requirement: file not found at ${requirementPath}`);
     }
 
     const markdown = await mergedDeps.readFileFn(requirementPath, "utf-8");
     const prdData = parsePrd(markdown);
-    const prdJsonFileName = `it_${state.current_iteration}_PRD.json`;
+    const paddedIndex = String(entry.index).padStart(3, "0");
+    const prdJsonFileName = `it_${state.current_iteration}_PRD_${paddedIndex}.json`;
     const prdJsonRelPath = join(FLOW_REL_DIR, prdJsonFileName);
 
     const result = await mergedDeps.invokeWriteJsonFn(
@@ -150,11 +163,15 @@ export async function runApproveRequirement(
     }
 
     entry.status = "approved";
+    entry.file = resolvedRequirementFile;
     lastPrdJsonFileName = prdJsonFileName;
   }
 
   // AC04: Persist state with all entries marked approved
   if (lastPrdJsonFileName) {
+    if (!state.phases.define.prd_generation) {
+      state.phases.define.prd_generation = { status: "pending", file: null };
+    }
     state.phases.define.prd_generation.status = "completed";
     state.phases.define.prd_generation.file = lastPrdJsonFileName;
   }

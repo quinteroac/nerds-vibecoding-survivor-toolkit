@@ -1,30 +1,32 @@
 {
   "current_iteration": "000038",
   "current_phase": "prototype",
-  "flow_guardrail": "off",
-  "last_updated": "2026-04-03T03:47:47.706Z",
-  "updated_by": "nvst:refactor-prototype",
   "phases": {
     "define": {
       "ideation": null,
-      "requirement_definition": {
-        "status": "approved",
-        "file": "prd.md"
-      }
+      "requirement_definition": [
+        {
+          "index": 1,
+          "status": "approved",
+          "file": "prd.md"
+        }
+      ]
     },
     "prototype": {
-      "project_context": {
-        "status": "created",
-        "file": "ctx.md"
-      },
-      "prototype_creation": {
-        "status": "completed",
-        "file": null
-      },
-      "prototype_audit": {
-        "status": "completed",
-        "file": null
-      },
+      "prototype_creation": [
+        {
+          "index": 1,
+          "status": "completed",
+          "file": null
+        }
+      ],
+      "prototype_audit": [
+        {
+          "index": 1,
+          "status": "completed",
+          "file": null
+        }
+      ],
       "prototype_refactor": [
         {
           "index": 1,
@@ -32,7 +34,16 @@
           "file": "it_000038_refactor-plan_001.md"
         }
       ],
-      "prototype_approval": null
+      "prototype_approval": {
+        "status": "completed",
+        "file": null
+      },
+      "project_context": {
+        "status": "created",
+        "file": "ctx.md"
+      }
     }
-  }
+  },
+  "last_updated": "2026-04-04T19:40:50.377Z",
+  "updated_by": "nvst:approve-prototype"
 }

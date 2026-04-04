@@ -141,7 +141,7 @@ export async function runRefactorPrototype(
       provider: opts.provider,
       prompt,
       cwd: projectRoot,
-      interactive: true,
+      interactive: false,
       yolo: opts.yolo ?? false,
     });
 

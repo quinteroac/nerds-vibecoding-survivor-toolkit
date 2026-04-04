@@ -97,12 +97,12 @@ const definePhase = z.object({
   ideation: z.object({
     status: z.enum(["pending", "in_progress", "completed"]),
     file: z.string().nullable(),
-  }).optional(),
+  }).nullable().optional(),
   requirement_definition: requirementDefinitionField,
   prd_generation: z.object({
     status: z.enum(["pending", "completed"]),
     file: z.string().nullable(),
-  }),
+  }).optional(),
 });
 
 const prototypePhase = z.object({
@@ -111,7 +111,7 @@ const prototypePhase = z.object({
   prototype_refactor: prototypeRefactorField.optional(),
   prototype_approval: statusFile.extend({
     status: z.enum(["pending", "approved", "completed"]),
-  }).optional(),
+  }).nullable().optional(),
   // DEPRECATED: kept for backward compatibility with older command flows.
   project_context: statusFile.extend({
     status: z.enum(["pending", "pending_approval", "created"]),
@@ -160,11 +160,14 @@ const refactorPhase = z.object({
 export const StateSchema = z.object({
   current_iteration: iterationId,
   current_phase: phase,
-  flow_guardrail: z.enum(["strict", "relaxed"]).optional(),
+  flow_guardrail: z.preprocess(
+    (val) => (val === "off" ? undefined : val),
+    z.enum(["strict", "relaxed"]).optional(),
+  ),
   phases: z.object({
     define: definePhase,
     prototype: prototypePhase,
-    refactor: refactorPhase,
+    refactor: refactorPhase.optional(),
   }),
   last_updated: iso8601,
   updated_by: z.string().optional(),

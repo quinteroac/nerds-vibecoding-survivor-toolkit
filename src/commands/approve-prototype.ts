@@ -361,13 +361,27 @@ export async function runApprovePrototype(
     mergedDeps.existsFn(refactorReportPath),
   ]);
 
+  // Check state arrays for multi-PRD completion (RP-2)
+  // Normalise: handle both the new array format and legacy single-object format (not going through Zod).
+  const rawAudit = state.phases.prototype?.prototype_audit;
+  const auditEntries = Array.isArray(rawAudit) ? rawAudit : [];
+  const rawRefactor = state.phases.prototype?.prototype_refactor;
+  const refactorEntries = Array.isArray(rawRefactor) ? rawRefactor : [];
+  const auditCompletedViaState =
+    auditEntries.length > 0 && auditEntries.every((e) => e.status === "completed");
+  const refactorCompletedViaState =
+    refactorEntries.length > 0 && refactorEntries.every((e) => e.status === "completed");
+
+  const effectiveHasAudit = hasAuditMd || hasAuditJson || auditCompletedViaState;
+  const effectiveHasRefactor = hasRefactorReport || refactorCompletedViaState;
+
   let violated = false;
   let message = "";
 
-  if (!hasAuditMd && !hasAuditJson && !hasRefactorReport) {
+  if (!effectiveHasAudit && !effectiveHasRefactor) {
     violated = true;
     message = AUDIT_MISSING_MESSAGE;
-  } else if (hasAuditJson && !hasRefactorReport) {
+  } else if ((hasAuditJson || auditCompletedViaState) && !effectiveHasRefactor) {
     violated = true;
     message = REFACTOR_NOT_RUN_MESSAGE;
   }
@@ -498,7 +512,16 @@ export async function runApprovePrototype(
       );
     }
 
-    const refactorReportRelativePath = join(FLOW_REL_DIR, `it_${iteration}_refactor-report.md`);
+    // Derive refactor report path(s) from state.phases.prototype.prototype_refactor (RP-3)
+    const rawRefactorState = state.phases.prototype?.prototype_refactor;
+    const refactorStateEntries = Array.isArray(rawRefactorState) ? rawRefactorState : [];
+    const refactorFilePaths = refactorStateEntries
+      .filter((e) => e.file !== null)
+      .map((e) => join(FLOW_REL_DIR, e.file!));
+    const refactorReportRelativePath =
+      refactorFilePaths.length > 0
+        ? refactorFilePaths.join(", ")
+        : join(FLOW_REL_DIR, `it_${iteration}_refactor-report.md`);
     const prTitle = `feat: it_${iteration} — ${requirementName}`;
 
     // Build PR body from all PRDs (US-008-AC03)

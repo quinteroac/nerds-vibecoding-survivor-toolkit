@@ -294,7 +294,7 @@ export async function runCreatePrototype(
   let prePrototypeCommitDone = false;
 
   if (state.current_phase === "define") {
-    if (state.phases.define.prd_generation.status === "completed") {
+    if (state.phases.define.prd_generation?.status === "completed") {
       const workingTreeBeforeTransition = await dollar`git status --porcelain`.cwd(projectRoot).nothrow().quiet();
       if (workingTreeBeforeTransition.exitCode !== 0) {
         throw new Error(
@@ -350,7 +350,10 @@ export async function runCreatePrototype(
     }
   }
 
-  const prdMdPath = join(projectRoot, FLOW_REL_DIR, `it_${iteration}_product-requirement-document.md`);
+  const primaryApprovedPrdMdFile = approvedDefsWithExistingFiles[0]?.file;
+  const prdMdPath = primaryApprovedPrdMdFile
+    ? join(projectRoot, FLOW_REL_DIR, primaryApprovedPrdMdFile)
+    : join(projectRoot, FLOW_REL_DIR, `it_${iteration}_product-requirement-document.md`);
   let slug = "";
   if (await exists(prdMdPath)) {
     const prdMdContent = await readFile(prdMdPath, "utf8");
@@ -520,12 +523,6 @@ export async function runCreatePrototype(
   const projectContextContent = await readFile(projectContextPath, "utf8");
   const qualityCheckCommands = parseQualityChecks(projectContextContent);
 
-  const lessonsLearnedPath = join(projectRoot, FLOW_REL_DIR, `it_${iteration}_lessons-learned.md`);
-  const lessonsLearnedRaw = await mergedDeps.readLessonsLearnedFn(lessonsLearnedPath);
-  const lessonsLearnedContent = lessonsLearnedRaw
-    ? `## Lessons Learned from Previous Stories\n\n${lessonsLearnedRaw}`
-    : "";
-
   const maxStoriesToProcess = opts.iterations ?? Number.POSITIVE_INFINITY;
   const maxRetriesPerStory = opts.retryOnFail ?? 0;
 
@@ -540,6 +537,14 @@ export async function runCreatePrototype(
         return entry !== undefined && (entry.status === "pending" || entry.status === "failed");
       });
 
+      const paddedIndex = String(src.index).padStart(3, "0");
+      const lessonsLearnedFile = `it_${iteration}_lessons-learned_${paddedIndex}.md`;
+      const lessonsLearnedPath = join(projectRoot, FLOW_REL_DIR, lessonsLearnedFile);
+      const lessonsLearnedRaw = await mergedDeps.readLessonsLearnedFn(lessonsLearnedPath);
+      const lessonsLearnedContent = lessonsLearnedRaw
+        ? `## Lessons Learned from Previous Stories\n\n${lessonsLearnedRaw}`
+        : "";
+
       for (const story of eligibleStories) {
         if (printedStories >= maxStoriesToProcess) break;
         if (printedStories > 0) {
@@ -550,6 +555,7 @@ export async function runCreatePrototype(
           project_context: projectContextContent,
           user_story: JSON.stringify(story, null, 2),
           lessons_learned: lessonsLearnedContent,
+          lessons_learned_file: lessonsLearnedFile,
         });
         mergedDeps.logFn(prompt);
         printedStories += 1;
@@ -568,9 +574,12 @@ export async function runCreatePrototype(
 
     const progressData = progressDataByIndex.get(src.index)!;
     const creationEntry = prototypeCreationEntries.find((e) => e.index === src.index)!;
+    const agentPaddedIndex = String(src.index).padStart(3, "0");
     const progressFile = creationEntry.file
-      ?? `it_${iteration}_prototype-creation_${String(src.index).padStart(3, "0")}.json`;
+      ?? `it_${iteration}_prototype-creation_${agentPaddedIndex}.json`;
     const progressPath = join(projectRoot, FLOW_REL_DIR, progressFile);
+    const lessonsLearnedFile = `it_${iteration}_lessons-learned_${agentPaddedIndex}.md`;
+    const lessonsLearnedPath = join(projectRoot, FLOW_REL_DIR, lessonsLearnedFile);
 
     const eligibleStories = src.prd.userStories.filter((story) => {
       const entry = progressData.entries.find((item) => item.use_case_id === story.id);
@@ -586,11 +595,16 @@ export async function runCreatePrototype(
       const maxAttemptsForStory = 1 + maxRetriesPerStory;
 
       for (let attempt = 1; attempt <= maxAttemptsForStory; attempt += 1) {
+        const lessonsLearnedRaw = await mergedDeps.readLessonsLearnedFn(lessonsLearnedPath);
+        const lessonsLearnedContent = lessonsLearnedRaw
+          ? `## Lessons Learned from Previous Stories\n\n${lessonsLearnedRaw}`
+          : "";
         const prompt = buildPrompt(skillTemplate, {
           iteration,
           project_context: projectContextContent,
           user_story: JSON.stringify(story, null, 2),
           lessons_learned: lessonsLearnedContent,
+          lessons_learned_file: lessonsLearnedFile,
         });
 
         const agentResult = await mergedDeps.invokeAgentFn({

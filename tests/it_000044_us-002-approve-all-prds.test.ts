@@ -319,7 +319,7 @@ describe("US-002-AC04: state.json persisted with all entries approved", () => {
     expect(defs).toHaveLength(2);
     expect(defs.every((e) => e.status === "approved")).toBe(true);
     expect(persisted.phases.define.prd_generation.status).toBe("completed");
-    expect(persisted.phases.define.prd_generation.file).toBe("it_000044_PRD.json");
+    expect(persisted.phases.define.prd_generation.file).toBe("it_000044_PRD_002.json");
   });
 
   it("prd_generation.file reflects the iteration PRD JSON filename", async () => {
@@ -333,7 +333,7 @@ describe("US-002-AC04: state.json persisted with all entries approved", () => {
     await runApproveRequirement({ force: true }, { invokeWriteJsonFn: fakeWriteJsonOk });
 
     const persisted = await readState(projectRoot);
-    expect(persisted.phases.define.prd_generation.file).toBe("it_000044_PRD.json");
+    expect(persisted.phases.define.prd_generation.file).toBe("it_000044_PRD_001.json");
   });
 
   it("does not persist state if write-json fails", async () => {
@@ -351,5 +351,22 @@ describe("US-002-AC04: state.json persisted with all entries approved", () => {
     // Entry should still be in_progress since write-json failed
     expect(persisted.phases.define.requirement_definition[0].status).toBe("in_progress");
     process.exitCode = originalExitCode;
+  });
+
+  it("uses legacy unsuffixed PRD file when suffixed state file is missing", async () => {
+    const state = makeState([
+      { index: 1, status: "in_progress", file: "it_000044_product-requirement-document_001.md" },
+    ]);
+    await setupProject(projectRoot, state, {
+      "it_000044_product-requirement-document.md": MINIMAL_PRD_MARKDOWN,
+    });
+
+    await runApproveRequirement({ force: true }, { invokeWriteJsonFn: fakeWriteJsonOk });
+
+    const persisted = await readState(projectRoot);
+    const entry = persisted.phases.define.requirement_definition[0];
+    expect(entry.status).toBe("approved");
+    expect(entry.file).toBe("it_000044_product-requirement-document.md");
+    expect(persisted.phases.define.prd_generation.file).toBe("it_000044_PRD_001.json");
   });
 });

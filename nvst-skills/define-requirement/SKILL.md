@@ -1,12 +1,12 @@
 ---
 name: define-requirement
-description: "Gathers the requirement from the user and produces it_{iteration}_product-requirement-document.md. Triggered by: nvst define requirement."
+description: "Gathers the requirement from the user and produces it_{iteration}_product-requirement-document_001.md (indexed). Triggered by: nvst define requirement."
 user-invocable: true
 ---
 
 # Create Product Requirement Document
 
-Produce `it_{current_iteration}_product-requirement-document.md` in `.agents/flow/` by interviewing the user about the feature or change they want to build.
+Produce `it_{current_iteration}_product-requirement-document_{index3}.md` in `.agents/flow/` by interviewing the user about the feature or change they want to build.
 
 **Important:** Do NOT start implementing. Just gather the requirement and write the document.
 
@@ -19,7 +19,7 @@ Produce `it_{current_iteration}_product-requirement-document.md` in `.agents/flo
 2. **Understand the project first.** Read `AGENTS.md`, `.agents/PROJECT_CONTEXT.md`, and explore the codebase structure (main entry points, conventions, existing features) before starting the interview. This context will make your questions more relevant and the PRD better aligned with the project.
 3. Ask 3–5 clarifying questions (see Questions Flow).
 4. Generate the document following the Output Structure.
-5. Write to `.agents/flow/it_{current_iteration}_product-requirement-document.md`.
+5. Write to `.agents/flow/it_{current_iteration}_product-requirement-document_{index3}.md` where `{index3}` is the zero-padded 3-digit PRD index (e.g. `001` for the first PRD in the iteration).
 6. If `.agents/state.json` exists, update it: `requirement_definition.status` = `"in_progress"`, `requirement_definition.file` = filename. If it does not exist (standalone mode), skip this step and notify the user: "Running standalone — state.json not found, skipping state update."
 
 ---
@@ -120,7 +120,7 @@ Each story must be small enough to implement in one focused session.
 
 **CRITICAL: Do this at the end of the session, after you have written the PRD file and before you update `state.json`.**
 
-1. **Detect open questions.** Read the PRD file you just wrote (`.agents/flow/it_{current_iteration}_product-requirement-document.md`). If it contains a section `## Open Questions` with one or more list items (lines starting with `-` or `*` or a number), treat each list item as an open question. Skip placeholders such as "None", "…", or "TBD" — only ask items that are real questions.
+1. **Detect open questions.** Read the PRD file you just wrote (`.agents/flow/it_{current_iteration}_product-requirement-document_{index3}.md`). If it contains a section `## Open Questions` with one or more list items (lines starting with `-` or `*` or a number), treat each list item as an open question. Skip placeholders such as "None", "…", or "TBD" — only ask items that are real questions.
 2. **Ask the open questions one by one.** For each open question (in order), ask the user that question. **When asking each open question, always include valid suggestions or inferred options** (e.g. lettered choices A, B, C, or "Other: [specify]") so the user has helpful context to provide an answer. Infer options from the PRD context when possible; if none fit, offer at least 2–3 plausible options plus "Other".
 3. **Wait for the user's answer before proceeding.** After asking a question, wait for the user to respond. Only then ask the next question (or, if there are no more, proceed to update `state.json` and finish).
 
@@ -136,6 +136,6 @@ Before saving:
 - [ ] Each user story has verifiable acceptance criteria
 - [ ] Functional requirements are numbered and unambiguous
 - [ ] Non-goals define clear scope boundaries
-- [ ] File written to `.agents/flow/it_{current_iteration}_product-requirement-document.md`
+- [ ] File written to `.agents/flow/it_{current_iteration}_product-requirement-document_{index3}.md`
 - [ ] **Open questions (if any) asked one by one with suggestions/options per question, and user answers collected**
 - [ ] If `.agents/state.json` exists: `requirement_definition.status` = `"in_progress"`, `requirement_definition.file` set. If absent (standalone): user notified "Running standalone — state.json not found, skipping state update."

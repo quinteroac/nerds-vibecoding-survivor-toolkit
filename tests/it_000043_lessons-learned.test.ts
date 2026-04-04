@@ -40,9 +40,9 @@ describe("US-001: Lessons-learned instruction in create-prototype SKILL.md", () 
     expect(skillContent).toContain("Lessons-learned entry written to");
   });
 
-  // AC04: uses naming convention it_{iteration}_lessons-learned.md
+  // AC04: uses lessons_learned_file context variable for per-PRD naming
   it("AC04: references the correct file naming convention", () => {
-    expect(skillContent).toContain("it_{iteration}_lessons-learned.md");
-    expect(skillContent).toMatch(/it_\{iteration\}_lessons-learned\.md/);
+    expect(skillContent).toContain("{lessons_learned_file}");
+    expect(skillContent).toContain("lessons_learned_file");
   });
 });

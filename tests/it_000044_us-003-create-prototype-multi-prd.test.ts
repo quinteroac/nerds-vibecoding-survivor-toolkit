@@ -215,6 +215,33 @@ describe("US-003-AC01: reads all PRD entries from requirement_definition in inde
     expect(posB01).toBeGreaterThanOrEqual(0);
     expect(posA01).toBeLessThan(posB01);
   });
+
+  it("uses approved _001 PRD file for branch slug and does not warn about missing unsuffixed markdown", async () => {
+    const state = makeBaseState([
+      { index: 1, status: "approved", file: "it_000044_product-requirement-document_001.md" },
+    ]);
+    await setupProject(projectRoot, state, {
+      "it_000044_product-requirement-document_001.md": MINIMAL_PRD_MARKDOWN_1,
+    });
+    await initGitRepo(projectRoot);
+
+    const warnings: string[] = [];
+    await runCreatePrototype(
+      { provider: "ide" },
+      {
+        invokeAgentFn: async () => ({ exitCode: 0, stdout: "", stderr: "" }),
+        loadSkillFn: async () => "{{user_story}}",
+        writeJsonArtifactFn: async () => {},
+        promptDirtyTreeCommitFn: async () => true,
+        gitAddAndCommitFn: async () => {},
+        logFn: () => {},
+        warnFn: (msg: string) => { warnings.push(msg); },
+        readLessonsLearnedFn: async () => "",
+      },
+    );
+
+    expect(warnings.some((w) => w.includes("PRD markdown not found"))).toBe(false);
+  });
 });
 
 // ---------------------------------------------------------------------------

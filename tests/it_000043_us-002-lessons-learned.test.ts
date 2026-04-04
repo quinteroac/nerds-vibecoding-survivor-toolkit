@@ -65,7 +65,7 @@ describe("US-002-AC01: create-prototype.ts includes lessons_learned in buildProm
   it("reads lessons-learned file from the correct iteration path pattern", async () => {
     const srcPath = join(PROJECT_ROOT, "src", "commands", "create-prototype.ts");
     const src = await readFile(srcPath, "utf-8");
-    expect(src).toContain("it_${iteration}_lessons-learned.md");
+    expect(src).toContain("it_${iteration}_lessons-learned_");
     expect(src).toContain("readLessonsLearnedFn");
   });
 
@@ -74,11 +74,9 @@ describe("US-002-AC01: create-prototype.ts includes lessons_learned in buildProm
     const src = await readFile(srcPath, "utf-8");
     // The path should use FLOW_REL_DIR (same as other flow artifacts)
     expect(src).toContain("FLOW_REL_DIR");
-    const lessonsPathLine = src
-      .split("\n")
-      .find((line) => line.includes("lessons-learned.md"));
-    expect(lessonsPathLine).toBeDefined();
-    expect(lessonsPathLine).toContain("FLOW_REL_DIR");
+    // lessons-learned file and FLOW_REL_DIR join should both appear in source
+    expect(src).toContain("lessonsLearnedFile");
+    expect(src).toContain("join(projectRoot, FLOW_REL_DIR, lessonsLearnedFile)");
   });
 });
 

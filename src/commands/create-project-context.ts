@@ -24,7 +24,7 @@ export async function runCreateProjectContext(opts: CreateProjectContextOptions)
 
   await assertGuardrail(
     state,
-    state.phases.define.prd_generation.status !== "completed",
+    state.phases.define.prd_generation?.status !== "completed",
     "Cannot create project context: define.prd_generation must be completed first.",
     { force },
   );
@@ -56,7 +56,7 @@ export async function runCreateProjectContext(opts: CreateProjectContextOptions)
     { force },
   );
 
-  const prdFile = state.phases.define.prd_generation.file;
+  const prdFile = state.phases.define.prd_generation?.file;
   if (!prdFile) {
     throw new Error("Cannot create project context: define.prd_generation.file is missing.");
   }

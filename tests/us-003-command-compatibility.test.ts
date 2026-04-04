@@ -269,10 +269,10 @@ describe("US-003: All existing commands work identically after migration", () =>
         "utf8",
       );
 
-      const result = await runCli(["approve", "requirement"], projectRoot);
+      const result = await runCli(["approve", "requirement", "--force"], projectRoot);
       expect(result.exitCode).toBe(0);
       expect(result.stderr).toBe("");
-      expect(result.stdout).toContain("Requirement approved.");
+      expect(result.stdout).toContain("All 1 requirement(s) approved.");
     } finally {
       await rm(projectRoot, { recursive: true, force: true });
     }
