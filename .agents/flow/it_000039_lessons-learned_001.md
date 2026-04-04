@@ -49,3 +49,13 @@
 **Pitfalls Encountered:** None — pure Markdown change; no TypeScript involved.
 
 **Useful Context for Future Agents:** The `## Reasoning Protocol` CoD pattern is now applied to all five skills: `define-requirement`, `refine-requirement`, `create-prototype`, `audit-prototype`, and `refactor-prototype`. The placement rule is: insert after the introductory block, before the first substantive section (`## Your task` or `## The Job`). No typecheck or build steps are required for SKILL.md edits.
+
+## US-006 — CoD Reasoning in `approve-prototype` skill
+
+**Summary:** Added a `## Reasoning Protocol` section to `nvst-skills/approve-prototype/SKILL.md` with Chain of Draft (CoD) instructions for internal AI reasoning.
+
+**Key Decisions:** Placed the new section after the `All generated content **must be in English**.` line and before `## Files and artifacts you must use`, consistent with the placement pattern across all other skills. Example draft steps were tailored to approve-prototype context (e.g. "read PRD artifacts first", "context doc needs update", "roadmap item completed").
+
+**Pitfalls Encountered:** None — pure Markdown change; no TypeScript involved.
+
+**Useful Context for Future Agents:** The `## Reasoning Protocol` CoD pattern is now applied to all six skills: `define-requirement`, `refine-requirement`, `create-prototype`, `audit-prototype`, `refactor-prototype`, and `approve-prototype`. The CoD section is always placed after the introductory block, before the first substantive section. No typecheck or build steps are required for SKILL.md edits.
